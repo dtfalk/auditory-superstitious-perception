@@ -184,7 +184,7 @@ def main():
 
     
     # Get the user's consent and explain the experiment
-    consented = consentScreen(subjectNumber, subjectEmail, experimenterName, win)
+    consented = consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win)
     if not consented:
         nonConsentScreen(win)
     sleepiness_responses = []

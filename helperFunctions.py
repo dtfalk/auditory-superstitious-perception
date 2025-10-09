@@ -730,7 +730,7 @@ def nonConsentScreen(win):
 
 
 # contains questionnaire questions and displays questionnaire to the subject
-def consentScreen(subjectNumber, subjectEmail, experimenterName, win):
+def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win):
     index = 0
     while True:
         pg.mouse.set_visible(False)
@@ -890,7 +890,10 @@ def consentScreen(subjectNumber, subjectEmail, experimenterName, win):
     with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'consentInfo_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
         writer = csv.writer(f)
         writer.writerow(['Subject Number', 'Subject Name', 'Subject Email', 'Experimenter Name', 'Consented', 'Date'])
-        writer.writerow([subjectNumber, signature, subjectEmail, experimenterName, str(consented), formatted_date])
+        if not consented:
+            writer.writerow([subjectNumber, subjectName, subjectEmail, experimenterName, str(consented), formatted_date])
+        else:
+            writer.writerow([subjectNumber, signature, subjectEmail, experimenterName, str(consented), formatted_date])
     return consented
 
 # =======================================================================
