@@ -7,7 +7,7 @@ from screeninfo import get_monitors
 
 screen_width_in_centimeters = 31.5
 distance_from_screen_in_centimeters = 69
-number_of_sona_credits = 'xxx'
+number_of_sona_credits = '1.5'
 
 # get screen size for each monitor in the syste m
 winfo = get_monitors()
