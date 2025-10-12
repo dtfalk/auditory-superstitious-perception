@@ -1024,10 +1024,10 @@ def dissociative_experiences(subjectNumber, win):
 def main(subjectNumber, win):
 
     # multiLineMessage(questionnairesIntroText, mediumFont, win)
-    # pg.display.flip()
-    # waitKey(pg.K_SPACE)
+    pg.display.flip()
+    waitKey(pg.K_SPACE)
     pg.mouse.set_visible(True)
-    # tellegen(subjectNumber, win)
+    tellegen(subjectNumber, win)
     vhq(subjectNumber, win)
     launay_slade(subjectNumber, win)
     dissociative_experiences(subjectNumber, win)
