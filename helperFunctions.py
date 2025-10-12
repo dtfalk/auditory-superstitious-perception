@@ -461,11 +461,6 @@ def writeSummaryData(subjectNumber, block_names, saveFolder):
                     falseAlarms += 1
                 else:
                     correctRejections += 1
-            print(dataFile)
-            print(hits)
-            print(misses)
-            print(falseAlarms)
-            print(correctRejections)
             dprime = calculateDprime(hits, misses, correctRejections, falseAlarms)
             dprimes.append(dprime)
 
@@ -647,13 +642,6 @@ def showExamples(win, text = ''):
                     if continue_button_rect.collidepoint(mouse_pos):
                         return
 
-
-# Tell the user that they are beginning the real experiment and have completed the questionnaires
-def experimentIntro(win):
-    win.fill(backgroundColor)
-    multiLineMessage(experimentIntroText, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
 
 # explains the experiment to the subject
 def experimentExplanation(win):
@@ -1182,9 +1170,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             "",
             f"Here's a reminder of the \"WALL\" that you are searching for.",
             f"You can play it up to {REMINDER_MAX_PLAYS} times.",
-            "",
             f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
-            "",
             "Click 'Play Target Sound' to hear the sound",
             "Click 'Continue' when you're ready to proceed"
         ]
@@ -1286,4 +1272,130 @@ def savePeriodicReminderData(subjectNumber, saveFolder, trial_number, play_count
             writer.writerow(data)
     except Exception as e:
         print(f"Error saving periodic reminder data: {e}")
+
+
+def showAudioLevelTest(win):
+    """
+    Show audio level testing screen for the experimenter to normalize audio levels.
+    Allows playing white noise and target wall sounds as many times as needed.
+    
+    Args:
+        win: pygame window
+    """
+    pg.mouse.set_visible(True)
+    
+    # Load audio files
+    audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
+    
+    # Load target wall sound
+    target_path = os.path.join(audio_stimuli_dir, 'target.wav')
+    target_sound = pg.mixer.Sound(target_path)
+    white_noise_path = os.path.join(audio_stimuli_dir, '8khz', 'targets','6410.wav')
+    white_noise_sound = pg.mixer.Sound(white_noise_path)
+
+    
+    # Track timing for delay system
+    last_audio_start = 0
+    audio_duration = 0
+    
+    # Create buttons
+    button_width = int(0.2 * winWidth)  # 20% of screen width
+    button_height = int(0.08 * winHeight)  # 8% of screen height
+    
+    # White noise button (left)
+    white_noise_button_rect = pg.Rect(winWidth // 4 - button_width//2, winHeight // 2, button_width, button_height)
+    
+    # Target wall button (right)
+    target_button_rect = pg.Rect(3 * winWidth // 4 - button_width//2, winHeight // 2, button_width, button_height)
+    
+    # Continue button (bottom center)
+    continue_button_width = int(0.15 * winWidth)
+    continue_button_height = int(0.06 * winHeight)
+    continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, int(0.8 * winHeight), continue_button_width, continue_button_height)
+    
+    while True:
+        win.fill(backgroundColor)
+        
+        # Check if buttons can be clicked (timing system)
+        current_time = pg.time.get_ticks()
+        time_since_last_play = current_time - last_audio_start
+        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+        
+        # Display instructions
+        white_noise_label = "White Noise"
+        
+        instructions = [
+            "Audio Level Testing - For Experimenter",
+            "",
+            "Use this screen to normalize audio levels before starting the experiment.",
+            "Adjust system volume so both sounds are at comfortable levels.",
+            "Recommended: Set volume so target wall is clearly audible",
+            "but not uncomfortably loud.",
+            "When audio levels are properly set, click 'Continue' to proceed."
+        ]
+        
+        y_pos = winHeight // 8
+        font = pg.font.SysFont("times new roman", 32)
+        
+        for instruction in instructions:
+            if instruction:
+                text_surface = font.render(instruction, True, BLACK)
+                text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
+                win.blit(text_surface, text_rect)
+            y_pos += 50
+        
+        # Draw buttons with timing consideration
+        if can_play:
+            white_noise_color = BLUE
+            target_color = BLUE
+            button_text_color = WHITE
+        else:
+            white_noise_color = [c//2 for c in BLUE]  # Dimmed blue
+            target_color = [c//2 for c in BLUE]  # Dimmed blue
+            button_text_color = GRAY
+        
+        # Draw white noise button
+        pg.draw.rect(win, white_noise_color, white_noise_button_rect)
+        pg.draw.rect(win, BLACK, white_noise_button_rect, 3)
+        
+        # Draw target button
+        pg.draw.rect(win, target_color, target_button_rect)
+        pg.draw.rect(win, BLACK, target_button_rect, 3)
+        
+        # Draw continue button (always green)
+        pg.draw.rect(win, GREEN, continue_button_rect)
+        pg.draw.rect(win, BLACK, continue_button_rect, 3)
+        
+        # Button labels
+        font = pg.font.SysFont("times new roman", 24)
+        white_noise_label = "White Noise"
+        white_noise_text = font.render(white_noise_label, True, button_text_color)
+        target_text = font.render("Target Wall", True, button_text_color)
+        continue_text = font.render("Continue", True, BLACK)
+        
+        win.blit(white_noise_text, white_noise_text.get_rect(center=white_noise_button_rect.center))
+        win.blit(target_text, target_text.get_rect(center=target_button_rect.center))
+        win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
+        
+        pg.display.flip()
+        
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    pg.quit()
+                    sys.exit()
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                mouse_pos = pg.mouse.get_pos()
+                if can_play:
+                    if white_noise_button_rect.collidepoint(mouse_pos):
+                        white_noise_sound.play()
+                        audio_duration = int(white_noise_sound.get_length() * 1000)
+                        last_audio_start = current_time
+                    elif target_button_rect.collidepoint(mouse_pos):
+                        target_sound.play()
+                        audio_duration = int(target_sound.get_length() * 1000)
+                        last_audio_start = current_time
+                
+                if continue_button_rect.collidepoint(mouse_pos):
+                    return
 

@@ -154,6 +154,9 @@ def main():
     # Collects user info and preps the stimuli and the rest of the experiment
     # ============================================================================================
 
+    # Audio level testing for experimenter
+    showAudioLevelTest(win)
+
     # get user info and where to store their results
     subjectName = getSubjectInfo('subject name', win)
     subjectNumber = getSubjectInfo('subject number', win)
@@ -181,7 +184,6 @@ def main():
     blocks = [block_dictionary[name] for name in block_names]
 
     # ============================================================================================
-
     
     # Get the user's consent and explain the experiment
     consented = consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win)
@@ -196,33 +198,38 @@ def main():
 
     # give users all blocks
     for i, (block_name, (targets, distractors)) in enumerate(zip(block_names, blocks)):
-        print(f'block {i + 1}: {block_name}')
 
         # Show target familiarization before each block
         familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name)
 
         # display stimuli
         pg.mouse.set_visible(True)
-        experiment(subjectNumber = subjectNumber, 
-                   block = block_name, 
-                   targets = targets, 
-                   distractors = distractors, 
-                   saveFolder = saveFolder, 
-                   win = win)   
+        experiment(
+            subjectNumber = subjectNumber, 
+            block = block_name, 
+            targets = targets, 
+            distractors = distractors, 
+            saveFolder = saveFolder, 
+            win = win)   
         
         # After first block (round one), add Stanford Sleepiness Scale labeled as "before break"
         if i == 0:  # After first block
             stanford_sleepiness_scale(sleepiness_responses, win, label="before break")
+            flow_state_scale(subjectNumber, "block-1", win)
+            pg.mouse.set_visible(False)
         
         # give break screen between blocks
         if i < len(blocks) - 1:
             breakScreen(i + 1, win)
+            pg.mouse.set_visible(False)
+            realInstructionsAlt(win)
+            pg.mouse.set_visible(True)
             # Add Stanford Sleepiness Scale after break screen, labeled as "after break"
             stanford_sleepiness_scale(sleepiness_responses, win, label="after break")
-            realInstructionsAlt(win)
     
     pg.mouse.set_visible(True)
     stanford_sleepiness_scale(sleepiness_responses, win)
+    flow_state_scale(subjectNumber, "block-2", win)
     pg.mouse.set_visible(False)
     subjectExplanation_methodology = getSubjectInfo('selfReflect_explanation', win)
     with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_methodology_{subjectNumber}.txt'), mode = 'w') as f:

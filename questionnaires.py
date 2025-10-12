@@ -24,6 +24,10 @@ class Button:
             elif questionnaireName == 'sleepiness':
                 scalar = 1.3
                 self.fontSize = int(0.85 * mediumFont)
+            elif questionnaireName == 'vhq':
+                scalar = 1.4  # Similar spacing to launay
+            else:
+                scalar = 1.5  # Default fallback for any unknown questionnaire types
             spacing = scalar * i * self.fontSize 
             buffer = winHeight // 20
             maxY = (0.85 * winHeight) - self.fontSize
@@ -328,6 +332,125 @@ def tellegen(subjectNumber, win):
         writer.writerow([subjectNumber] + responses)
     return
 
+def vhq(subjectNumber, win):
+    # === VOICE HEARING QUESTIONNAIRE (VHQ) ===
+
+    questions = []
+
+    # 1
+    q1 = "Sometimes I’ve thought I heard people say my name — like in a store when I walk past people I don’t know — but I know they didn’t really say my name, so I just go on."
+    questions.append([q1, 'True', 'False'])
+
+    # 2
+    q2 = "Sometimes when I’m just about to fall asleep, I hear my name as if spoken aloud."
+    questions.append([q2, 'True', 'False'])
+
+    # 3
+    q3 = "When I wake up in the morning but stay in bed for a few minutes, sometimes I hear my mother’s voice when she’s not there — like now when I’m living in the dorm. I hear her saying things like “Come on and get up” or “Don’t be late for school.” I’m used to it, and it doesn’t bother me."
+    questions.append([q3, 'True', 'False'])
+
+    # 4a
+    q4a = "I hear a voice that’s kind of garbled — I can’t really tell what it says — sometimes just as I go to sleep."
+    questions.append([q4a, 'True', 'False'])
+
+    # 4b
+    q4b = "I’ve had experiences of hearing something just as I’m going to sleep or waking up."
+    questions.append([q4b, 'True', 'False'])
+
+    # 5a
+    q5a = "When I was little, I had an imaginary playmate. I remember really thinking I heard her voice when we talked."
+    questions.append([q5a, 'True', 'False'])
+
+    # 5b
+    q5b = "When I had an imaginary playmate, I could actually hear their voice aloud."
+    questions.append([q5b, 'True', 'False'])
+
+    # 6
+    q6 = "Every now and then — not very often — I think I hear my name on the radio."
+    questions.append([q6, 'True', 'False'])
+
+    # 7
+    q7 = "Sometimes when I’m in the house all alone, I hear a voice call my name. It was scary at first, but now it isn’t. It’s just once — like ‘Sally!’ — kind of quick, like somebody’s calling me. I guess I know it’s really me, but it still sounds like a real voice."
+    questions.append([q7, 'True', 'False'])
+
+    # 8
+    q8 = "Last summer, while hanging up clothes in the backyard, I suddenly heard my husband call my name from inside the house. It sounded loud and clear, like something was wrong — but he was outside and hadn’t called at all."
+    questions.append([q8, 'True', 'False'])
+
+    # 9
+    q9 = "I’ve heard the doorbell or the phone ring when it didn’t."
+    questions.append([q9, 'True', 'False'])
+
+    # 10
+    q10 = "I hear my thoughts aloud."
+    questions.append([q10, 'True', 'False'])
+
+    # 11
+    q11 = "I’ve heard God’s voice — not just in my heart, but as a real voice."
+    questions.append([q11, 'True', 'False'])
+
+    # 12
+    q12 = "When I’m driving in my car — particularly when I’m tired or worried — I hear my own voice from the backseat. It sounds soothing, like ‘It’ll be all right’ or ‘Just calm down.’"
+    questions.append([q12, 'True', 'False'])
+
+    # 13
+    q13 = "I drive a lot at night for work. Sometimes when I’m tired, I hear sounds in the backseat like people talking — not clear, just words here and there. It scared me at first, but now I’m used to it. I think it happens because I’m tired and alone."
+    questions.append([q13, 'True', 'False'])
+
+    # 14
+    q14 = "Almost every morning while I do my housework, I have a pleasant conversation with my dead grandmother. I talk to her and quite regularly hear her voice aloud."
+    questions.append([q14, 'True', 'False'])
+
+    # === Display Logic (same as your Tellegen function) ===
+
+    submitButton = Button('submit', 'vhq', 'Submit', -1, 0)
+    responses = []
+    pg.mouse.set_visible(False)
+    for i, question in enumerate(questions):
+        response = None
+
+        if i == 0:
+            pg.mouse.set_visible(True)
+            introText = "The following questions describe experiences some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' as it applies to you."
+            multiLineMessage(introText, mediumFont, win)
+            pg.display.flip()
+            waitKey(pg.K_SPACE)
+            pg.mouse.set_visible(True)
+
+        yPos = multiLineMessage(question[0], mediumFont, win)
+        buttons = [submitButton]
+        for j, opt in enumerate(question[1:]):
+            buttons.append(Button('option', 'vhq', opt, j + 1, yPos))
+
+        while response is None:
+            win.fill(backgroundColor)
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    pg.quit(); sys.exit()
+                elif event.type == pg.MOUSEBUTTONUP:
+                    for btn in buttons:
+                        if (btn.coords[0] <= pg.mouse.get_pos()[0] <= btn.coords[0] + btn.coords[2]) and \
+                           (btn.coords[1] <= pg.mouse.get_pos()[1] <= btn.coords[1] + btn.coords[3]):
+                            response = btn.handleClick(buttons)
+
+            multiLineMessage(question[0], mediumFont, win)
+            submitButton.draw(win)
+            for btn in buttons:
+                btn.draw(win)
+            pg.display.flip()
+
+        responses.append(response)
+
+    # === Save Responses ===
+    out_path = os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'vhq_{subjectNumber}.csv')
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Subject Number"] + [f'Q{i + 1}' for i in range(len(questions))])
+        writer.writerow([subjectNumber] + responses)
+
+    return
+
 # contains questionnaire questions and displays questionnaire to the subject
 def launay_slade(subjectNumber, win):
 
@@ -508,7 +631,7 @@ def stanford_sleepiness_scale(sleepinessResponses, win, label=None):
     return
 
 # contains questionnaire questions and displays questionnaire to the subject
-def flow_state_scale(subjectNumber, win):
+def flow_state_scale(subjectNumber, suffix, win):
 
     # variables to hold all of the questions and their associated response options
     questions = []
@@ -709,7 +832,7 @@ def flow_state_scale(subjectNumber, win):
         responses.append(response)
     
     # write the responses to a csv file with the questionnaire's name
-    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'flow_state_scale_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'flow_state_scale_{suffix}_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
         writer = csv.writer(f)
         header = ["Subject Number"] + [f'Q{i + 1}' for i in range(len(questions))]
         assert(len(responses) == 36)
@@ -900,12 +1023,12 @@ def dissociative_experiences(subjectNumber, win):
 
 def main(subjectNumber, win):
 
-    multiLineMessage(questionnairesIntroText, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
+    # multiLineMessage(questionnairesIntroText, mediumFont, win)
+    # pg.display.flip()
+    # waitKey(pg.K_SPACE)
     pg.mouse.set_visible(True)
-    tellegen(subjectNumber, win)
+    # tellegen(subjectNumber, win)
+    vhq(subjectNumber, win)
     launay_slade(subjectNumber, win)
     dissociative_experiences(subjectNumber, win)
-    flow_state_scale(subjectNumber, win)
     pg.mouse.set_visible(True)

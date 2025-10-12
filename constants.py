@@ -125,19 +125,16 @@ validLetters, validNumbers = getValidChars()
 # =======================================================================
 
 explanationText_1 = 'Welcome to the experiment!\n\n\
-In this experiment, you will listen to a series of static-y audio samples. Hidden within half of these audio samples is the word "Wall". Your goal is to decide whether the word “Wall” is present in each audio sample.\n\n\
-Press the spacebar to continue.' 
+In this experiment, you will listen to a series of static-y audio samples. Hidden within half of these audio samples is the word "Wall". Your goal is to decide whether the word “Wall” is present in each audio sample.' 
 
 explanationText_2 = 'To help you think about the task, imagine you are driving toward a city while tuning your radio through static. At first, all you hear is noise, but as you get closer, faint notes or rhythms from a song begin to emerge. Even if the melody is not clear, you might sense its presence through subtle patterns in the noise.\n\n\
 Similarly, in this task, you will not clearly hear the word “Wall”. Instead, you may feel as though certain patterns or impressions suggest its presence, even if it is just a hunch.\n\n\
 When doing the task, many people describe the act of identifying the word as almost superstitious—a gut feeling rather than a definite perception. That is perfectly okay and expected for this task.\n\n\
-The most important thing to remember is that as long as you try very hard, it is okay to rely on those superstitious feelings.\n\n\
-Press the spacebar to continue.'
+The most important thing to remember is that as long as you try very hard, it is okay to rely on those superstitious feelings.'
 
-explanationText_3 = 'To help guide you, we will allow you to hear the “Wall” that we have embedded in half the audio samples. We will also show you an example of an audio sample where the target “Wall” is present and an audio sample where the target “Wall” is absent.\n\n\
+explanationText_3 = 'To help guide you, we will allow you to hear the “Wall” that we have hidden in half the audio samples. We will also show you an example of an audio sample where the target “Wall” is present and an audio sample where the target “Wall” is absent.\n\n\
 Please keep in mind that for audio samples where "Wall" is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\n\
-Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.\n\n\
-Press the spacebar to continue.'
+Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.'
 
 explanationText_4 = 'Here is what you need to do: \n\
         - Press "Y" if you have a sense or feeling that the word "Wall" is there, even if you are not certain.\n\
@@ -146,16 +143,17 @@ Remember, even if you are unsure, as long as you are actively trying, your initi
 Important Notes:\n\
         - If you have any questions during the task or decide to stop, please inform the experimenter immediately.\n\
         - We know how difficult this task is and really appreciate your valuable help and thank you for contributing to this study.\n\n\
-When you are ready, press the spacebar to listen to an example of the “Wall” that will be faintly present in half the audio samples before you begin.'
+When you are ready, you will listen to an example of the “Wall” that will be faintly present in half the audio samples before you begin.'
 
 explanationText_5 = 'What to keep in mind:\n\
     - For audio samples where the word “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\
     - Trust your instincts—this task is designed to challenge the very limits of perception.\n\
     - It is okay to feel uncertain; the goal is to make your best guess based on what you sense in the audio sample.\n\n\
-You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
 Good luck, and remember that if you are actively trying, it is okay to trust your gut-feelings! \n\n\
+Please try your hardest — remember, the better you do, the better your chances of winning the raffle. \n\n\
 If you have any questions please ask the experimenter now.\n\n\
-If you do not have any further questions and are ready to begin, press spacebar to continue. \n\n'
+You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
+The main portion of experiment will begin immediately after you listen to the target "Wall".'
 
 showExamplesText = 'On the left is an example of an image where the “H” is present, while on the right is an image where the “H” is absent. As you can see, this task is quite difficult. Just from looking at the differences between these images, you can tell that identifying the “H” will not come from clearly seeing it. Instead, you may find yourself relying on subtle impressions, patterns, or even a gut feeling that the “H” is there.\n\n\
     Press the spacebar to continue.'
@@ -167,14 +165,15 @@ showExamplesText = 'On the left is an example of an image where the “H” is p
 
 
 realText = 'Remember, you are listening for the word "Wall". The word will always begin at the very start of the audio sample and end at the very end of the audio sample. It is present in half of the audio samples.\n\n\
-You will be given the opportunity to listen to the actual "Wall" that is embedded in the audio samples before beginning the next block. After that, you will begin listening to audio samples again. Press "Y" if you believe the "Wall" is in the audio sample, and press "N" if you do not believe that you hear it. The task consists of two blocks, and you will receive a short break between each block to rest.\n\n\
+You will be given the opportunity to listen to the actual "Wall" that is hidden in the audio samples before beginning the next block. After that, you will begin listening to audio samples again. Press "Y" if you believe the "Wall" is in the audio sample, and press "N" if you do not believe that you hear it. The task consists of two blocks, and you will receive a short break between each block to rest.\n\n\
 Press the spacebar when you are ready to proceed and start making your selections.\n\n\
 Good luck, and believe in yourself! It is normal to feel unsure, as many participants think they are not doing well, but you will likely perform better than you expect!'
 
 realTextAlt = 'Remember, you are listening for the word "Wall". The word will always begin at the very start of the audio sample and end at the very end of the audio sample. It is present in half of the audio samples.\n\n\
-You will be given the opportunity to listen to the actual "Wall" that is embedded in the audio samples before beginning the next block. After that, you will listen to audio samples again. Press "Y" if you believe the "Wall" is in the audio sample, and press "N" if you do not believe the "Wall" is in the audio sample.\n\n\
-Press the spacebar when you are ready to proceed and start making your selections.\n\n\
-Good luck, and believe in yourself! It is normal to feel unsure, as many participants think they are not doing well, but you will likely perform better than you expect!'
+You will be given the opportunity to listen to the actual "Wall" that is hidden in the audio samples before beginning the next block. After that, you will listen to audio samples again. Press "Y" if you believe the "Wall" is in the audio sample, and press "N" if you do not believe the "Wall" is in the audio sample.\n\n\
+Good luck, and believe in yourself! It is normal to feel unsure, as many participants think they are not doing well, but you will likely perform better than you expect! Please try your hardest — remember, the better you do, the better your chances of winning the raffle.\n\n\
+You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
+The main portion of experiment will resume immediately after you listen to the target "Wall".'
 
 def breakScreenText(i):
     return f'You have now completed {i} out of 2 blocks.\n\n You have earned a break.\n\n Please let the experimenter know.\n\n\
@@ -187,9 +186,8 @@ questionnairesIntroText = 'You will now respond to some questionnaires.\n\nPleas
 telleganScaleText = 'Please respond True or False to the following questions.\n\nPress the spacebar to begin.'
 launeyScaleText = 'Please indicate the degree to which the following statements describe you on a scale from 1 (not at all like me) to 8 (extremely like me).\n\nPress the spacebar to begin.'
 dissociativeExperiencesText = 'This questionnaire consists of twenty-eight questions about experiences that you may have in your daily life. We are interested in how often you have these experiences. It is important, however, that your answers show how often these experiences happen to you when you are not under the influence of alcohol or drugs.\n\nTo answer the questions, please determine to what degree the experience described in the question applies to you and click the box corresponding to what percentage of the time you have the experience.\n\n Press the spacebar to begin.'
-experimentIntroText = 'You have now completed the questionnaires.\n\nYou will now begin the main experiment.\n\nPress the spacebar to continue'
 
-flow_state_instructions = 'Please respond to this final questionnaire about your experience during this experiment. \n\nPress the spacebar to continue.'
+flow_state_instructions = 'Please respond to this questionnaire about your experience so far. \n\nPress the spacebar to continue.'
 studyInfoText = f'Study Number: IRB24-1770\nStudy Title: Superstitious Perception\nResearcher(s): Shannon Heald\n\n\
 Description: We are researchers at the University of Chicago doing a research study about the limits of human perception. You will be asked to engage with different types of stimuli (such as images and sounds) and indicate whether or not you believe a particular target is present within them. You will also be asked to fill out a couple of questionnaires.\n\n\
 Participation should take approximately 90 minutes.\nYour participation is voluntary.\n\n\
