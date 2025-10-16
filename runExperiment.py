@@ -158,10 +158,10 @@ def main():
     showAudioLevelTest(win)
 
     # get user info and where to store their results
-    subjectName = getSubjectInfo('subject name', win)
-    subjectNumber = getSubjectInfo('subject number', win)
-    subjectEmail = getSubjectInfo('subject email', win)
     experimenterName = getSubjectInfo('experimenter name', win)
+    subjectNumber = getSubjectInfo('subject number', win)
+    subjectName = getSubjectInfo('subject name', win)
+    subjectEmail = getSubjectInfo('subject email', win)
 
     # create a new folder for the subject's results
     saveFolder = os.path.join(os.path.dirname(__file__), 'results', subjectNumber)
