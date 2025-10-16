@@ -516,129 +516,126 @@ def showExamples(win, text = ''):
     # Use first audio file from each category as examples
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
-    # Get example files (first target and first distractor from 44khz)
-    target_files = os.listdir(os.path.join(audio_stimuli_dir, '44khz', 'targets'))
-    distractor_files = os.listdir(os.path.join(audio_stimuli_dir, '44khz', 'distractors'))
+    # Example target (highly correlated example)
+    target_example_path = os.path.join(audio_stimuli_dir, 'target_example.wav')
+    # Example distractor
+    distractor_example_path = os.path.join(audio_stimuli_dir, 'distractor_example.wav')
+    # Actual target (the main target participants should identify)
+    actual_target_path = os.path.join(audio_stimuli_dir, 'target_high_frequency.wav')
     
-    if target_files and distractor_files:
-        # Example target (highly correlated example)
-        target_example_path = os.path.join(audio_stimuli_dir, '44khz', 'targets', target_files[0])
-        # Example distractor
-        distractor_example_path = os.path.join(audio_stimuli_dir, '44khz', 'distractors', distractor_files[0])
-        # Actual target (the main target participants should identify)
-        actual_target_path = os.path.join(audio_stimuli_dir, 'target.wav')
+    target_sound = pg.mixer.Sound(target_example_path)
+    distractor_sound = pg.mixer.Sound(distractor_example_path)
+    actual_target_sound = pg.mixer.Sound(actual_target_path)
+    
+    # Create three buttons - spread horizontally with actual target in center
+    # Make button sizes proportional to screen
+    button_width = int(0.15 * winWidth)  # 15% of screen width
+    button_height = int(0.06 * winHeight)  # 6% of screen height
+    button_y = winHeight // 2 - button_height // 2
+    
+    # Left: Sample Target (Green)
+    sample_target_button_rect = pg.Rect(winWidth // 6 - button_width//2, button_y, button_width, button_height)
+    # Center: Actual Target (Blue)
+    actual_target_button_rect = pg.Rect(winWidth // 2 - button_width//2, button_y, button_width, button_height)
+    # Right: Sample Distractor (Red)
+    sample_distractor_button_rect = pg.Rect(5 * winWidth // 6 - button_width//2, button_y, button_width, button_height)
+    
+    # Continue button (colored) - also make proportional
+    continue_button_width = int(0.12 * winWidth)  # 12% of screen width
+    continue_button_height = int(0.05 * winHeight)  # 5% of screen height
+    continue_button_rect = pg.Rect(winWidth // 2 - continue_button_width//2, int(0.75 * winHeight), continue_button_width, continue_button_height)
+    
+    # Track audio timing for delay system
+    last_audio_start = 0
+    audio_duration = 0
+    
+    while True:
+        win.fill(backgroundColor)
         
-        target_sound = pg.mixer.Sound(target_example_path)
-        distractor_sound = pg.mixer.Sound(distractor_example_path)
-        actual_target_sound = pg.mixer.Sound(actual_target_path)
+        # Display instructions
+        instructions = [
+            "Audio Examples",
+            "",
+            "Click the buttons below to hear examples:",
+            "Green: Sample WITH the word \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT the word \"Wall\"",
+            "",
+            "The blue button plays the ACTUAL \"Wall\" you should listen for",
+            "",
+            "When you are ready to proceed, press the continue button."
+        ]
         
-        # Create three buttons - spread horizontally with actual target in center
-        # Make button sizes proportional to screen
-        button_width = int(0.15 * winWidth)  # 15% of screen width
-        button_height = int(0.06 * winHeight)  # 6% of screen height
-        button_y = winHeight // 2 - button_height // 2
+        y_pos = winHeight // 6
+        font = pg.font.SysFont("times new roman", 28)
         
-        # Left: Sample Target (Green)
-        sample_target_button_rect = pg.Rect(winWidth // 6 - button_width//2, button_y, button_width, button_height)
-        # Center: Actual Target (Blue)
-        actual_target_button_rect = pg.Rect(winWidth // 2 - button_width//2, button_y, button_width, button_height)
-        # Right: Sample Distractor (Red)
-        sample_distractor_button_rect = pg.Rect(5 * winWidth // 6 - button_width//2, button_y, button_width, button_height)
+        for instruction in instructions:
+            if instruction:
+                text_surface = font.render(instruction, True, BLACK)
+                text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
+                win.blit(text_surface, text_rect)
+            y_pos += 45
         
-        # Continue button (colored) - also make proportional
-        continue_button_width = int(0.12 * winWidth)  # 12% of screen width
-        continue_button_height = int(0.05 * winHeight)  # 5% of screen height
-        continue_button_rect = pg.Rect(winWidth // 2 - continue_button_width//2, int(0.75 * winHeight), continue_button_width, continue_button_height)
+        # Check if buttons can be clicked (audio delay system)
+        current_time = pg.time.get_ticks()
+        time_since_last_play = current_time - last_audio_start
+        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
         
-        # Track audio timing for delay system
-        last_audio_start = 0
-        audio_duration = 0
+        # Draw buttons with requested colors (dim them if not clickable)
+        sample_target_color = GREEN
+        actual_target_color = BLUE
+        sample_distractor_color = RED
         
-        while True:
-            win.fill(backgroundColor)
-            
-            # Display instructions
-            instructions = [
-                "Audio Examples",
-                "",
-                "Click the buttons below to hear examples:",
-                "Green: Sample WITH the word \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT the word \"Wall\"",
-                "The blue button plays the ACTUAL \"Wall\" you should listen for",
-                "When you are ready to proceed, press the continue button."
-            ]
-            
-            y_pos = winHeight // 6
-            font = pg.font.SysFont("times new roman", 28)
-            
-            for instruction in instructions:
-                if instruction:
-                    text_surface = font.render(instruction, True, BLACK)
-                    text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
-                    win.blit(text_surface, text_rect)
-                y_pos += 45
-            
-            # Check if buttons can be clicked (audio delay system)
-            current_time = pg.time.get_ticks()
-            time_since_last_play = current_time - last_audio_start
-            can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
-            
-            # Draw buttons with requested colors (dim them if not clickable)
-            sample_target_color = GREEN
-            actual_target_color = BLUE
-            sample_distractor_color = RED
-            
-            pg.draw.rect(win, sample_target_color, sample_target_button_rect)      # Sample target - Green
-            pg.draw.rect(win, actual_target_color, actual_target_button_rect)       # Actual target - Blue
-            pg.draw.rect(win, sample_distractor_color, sample_distractor_button_rect)    # Sample distractor - Red
-            pg.draw.rect(win, [255, 165, 0], continue_button_rect)  # Continue button - Orange
-            
-            # Add button borders
-            pg.draw.rect(win, BLACK, sample_target_button_rect, 3)
-            pg.draw.rect(win, BLACK, actual_target_button_rect, 3)
-            pg.draw.rect(win, BLACK, sample_distractor_button_rect, 3)
-            pg.draw.rect(win, BLACK, continue_button_rect, 3)
-            
-            # Button labels
-            font = pg.font.SysFont("times new roman", 20)
-            sample_target_text = font.render("Sample WITH \"Wall\"", True, WHITE)
-            actual_target_text = font.render("ACTUAL \"Wall\"", True, WHITE)
-            sample_distractor_text = font.render("Sample WITHOUT \"Wall\"", True, WHITE)
-            continue_text = font.render("Continue", True, BLACK)
-            
-            win.blit(sample_target_text, sample_target_text.get_rect(center=sample_target_button_rect.center))
-            win.blit(actual_target_text, actual_target_text.get_rect(center=actual_target_button_rect.center))
-            win.blit(sample_distractor_text, sample_distractor_text.get_rect(center=sample_distractor_button_rect.center))
-            win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
-            
-            pg.display.flip()
-            
-            for event in pg.event.get():
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_ESCAPE:
-                        pg.quit()
-                        sys.exit()
-                elif event.type == pg.MOUSEBUTTONDOWN:
-                    mouse_pos = pg.mouse.get_pos()
-                    current_time = pg.time.get_ticks()
-                    time_since_last_play = current_time - last_audio_start
-                    can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
-                    
-                    if can_play:
-                        if sample_target_button_rect.collidepoint(mouse_pos):
-                            target_sound.play()
-                            audio_duration = int(target_sound.get_length() * 1000)
-                            last_audio_start = current_time
-                        elif actual_target_button_rect.collidepoint(mouse_pos):
-                            actual_target_sound.play()
-                            audio_duration = int(actual_target_sound.get_length() * 1000)
-                            last_audio_start = current_time
-                        elif sample_distractor_button_rect.collidepoint(mouse_pos):
-                            distractor_sound.play()
-                            audio_duration = int(distractor_sound.get_length() * 1000)
-                            last_audio_start = current_time
-                    
-                    if continue_button_rect.collidepoint(mouse_pos):
-                        return
+        pg.draw.rect(win, sample_target_color, sample_target_button_rect)      # Sample target - Green
+        pg.draw.rect(win, actual_target_color, actual_target_button_rect)       # Actual target - Blue
+        pg.draw.rect(win, sample_distractor_color, sample_distractor_button_rect)    # Sample distractor - Red
+        pg.draw.rect(win, [255, 165, 0], continue_button_rect)  # Continue button - Orange
+        
+        # Add button borders
+        pg.draw.rect(win, BLACK, sample_target_button_rect, 3)
+        pg.draw.rect(win, BLACK, actual_target_button_rect, 3)
+        pg.draw.rect(win, BLACK, sample_distractor_button_rect, 3)
+        pg.draw.rect(win, BLACK, continue_button_rect, 3)
+        
+        # Button labels
+        font = pg.font.SysFont("times new roman", 20)
+        sample_target_text = font.render("Sample WITH \"Wall\"", True, WHITE)
+        actual_target_text = font.render("ACTUAL \"Wall\"", True, WHITE)
+        sample_distractor_text = font.render("Sample WITHOUT \"Wall\"", True, WHITE)
+        continue_text = font.render("Continue", True, BLACK)
+        
+        win.blit(sample_target_text, sample_target_text.get_rect(center=sample_target_button_rect.center))
+        win.blit(actual_target_text, actual_target_text.get_rect(center=actual_target_button_rect.center))
+        win.blit(sample_distractor_text, sample_distractor_text.get_rect(center=sample_distractor_button_rect.center))
+        win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
+        
+        pg.display.flip()
+        
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    pg.quit()
+                    sys.exit()
+            elif event.type == pg.MOUSEBUTTONDOWN:
+                mouse_pos = pg.mouse.get_pos()
+                current_time = pg.time.get_ticks()
+                time_since_last_play = current_time - last_audio_start
+                can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+                
+                if can_play:
+                    if sample_target_button_rect.collidepoint(mouse_pos):
+                        target_sound.play()
+                        audio_duration = int(target_sound.get_length() * 1000)
+                        last_audio_start = current_time
+                    elif actual_target_button_rect.collidepoint(mouse_pos):
+                        actual_target_sound.play()
+                        audio_duration = int(actual_target_sound.get_length() * 1000)
+                        last_audio_start = current_time
+                    elif sample_distractor_button_rect.collidepoint(mouse_pos):
+                        distractor_sound.play()
+                        audio_duration = int(distractor_sound.get_length() * 1000)
+                        last_audio_start = current_time
+                
+                if continue_button_rect.collidepoint(mouse_pos):
+                    return
 
 
 # explains the experiment to the subject
@@ -999,7 +996,7 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
     # Use the second target file (actual target) if available, otherwise first
-    actual_target_path = os.path.join(audio_stimuli_dir, 'target.wav')
+    actual_target_path = os.path.join(audio_stimuli_dir, f'target_{block_name}.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1136,7 +1133,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     
     # Load the actual target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
-    actual_target_path = os.path.join(audio_stimuli_dir, 'target.wav')
+    actual_target_path = os.path.join(audio_stimuli_dir, f'target_{block_name}.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1167,7 +1164,6 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             "Target Sound Reminder",
             "",
             f"Here's a reminder of the \"WALL\" that you are searching for.",
-            f"You can play it up to {REMINDER_MAX_PLAYS} times.",
             f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
             "Click 'Play Target Sound' to hear the sound",
             "Click 'Continue' when you're ready to proceed"
@@ -1276,6 +1272,7 @@ def showAudioLevelTest(win):
     """
     Show audio level testing screen for the experimenter to normalize audio levels.
     Allows playing white noise and target wall sounds as many times as needed.
+    Also includes continuous background noise with start/stop controls.
     
     Args:
         win: pygame window
@@ -1286,25 +1283,29 @@ def showAudioLevelTest(win):
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
     # Load target wall sound
-    target_path = os.path.join(audio_stimuli_dir, 'target.wav')
+    target_path = os.path.join(audio_stimuli_dir, 'target_high_frequency.wav')
     target_sound = pg.mixer.Sound(target_path)
-    white_noise_path = os.path.join(audio_stimuli_dir, '8khz', 'targets','6410.wav')
-    white_noise_sound = pg.mixer.Sound(white_noise_path)
-
     
-    # Track timing for delay system
-    last_audio_start = 0
-    audio_duration = 0
+    # Load 60-second background noise for continuous playback
+    background_noise_path = os.path.join(audio_stimuli_dir, '60s_background_noise.wav')
+    background_noise_sound = pg.mixer.Sound(background_noise_path)
     
-    # Create buttons
+    # Track audio states for both streams
+    background_playing = False
+    background_channel = None
+    target_playing = False
+    target_channel = None
+    
+    # Create buttons - only continuous playback controls
     button_width = int(0.2 * winWidth)  # 20% of screen width
     button_height = int(0.08 * winHeight)  # 8% of screen height
     
-    # White noise button (left)
-    white_noise_button_rect = pg.Rect(winWidth // 4 - button_width//2, winHeight // 2, button_width, button_height)
+    # Two continuous audio controls side by side
+    # Left: Background noise start/stop
+    background_button_rect = pg.Rect(winWidth // 4 - button_width//2, int(0.5 * winHeight), button_width, button_height)
     
-    # Target wall button (right)
-    target_button_rect = pg.Rect(3 * winWidth // 4 - button_width//2, winHeight // 2, button_width, button_height)
+    # Right: Target wall start/stop  
+    target_button_rect = pg.Rect(3 * winWidth // 4 - button_width//2, int(0.5 * winHeight), button_width, button_height)
     
     # Continue button (bottom center)
     continue_button_width = int(0.15 * winWidth)
@@ -1314,21 +1315,12 @@ def showAudioLevelTest(win):
     while True:
         win.fill(backgroundColor)
         
-        # Check if buttons can be clicked (timing system)
-        current_time = pg.time.get_ticks()
-        time_since_last_play = current_time - last_audio_start
-        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
-        
         # Display instructions
-        white_noise_label = "White Noise"
-        
         instructions = [
             "Audio Level Testing - For Experimenter",
             "",
             "Use this screen to normalize audio levels before starting the experiment.",
             "Adjust system volume so both sounds are at comfortable levels.",
-            "Recommended: Set volume so target wall is clearly audible",
-            "but not uncomfortably loud.",
             "When audio levels are properly set, click 'Continue' to proceed."
         ]
         
@@ -1342,36 +1334,50 @@ def showAudioLevelTest(win):
                 win.blit(text_surface, text_rect)
             y_pos += 50
         
-        # Draw buttons with timing consideration
-        if can_play:
-            white_noise_color = BLUE
-            target_color = BLUE
-            button_text_color = WHITE
-        else:
-            white_noise_color = [c//2 for c in BLUE]  # Dimmed blue
-            target_color = [c//2 for c in BLUE]  # Dimmed blue
-            button_text_color = GRAY
+        # Draw buttons - both are start/stop toggles
         
-        # Draw white noise button
-        pg.draw.rect(win, white_noise_color, white_noise_button_rect)
-        pg.draw.rect(win, BLACK, white_noise_button_rect, 3)
+        # Background noise button color based on state
+        if background_playing:
+            background_color = RED  # Red when playing (shows "Stop")
+            background_text_color = WHITE
+        else:
+            background_color = GREEN  # Green when stopped (shows "Start")
+            background_text_color = BLACK
+            
+        # Target button color based on state
+        if target_playing:
+            target_color = RED  # Red when playing (shows "Stop")
+            target_text_color = WHITE
+        else:
+            target_color = GREEN  # Green when stopped (shows "Start")
+            target_text_color = BLACK
+        
+        # Draw background noise button
+        pg.draw.rect(win, background_color, background_button_rect)
+        pg.draw.rect(win, BLACK, background_button_rect, 3)
         
         # Draw target button
         pg.draw.rect(win, target_color, target_button_rect)
         pg.draw.rect(win, BLACK, target_button_rect, 3)
         
-        # Draw continue button (always green)
-        pg.draw.rect(win, GREEN, continue_button_rect)
+        # Draw continue button (always blue)
+        pg.draw.rect(win, BLUE, continue_button_rect)
         pg.draw.rect(win, BLACK, continue_button_rect, 3)
         
         # Button labels
-        font = pg.font.SysFont("times new roman", 24)
-        white_noise_label = "White Noise"
-        white_noise_text = font.render(white_noise_label, True, button_text_color)
-        target_text = font.render("Target Wall", True, button_text_color)
-        continue_text = font.render("Continue", True, BLACK)
+        font = pg.font.SysFont("times new roman", 18)
         
-        win.blit(white_noise_text, white_noise_text.get_rect(center=white_noise_button_rect.center))
+        # Background noise button text changes based on state
+        background_text_content = "Stop Background" if background_playing else "Start Background"
+        background_text = font.render(background_text_content, True, background_text_color)
+        
+        # Target button text changes based on state
+        target_text_content = "Stop Target Wall" if target_playing else "Start Target Wall"
+        target_text = font.render(target_text_content, True, target_text_color)
+        
+        continue_text = font.render("Continue", True, WHITE)
+        
+        win.blit(background_text, background_text.get_rect(center=background_button_rect.center))
         win.blit(target_text, target_text.get_rect(center=target_button_rect.center))
         win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
         
@@ -1384,16 +1390,38 @@ def showAudioLevelTest(win):
                     sys.exit()
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse_pos = pg.mouse.get_pos()
-                if can_play:
-                    if white_noise_button_rect.collidepoint(mouse_pos):
-                        white_noise_sound.play()
-                        audio_duration = int(white_noise_sound.get_length() * 1000)
-                        last_audio_start = current_time
-                    elif target_button_rect.collidepoint(mouse_pos):
-                        target_sound.play()
-                        audio_duration = int(target_sound.get_length() * 1000)
-                        last_audio_start = current_time
                 
-                if continue_button_rect.collidepoint(mouse_pos):
+                # Handle background noise start/stop
+                if background_button_rect.collidepoint(mouse_pos):
+                    if background_playing:
+                        # Stop background noise
+                        if background_channel:
+                            background_channel.stop()
+                        background_playing = False
+                        background_channel = None
+                    else:
+                        # Start background noise (loop indefinitely)
+                        background_channel = background_noise_sound.play(loops=-1)
+                        background_playing = True
+                
+                # Handle target wall start/stop
+                elif target_button_rect.collidepoint(mouse_pos):
+                    if target_playing:
+                        # Stop target wall
+                        if target_channel:
+                            target_channel.stop()
+                        target_playing = False
+                        target_channel = None
+                    else:
+                        # Start target wall (loop indefinitely)
+                        target_channel = target_sound.play(loops=-1)
+                        target_playing = True
+                
+                elif continue_button_rect.collidepoint(mouse_pos):
+                    # Stop all audio if playing when exiting
+                    if background_playing and background_channel:
+                        background_channel.stop()
+                    if target_playing and target_channel:
+                        target_channel.stop()
                     return
 

@@ -51,8 +51,8 @@ screenCenter = ((winWidth // 2) - (stimSize // 2), (winHeight // 2) - (stimSize 
 MAX_PLAYS = 3  # Maximum number of times a participant can play an audio stimulus
 
 # Periodic reminder settings
-REMINDER_INTERVAL = 20  # Show reminder every N trials (change this number to control frequency)
-REMINDER_MAX_PLAYS = 3  # Maximum plays allowed in the reminder screen
+REMINDER_INTERVAL = 20 # Show reminder every N trials (change this number to control frequency)
+REMINDER_MAX_PLAYS = 5  # Maximum plays allowed in the reminder screen
 
 
 # define some font sizes and colors for easy access
