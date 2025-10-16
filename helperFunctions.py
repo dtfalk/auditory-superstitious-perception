@@ -1164,7 +1164,6 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             "Target Sound Reminder",
             "",
             f"Here's a reminder of the \"WALL\" that you are searching for.",
-            f"You can play it up to {REMINDER_MAX_PLAYS} times.",
             f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
             "Click 'Play Target Sound' to hear the sound",
             "Click 'Continue' when you're ready to proceed"
