@@ -558,9 +558,7 @@ def showExamples(win, text = ''):
             "",
             "Click the buttons below to hear examples:",
             "Green: Sample WITH the word \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT the word \"Wall\"",
-            "",
             "The blue button plays the ACTUAL \"Wall\" you should listen for",
-            "",
             "When you are ready to proceed, press the continue button."
         ]
         
