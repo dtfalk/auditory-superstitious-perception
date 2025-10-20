@@ -282,7 +282,6 @@ def tellegen(subjectNumber, win):
         response = None
 
         if i == 0:
-            pg.mouse.set_visible(True)
             multiLineMessage(telleganScaleText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
@@ -1023,10 +1022,6 @@ def dissociative_experiences(subjectNumber, win):
 
 def main(subjectNumber, win):
 
-    # multiLineMessage(questionnairesIntroText, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
-    pg.mouse.set_visible(True)
     tellegen(subjectNumber, win)
     vhq(subjectNumber, win)
     launay_slade(subjectNumber, win)
