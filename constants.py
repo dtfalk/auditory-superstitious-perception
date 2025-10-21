@@ -190,7 +190,8 @@ dissociativeExperiencesText = 'This questionnaire consists of twenty-eight quest
 flow_state_instructions = 'Please respond to this questionnaire about your experience so far. \n\nPress the spacebar to continue.'
 studyInfoText = f'Study Number: IRB24-1770\nStudy Title: Superstitious Perception\nResearcher(s): Shannon Heald\n\n\
 Description: We are researchers at the University of Chicago doing a research study about the limits of human perception. You will be asked to engage with different types of stimuli (such as images and sounds) and indicate whether or not you believe a particular target is present within them. You will also be asked to fill out a couple of questionnaires.\n\n\
-Participation should take approximately 90 minutes.\nYour participation is voluntary.\n\n\
+Depending on your performance, we may reach out to you for follow up studies. If we reach out to you again, your participation is entirely voluntary, and you will be compensated for any further experiments in which you are a participant.\n\n\
+Participation should take approximately 45-90 minutes.\nYour participation is voluntary.\n\n\
 Incentives: You will be compensated {number_of_sona_credits} SONA Credits for your participation in this study. You will also be entered into a raffle for a 50 dollar Amazon gift card. Your performance on the study will influence your chances of winning the raffle. The better you do, the higher your chances are to win the giftcard.\n\n\
 Please press the right arrow key to continue.'
 

@@ -713,6 +713,7 @@ def nonConsentScreen(win):
 # contains questionnaire questions and displays questionnaire to the subject
 def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win):
     index = 0
+    email_consent = False  # Initialize email consent variable
     while True:
         pg.mouse.set_visible(False)
 
@@ -793,7 +794,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
             questions = []
 
             # question 1 text and response options
-            question1 = 'By clicking “I agree” below, you confirm that you have read the consent form, are at least 18 years old, and agree to participate in the research. Please print or save a copy of this page for your records. By selecting “I do NOT agree” you will not be able to participate in this research and we thank you for your consideration. You may use the arrow keys to review the information in this consent form before making a decision.'
+            question1 = 'By clicking “I agree” below, you confirm that you have read the consent form, are at least 18 years old, and agree to participate in the research. We will provide you a paper copy of this consent form upon completion of the study. By selecting “I do NOT agree” you will not be able to participate in this research and we thank you for your consideration. You may use the arrow keys to review the information in this consent form before making a decision.'
             ResponseOptions1 = ['I agree to participate in the research', 'I do NOT agree to participate in the research ']
             questions.append([question1] + ResponseOptions1)
 
@@ -848,12 +849,83 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
             if len(responses) != 0:  
                 if 'I agree' in responses[0]:
                     consented = True
-                    # subject's signature
-                    pg.mouse.set_visible(False)
-                    signature = getSubjectInfo('Signature', win)
+                    index += 1  # Move to email consent screen
                 else:
                     consented = False
                     signature = ''
+                    email_consent = False
+                    break
+            else:
+                break
+
+        elif index == 5:
+            # Email consent screen
+            pg.mouse.set_visible(True)
+            questions = []
+
+            # Email consent question
+            email_question = 'May we use your email address to contact you about future research studies?\n\nThis is optional and will not affect your participation in the current study. You can withdraw this permission at any time by contacting the researchers.\n\nBy selecting "Yes", you agree to be contacted about future research opportunities. By selecting "No", we will not contact you for future studies.'
+            email_options = ['Yes, you may contact me about future studies', 'No, please do not contact me about future studies']
+            questions.append([email_question] + email_options)
+
+            submitButton = Button('submit', 'tellegen', 'Submit', -1, 0)
+            email_responses = []
+
+            # iterate over each question and display to user
+            for i, question in enumerate(questions):
+
+                response = None
+                running = True
+
+                # draw the question and return how far down the screen the text goes
+                yPos = multiLineMessage(question[0], mediumFont, win)
+
+                # create all of the options for this particular questions
+                buttons = [submitButton]
+                for i, question_option in enumerate(question):
+                    if i == 0:
+                        continue
+                    buttons.append(Button('option', 'tellegen', question_option, i, yPos))
+
+                while response == None and running:
+                    win.fill(backgroundColor)
+                    for event in pg.event.get():
+                        if event.type == pg.KEYDOWN:
+                            if event.key == pg.K_ESCAPE:
+                                pg.quit()
+                                sys.exit()
+                            if event.key == pg.K_LEFT:
+                                index -= 1
+                                running = False
+                        elif event.type == pg.MOUSEBUTTONUP:
+                            for i, button in enumerate(buttons):
+                                if (button.coords[0] <= pg.mouse.get_pos()[0] <= button.coords[0] + button.coords[2]) \
+                                    and (button.coords[1] <= pg.mouse.get_pos()[1] <= button.coords[1] + button.coords[3]):
+                                    response = button.handleClick(buttons)
+                        pg.event.clear()
+
+                    # draw the question and return how far down the screen the text goes
+                    multiLineMessage(question[0], mediumFont, win)
+
+                    # draw the submit button and the checkboxes for this questions
+                    submitButton.draw(win)
+                    for i, button in enumerate(buttons): 
+                        button.draw(win)
+                    pg.display.flip() 
+                
+                # add the user's response to the list of responses
+                if response:
+                    email_responses.append(response)
+            
+            if len(email_responses) != 0:  
+                if 'Yes' in email_responses[0]:
+                    email_consent = True
+                else:
+                    email_consent = False
+                
+                # Get signature after both consents are completed
+                pg.mouse.set_visible(False)
+                signature = getSubjectInfo('Signature', win)
                 break
     
     # Create a timezone object for Central Time
@@ -870,11 +942,11 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
     # write all of the responses to a csv file with the questionnaire's name as the file name. 
     with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'consentInfo_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
         writer = csv.writer(f)
-        writer.writerow(['Subject Number', 'Subject Name', 'Subject Email', 'Experimenter Name', 'Consented', 'Date'])
+        writer.writerow(['Subject Number', 'Subject Name', 'Subject Email', 'Experimenter Name', 'Consented', 'Email Consent', 'Date'])
         if not consented:
-            writer.writerow([subjectNumber, subjectName, subjectEmail, experimenterName, str(consented), formatted_date])
+            writer.writerow([subjectNumber, subjectName, subjectEmail, experimenterName, str(consented), str(email_consent), formatted_date])
         else:
-            writer.writerow([subjectNumber, signature, subjectEmail, experimenterName, str(consented), formatted_date])
+            writer.writerow([subjectNumber, signature, subjectEmail, experimenterName, str(consented), str(email_consent), formatted_date])
     return consented
 
 # =======================================================================
