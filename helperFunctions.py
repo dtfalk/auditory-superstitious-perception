@@ -864,7 +864,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
             questions = []
 
             # Email consent question
-            email_question = 'May we use your email address to contact you about future research studies?\n\nThis is optional and will not affect your participation in the current study. You can withdraw this permission at any time by contacting the researchers.\n\nBy selecting "Yes", you agree to be contacted about future research opportunities. By selecting "No", we will not contact you for future studies.'
+            email_question = 'May we use your email address to contact you about future research studies?\n\nThis is optional and will not affect your participation or compensation in the current study. You can withdraw this permission at any time by contacting the researchers.\n\nBy selecting "Yes", you agree to be contacted about future research opportunities. By selecting "No", we will not contact you for future studies.'
             email_options = ['Yes, you may contact me about future studies', 'No, please do not contact me about future studies']
             questions.append([email_question] + email_options)
 
