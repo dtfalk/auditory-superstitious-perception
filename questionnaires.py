@@ -410,7 +410,7 @@ def vhq(subjectNumber, win):
 
         if i == 0:
             pg.mouse.set_visible(True)
-            introText = "The following questions describe experiences some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' as it applies to you."
+            introText = "The following questions describe experiences some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' depending on whether or not you have experienced the situation, or if you have experienced an situation that is analagous to the one described."
             multiLineMessage(introText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
