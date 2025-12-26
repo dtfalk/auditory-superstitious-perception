@@ -32,7 +32,8 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
     trial_number = 0
     
     # select an initial audio stimulus
-    sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors)
+    prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", f"fullsentenceminuswall_{block}.wav")
+    sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav)
     
     # Don't auto-play the initial audio stimulus - let user press button
 
@@ -123,11 +124,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
-            sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors)
-            
-            # Don't auto-play the new audio stimulus - let user press button
-            
-            # Don't reset the trial timer here - it will be reset when audio is first played
+            sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav)
 
             # clear events so spamming keys doesn't mess things up
             pg.event.clear()

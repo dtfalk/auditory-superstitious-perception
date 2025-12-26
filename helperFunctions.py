@@ -1,11 +1,14 @@
 import os
 import sys
+import io
 import csv
 from random import choice
 from scipy.stats import norm
 import pygame as pg
 import pytz
 from datetime import datetime
+import wave
+from random import choice
 from constants import *
 
 
@@ -520,11 +523,13 @@ def showExamples(win, text = ''):
     target_example_path = os.path.join(audio_stimuli_dir, 'target_example.wav')
     # Example distractor
     distractor_example_path = os.path.join(audio_stimuli_dir, 'distractor_example.wav')
-    # Actual target (the main target participants should identify)
-    actual_target_path = os.path.join(audio_stimuli_dir, 'target_high_frequency.wav')
     
-    target_sound = pg.mixer.Sound(target_example_path)
-    distractor_sound = pg.mixer.Sound(distractor_example_path)
+    # Actual target (the main target participants should identify)
+    actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence_low_frequency.wav')
+    prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", "fullsentenceminuswall_low_frequency.wav")
+
+    target_sound = concatenate_wavs(prefix_wav, target_example_path) 
+    distractor_sound = concatenate_wavs(prefix_wav, distractor_example_path) 
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     # Create three buttons - spread horizontally with actual target in center
@@ -952,11 +957,41 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
 # =======================================================================
 # =======================================================================
 
-def selectStimulus(targets, distractors):
+def concatenate_wavs(prefix_path, stimulus_path, add_gap=True, gap_ms=120):
+    with wave.open(prefix_path, 'rb') as w1, wave.open(stimulus_path, 'rb') as w2:
+        p1, p2 = w1.getparams(), w2.getparams()
 
+        # Compare actual format fields (not nframes)
+        fmt1 = (p1.nchannels, p1.sampwidth, p1.framerate, p1.comptype)
+        fmt2 = (p2.nchannels, p2.sampwidth, p2.framerate, p2.comptype)
+        if fmt1 != fmt2:
+            raise ValueError(f"WAV format mismatch: {fmt1} vs {fmt2}")
+
+        prefix_frames = w1.readframes(p1.nframes)
+        stim_frames = w2.readframes(p2.nframes)
+
+        if add_gap and gap_ms > 0:
+            # Compute silence length in frames and bytes
+            gap_frames = int(round(p1.framerate * (gap_ms / 1000.0)))
+            bytes_per_frame = p1.sampwidth * p1.nchannels
+            silence = b'\x00' * (gap_frames * bytes_per_frame)
+            frames = prefix_frames + silence + stim_frames
+        else:
+            frames = prefix_frames + stim_frames
+
+        buffer = io.BytesIO()
+        with wave.open(buffer, 'wb') as out:
+            out.setparams(p1)  # preserve original format
+            out.writeframes(frames)
+
+        buffer.seek(0)
+        return pg.mixer.Sound(buffer)
+    
+def selectStimulus(targets, distractors, prefix_wav):
     # select a stimulus and remove it from its associated list
     masterList = targets + distractors
     stimulus = choice(masterList)
+
     if stimulus in targets:
         stimulusType = 'target'
         targets.remove(stimulus)
@@ -964,13 +999,11 @@ def selectStimulus(targets, distractors):
         stimulusType = 'distractor'
         distractors.remove(stimulus)
 
-    # load the audio file
-    sound = pg.mixer.Sound(stimulus)
-    
-    # get filename without extension for identification
-    filename = os.path.basename(stimulus)
-    if '.' in filename:
-        filename = filename.split('.')[0]
+    # concatenate prefix + stimulus
+    sound = concatenate_wavs(prefix_wav, stimulus)
+
+    # get filename without extension
+    filename = os.path.splitext(os.path.basename(stimulus))[0]
 
     return sound, filename, stimulusType
 
@@ -1066,7 +1099,7 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
     # Use the second target file (actual target) if available, otherwise first
-    actual_target_path = os.path.join(audio_stimuli_dir, f'target_{block_name}.wav')
+    actual_target_path = os.path.join(audio_stimuli_dir, f'fullsentence_{block_name}.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1203,7 +1236,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     
     # Load the actual target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
-    actual_target_path = os.path.join(audio_stimuli_dir, f'target_{block_name}.wav')
+    actual_target_path = os.path.join(audio_stimuli_dir, f'fullsentence_{block_name}.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1353,7 +1386,7 @@ def showAudioLevelTest(win):
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
     # Load target wall sound
-    target_path = os.path.join(audio_stimuli_dir, 'target_high_frequency.wav')
+    target_path = os.path.join(audio_stimuli_dir, 'fullsentence_low_frequency.wav')
     target_sound = pg.mixer.Sound(target_path)
     
     # Load 60-second background noise for continuous playback
