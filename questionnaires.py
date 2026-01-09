@@ -630,155 +630,41 @@ def stanford_sleepiness_scale(sleepinessResponses, win, label=None):
     return
 
 # contains questionnaire questions and displays questionnaire to the subject
-def flow_state_scale(subjectNumber, suffix, win):
+def flow_state_scale(subjectNumber, win):
 
     # variables to hold all of the questions and their associated response options
     questions = []
 
-    # question 1 text and response options
-    question1 = 'I was challenged, but I believed my skills would allow me to meet the challenge.'
-    ResponseOptions1 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question1] + ResponseOptions1)
+    dfs_instructions = 'Please answer the following questions in relation to your experience in your chosen activity. These questions relate to the thoughts and feelings you may experience during participation in this tasks or similar ones. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic during this type of task, then circle the number that best matches your experience.\n\n Press the spacebar to continue.'
 
-    question2 = 'I made the correct movements without thinking about trying to do so.'
-    ResponseOptions2 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question2] + ResponseOptions2)
+    responseOptions = ['1', '2', '3', '4', '5']
 
-    question3 = 'I knew clearly what I wanted to do.'
-    ResponseOptions3 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question3] + ResponseOptions3)
+    question1 = 'I feel I am competent enough to meet the demands of the situation'
+    questions.append([question1] + responseOptions)
 
-    question4 = "It was really clear to me that I was doing well."
-    ResponseOptions4 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question4] + ResponseOptions4)
+    question2 = 'I do things spontaneously and automatically without having to think'
+    questions.append([question2] + responseOptions)
 
-    question5 = 'My attention was focused entirely on what I was doing.'
-    ResponseOptions5 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question5] + ResponseOptions5)
+    question3 = 'I have a strong sense of what I want to do'
+    questions.append([question3] + responseOptions)
 
-    question6 = 'I felt in total control of what I was doing.'
-    ResponseOptions6 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question6] + ResponseOptions6)
+    question4 = 'I have a good idea about how well I am doing while I am involved in the task/activity'
+    questions.append([question4] + responseOptions)
 
-    question7 = 'I was not concerned with what others may have been thinking of me.'
-    ResponseOptions7 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question7] + ResponseOptions7)
+    question5 = 'I am completely focused on the task at hand'
+    questions.append([question5] + responseOptions)
 
-    question8 = 'Time seemed to alter (either slowed down or speeded up).'
-    ResponseOptions8 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question8] + ResponseOptions8)
+    question6 = 'I have a feeling of total control over what I am doing'
+    questions.append([question6] + responseOptions)
 
-    question9 = 'I really enjoyed the experience.'
-    ResponseOptions9 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question9] + ResponseOptions9)
-    
-    question10 = 'My abilities matched the high challenge of the situation.'
-    ResponseOptions10 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question10] + ResponseOptions10)
+    question7 = 'I am not worried about what others may be thinking of me'
+    questions.append([question7] + responseOptions)
 
-    question11 = 'Things just seemed to be happening automatically.'
-    ResponseOptions11 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question11] + ResponseOptions11)
+    question8 = 'The way time passes seems to be different from normal'
+    questions.append([question8] + responseOptions)
 
-    question12 = "I had a strong sense of what I wanted to do."
-    ResponseOptions12 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question12] + ResponseOptions12)
-
-    question13 = 'I was aware of how well I was performing.'
-    ResponseOptions13 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question13] + ResponseOptions13)
-
-    question14 = 'It was no effort to keep my mind on what was happening.'
-    ResponseOptions14 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question14] + ResponseOptions14)
-
-    question15 = 'I felt like I could control what I was doing.'
-    ResponseOptions15 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question15] + ResponseOptions15)
-
-    question16 = "I was not worried about my performance during the event."
-    ResponseOptions16 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question16] + ResponseOptions16)
-
-    question17 = 'The way time passed seemed to be different from normal.'
-    ResponseOptions17 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question17] + ResponseOptions17)
-
-    question18 = 'I loved the feeling of that performance and want to capture it again.'
-    ResponseOptions18 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question18] + ResponseOptions18)
-
-    question19 = 'I felt I was competent enough to meet the high demands of the situation.'
-    ResponseOptions19 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question19] + ResponseOptions19)
-
-    question20 = 'I performed automatically.'
-    ResponseOptions20 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question20] + ResponseOptions20)
-
-    question21= 'I knew what I wanted to achieve.'
-    ResponseOptions21 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question21] + ResponseOptions21)
-    
-    question22 = 'I had a good idea while I was performing about how well I was doing.'
-    ResponseOptions22 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question22] + ResponseOptions22)
-
-    question23 = 'I had total concentration.'
-    ResponseOptions23 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question23] + ResponseOptions23)
-
-    question24 = "I had a feeling of total control."
-    ResponseOptions24 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question24] + ResponseOptions24)
-
-    question25 = 'I was not concerned with how I was presenting myself.'
-    ResponseOptions25 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question25] + ResponseOptions25)
-    
-    question26 = 'It felt like time stopped while I was performing.'
-    ResponseOptions26 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question26] + ResponseOptions26)
-
-    question27 = 'The experience left me feeling great.'
-    ResponseOptions27 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question27] + ResponseOptions27)
-
-    question28 = 'The challenge and my skills were at an equally high level.'
-    ResponseOptions28 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question28] + ResponseOptions28)
-
-    question29 = 'I did things spontaneously and automatically without having to think.'
-    ResponseOptions29 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question29] + ResponseOptions29)
-
-    question30 = 'My goals were clearly defined.'
-    ResponseOptions30 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question30] + ResponseOptions30)
-
-    question31 = "I could tell by the way I was performing how well I was doing."
-    ResponseOptions31 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question31] + ResponseOptions31)
-
-    question32 = '1 was completely focused on the task at hand.'
-    ResponseOptions32 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question32] + ResponseOptions32)
-
-    question33 = 'I felt in total control of my body.'
-    ResponseOptions33 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question33] + ResponseOptions33)
-
-    question34 = 'I was not worried about what others may have been thinking of me.'
-    ResponseOptions34 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question34] + ResponseOptions34)
-
-    question35 = 'At times, it almost seemed like things were happening in slow motion.'
-    ResponseOptions35 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question35] + ResponseOptions35)
-
-    question36 = "I found the experience extremely rewarding."
-    ResponseOptions36 = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
-    questions.append([question36] + ResponseOptions36)
+    question9 = 'The experience is extremely rewarding'
+    questions.append([question9] + responseOptions)
 
     submitButton = Button('submit', 'launay', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
@@ -787,7 +673,7 @@ def flow_state_scale(subjectNumber, suffix, win):
     for i, question in enumerate(questions):
         
         if i == 0:
-            multiLineMessage(flow_state_instructions, mediumFont, win)
+            multiLineMessage(dfs_instructions, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
             pg.mouse.set_visible(True)
@@ -831,10 +717,10 @@ def flow_state_scale(subjectNumber, suffix, win):
         responses.append(response)
     
     # write the responses to a csv file with the questionnaire's name
-    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'flow_state_scale_{suffix}_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'flow_state_scale_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
         writer = csv.writer(f)
         header = ["Subject Number"] + [f'Q{i + 1}' for i in range(len(questions))]
-        assert(len(responses) == 36)
+        assert(len(responses) == 9)
         writer.writerow(header)
         writer.writerow([subjectNumber] + [''.join([ch for ch in response if ch.isdigit()]) for response in responses])
     pg.mouse.set_visible(True)
@@ -1020,10 +906,168 @@ def dissociative_experiences(subjectNumber, win):
     return
 
 
+# contains questionnaire questions and displays questionnaire to the subject
+def bais_v(subjectNumber, win):
+
+    questions = []
+
+    bais_v_instructions = 'For the following questions please do the following: Read the item and consider whether you can imagine the described sound in your head. Then rate the vividness of the imagined sound in your head on a scale from 1 (no mental image) to 7 (as vivid as the actual sound).\n\nPress the spacebar to continue.'
+
+    responseOptions = ['1 (no imagined sound)', '2', '3', '4 (somewhat vivid)', '5', '6', '7 (extremely vivid)']
+
+    questions.append(['For the first item, consider the beginning of the song “Happy Birthday.”\nThe sound of a trumpet beginning the piece.'] + responseOptions)
+    questions.append(['For the next item, consider ordering something over the phone.\nThe voice of an elderly clerk assisting you.'] + responseOptions)
+    questions.append(['For the next item, consider being at the beach.\nThe sound of the waves crashing against nearby rocks.'] + responseOptions)
+    questions.append(['For the next item, consider going to a dentist appointment.\nThe loud sound of the dentist’s drill.'] + responseOptions)
+    questions.append(['For the next item, consider being present at a jazz club.\nThe sound of a saxophone solo.'] + responseOptions)
+    questions.append(['For the next item, consider being at a live baseball game.\nThe cheer of the crowd as a player hits the ball.'] + responseOptions)
+    questions.append(['For the next item, consider attending a choir rehearsal.\nThe sound of an all-children’s choir singing the first verse of a song.'] + responseOptions)
+    questions.append(['For the next item, consider attending an orchestral performance of Beethoven’s Fifth.\nThe sound of the ensemble playing.'] + responseOptions)
+    questions.append(['For the next item, consider listening to a rain storm.\nThe sound of gentle rain.'] + responseOptions)
+    questions.append(['For the next item, consider attending classes.\nThe slow-paced voice of your English teacher.'] + responseOptions)
+    questions.append(['For the next item, consider seeing a live opera performance.\nThe voice of an opera singer in the middle of a verse.'] + responseOptions)
+    questions.append(['For the next item, consider attending a new tap-dance performance.\nThe sound of tap-shoes on the stage.'] + responseOptions)
+    questions.append(['For the next item, consider a kindergarten class.\nThe voice of the teacher reading a story to the children.'] + responseOptions)
+    questions.append(['For the next item, consider driving in a car.\nThe sound of an upbeat rock song on the radio.'] + responseOptions)
+
+    submitButton = Button('submit', 'bais_v', 'Submit', -1, 0) # submit button
+    responses = [] # for storing answers to each question
+
+    for i, question in enumerate(questions):
+
+        if i == 0:
+            pg.mouse.set_visible(True)
+            multiLineMessage(bais_v_instructions, mediumFont, win)
+            pg.display.flip()
+            waitKey(pg.K_SPACE)
+            pg.mouse.set_visible(True)
+
+        response = None
+        yPos = multiLineMessage(question[0], mediumFont, win)
+
+        buttons = [submitButton]
+        for i, question_option in enumerate(question):
+            if i == 0:
+                continue
+            buttons.append(Button('option', 'bais_v', question_option, i, yPos))
+
+        while response == None:
+
+            win.fill(backgroundColor)
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        pg.quit()
+                        sys.exit()
+                elif event.type == pg.MOUSEBUTTONUP:
+                    for i, button in enumerate(buttons):
+                        if (button.coords[0] <= pg.mouse.get_pos()[0] <= button.coords[0] + button.coords[2]) \
+                            and (button.coords[1] <= pg.mouse.get_pos()[1] <= button.coords[1] + button.coords[3]):
+                            response = button.handleClick(buttons)
+
+            multiLineMessage(question[0], mediumFont, win)
+
+            submitButton.draw(win)
+            for i, button in enumerate(buttons):
+                button.draw(win)
+            pg.display.flip()
+
+        responses.append(response)
+
+    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'bais_v_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
+        writer = csv.writer(f)
+        header = ["Subject Number"] + [f'Q{i + 1}' for i in range(len(questions))]
+        writer.writerow(header)
+        assert(len(responses) == 14)
+        writer.writerow([subjectNumber] + [''.join([ch for ch in response if ch.isdigit()]) for response in responses])
+    pg.mouse.set_visible(True)
+    return
+
+
+# contains questionnaire questions and displays questionnaire to the subject
+def bais_c(subjectNumber, win):
+
+    questions = []
+
+    bais_c_instructions = 'For the following pairs of items you are asked to do the following: Read the first item (marked “a”) and consider whether you think of an image of the described sound in your head. Then read the second item (marked “b”) and consider how easily you could change your image of the first sound to that of the second sound and hold this image. Rate how easily you could make this change using the “Ease of Change Rating Scale.” If no images are generated, give a rating of 1. Please read “a” first and “b” second for each pair.\n\nPress the spacebar to continue.'
+
+    responseOptions = ['1 (no imagined sound)', '2', '3', '4 (somewhat easy to change)', '5', '6', '7 (easy to shift)']
+
+    questions.append(['For the first pair, consider attending a choir rehearsal.\na. The sound of an all-children’s choir singing the first verse of a song.\nb. An all-adults’ choir now sings the second verse of the song.'] + responseOptions)
+    questions.append(['For the next pair, consider being present at a jazz club.\na. The sound of a saxophone solo.\nb. The saxophone is now accompanied by a piano.'] + responseOptions)
+    questions.append(['For the next pair, consider listening to a rain storm.\na. The sound of gentle rain.\nb. The gentle rain turns into a violent thunderstorm.'] + responseOptions)
+    questions.append(['For the next pair, consider driving in a car.\na. The sound of an upbeat rock song on the radio.\nb. The song is now masked by the sound of the car coming to a screeching halt.'] + responseOptions)
+    questions.append(['For the next pair, consider ordering something over the phone.\na. The voice of an elderly clerk assisting you.\nb. The elderly clerk leaves and the voice of a younger clerk is now on the line.'] + responseOptions)
+    questions.append(['For the next pair, consider seeing a live opera performance.\na. The voice of an opera singer in the middle of a verse.\nb. The opera singer now reaches the end of the piece and holds the final note.'] + responseOptions)
+    questions.append(['For the next pair, consider going to a dentist appointment.\na. The loud sound of the dentist’s drill.\nb. The drill stops and you can now hear the soothing voice of the receptionist.'] + responseOptions)
+    questions.append(['For the next pair, consider the beginning of the song “Happy Birthday.”\na. The sound of a trumpet beginning the piece.\nb. The trumpet stops and a violin continues the piece.'] + responseOptions)
+    questions.append(['For the next pair, consider attending an orchestral performance of Beethoven’s Fifth.\na. The sound of the ensemble playing.\nb. The ensemble stops but the sound of a piano solo is present.'] + responseOptions)
+    questions.append(['For the next pair, consider attending a new tap-dance performance.\na. The sound of tap-shoes on the stage.\nb. The sound of the shoes speeds up and gets louder.'] + responseOptions)
+    questions.append(['For the next pair, consider being at a live baseball game.\na. The cheer of the crowd as a player hits the ball.\nb. Now the crowd boos as the fielder catches the ball.'] + responseOptions)
+    questions.append(['For the next pair, consider a kindergarten class.\na. The voice of the teacher reading a story to the children.\nb. The teacher stops reading for a minute to talk to another teacher.'] + responseOptions)
+    questions.append(['For the next pair, consider attending classes.\na. The slow-paced voice of your English teacher.\nb. The pace of the teacher’s voice gets faster at the end of class.'] + responseOptions)
+    questions.append(['For the next pair, consider being at the beach.\na. The sound of the waves crashing against nearby rocks.\nb. The waves are now drowned out by the loud sound of a boat’s horn out at sea.'] + responseOptions)
+
+    submitButton = Button('submit', 'bais_c', 'Submit', -1, 0) # submit button
+    responses = [] # for storing answers to each question
+
+    for i, question in enumerate(questions):
+
+        if i == 0:
+            pg.mouse.set_visible(True)
+            multiLineMessage(bais_c_instructions, mediumFont, win)
+            pg.display.flip()
+            waitKey(pg.K_SPACE)
+            pg.mouse.set_visible(True)
+
+        response = None
+        yPos = multiLineMessage(question[0], mediumFont, win)
+
+        buttons = [submitButton]
+        for i, question_option in enumerate(question):
+            if i == 0:
+                continue
+            buttons.append(Button('option', 'bais_c', question_option, i, yPos))
+
+        while response == None:
+
+            win.fill(backgroundColor)
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        pg.quit()
+                        sys.exit()
+                elif event.type == pg.MOUSEBUTTONUP:
+                    for i, button in enumerate(buttons):
+                        if (button.coords[0] <= pg.mouse.get_pos()[0] <= button.coords[0] + button.coords[2]) \
+                            and (button.coords[1] <= pg.mouse.get_pos()[1] <= button.coords[1] + button.coords[3]):
+                            response = button.handleClick(buttons)
+
+            multiLineMessage(question[0], mediumFont, win)
+
+            submitButton.draw(win)
+            for i, button in enumerate(buttons):
+                button.draw(win)
+            pg.display.flip()
+
+        responses.append(response)
+
+    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'bais_c_{subjectNumber}.csv'), mode = 'w', newline = '') as f:
+        writer = csv.writer(f)
+        header = ["Subject Number"] + [f'Q{i + 1}' for i in range(len(questions))]
+        writer.writerow(header)
+        assert(len(responses) == 14)
+        writer.writerow([subjectNumber] + [''.join([ch for ch in response if ch.isdigit()]) for response in responses])
+    pg.mouse.set_visible(True)
+    return
+
+
 def main(subjectNumber, win):
 
     tellegen(subjectNumber, win)
     vhq(subjectNumber, win)
     launay_slade(subjectNumber, win)
     dissociative_experiences(subjectNumber, win)
+    bais_v(subjectNumber, win)
+    bais_c(subjectNumber, win)
     pg.mouse.set_visible(True)

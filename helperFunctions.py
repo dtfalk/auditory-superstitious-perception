@@ -491,19 +491,19 @@ def getStimuli():
     # get the current file's path
     stimuliDir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
 
-    # list of file names as paths for high frequency (44khz) audio
-    high_frequency_targets = [os.path.join(stimuliDir, '44khz', 'targets', fileName) 
-                             for fileName in os.listdir(os.path.join(stimuliDir, '44khz', 'targets'))]
-    high_frequency_distractors = [os.path.join(stimuliDir, '44khz', 'distractors', fileName) 
-                                 for fileName in os.listdir(os.path.join(stimuliDir, '44khz', 'distractors'))]
+    # list of file names as paths for full sentence audio
+    full_sentence_targets = [os.path.join(stimuliDir, 'full_sentence', 'targets', fileName) 
+                             for fileName in os.listdir(os.path.join(stimuliDir, 'full_sentence', 'targets'))]
+    full_sentence_distractors = [os.path.join(stimuliDir, 'full_sentence', 'distractors', fileName) 
+                                 for fileName in os.listdir(os.path.join(stimuliDir, 'full_sentence', 'distractors'))]
 
-    # list of file names as paths for low frequency (8khz) audio
-    low_frequency_targets = [os.path.join(stimuliDir, '8khz', 'targets', fileName) 
-                            for fileName in os.listdir(os.path.join(stimuliDir, '8khz', 'targets'))]
-    low_frequency_distractors = [os.path.join(stimuliDir, '8khz', 'distractors', fileName) 
-                                for fileName in os.listdir(os.path.join(stimuliDir, '8khz', 'distractors'))]
+    # list of file names as paths for iamgine sentence audio
+    imagined_sentence_targets = [os.path.join(stimuliDir, 'imagined_sentence', 'targets', fileName) 
+                            for fileName in os.listdir(os.path.join(stimuliDir, 'imagined_sentence', 'targets'))]
+    imagined_sentence_distractors = [os.path.join(stimuliDir, 'imagined_sentence', 'distractors', fileName) 
+                                for fileName in os.listdir(os.path.join(stimuliDir, 'imagined_sentence', 'distractors'))]
 
-    return high_frequency_targets, high_frequency_distractors, low_frequency_targets, low_frequency_distractors 
+    return full_sentence_targets, full_sentence_distractors, imagined_sentence_targets, imagined_sentence_distractors 
 
 
 
@@ -525,8 +525,8 @@ def showExamples(win, text = ''):
     distractor_example_path = os.path.join(audio_stimuli_dir, 'distractor_example.wav')
     
     # Actual target (the main target participants should identify)
-    actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence_low_frequency.wav')
-    prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", "fullsentenceminuswall_low_frequency.wav")
+    actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
+    prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", "fullsentenceminuswall.wav")
 
     target_sound = concatenate_wavs(prefix_wav, target_example_path) 
     distractor_sound = concatenate_wavs(prefix_wav, distractor_example_path) 
@@ -999,8 +999,11 @@ def selectStimulus(targets, distractors, prefix_wav):
         stimulusType = 'distractor'
         distractors.remove(stimulus)
 
-    # concatenate prefix + stimulus
-    sound = concatenate_wavs(prefix_wav, stimulus)
+    # If prefix_wav is provided, concatenate; otherwise play stimulus as-is.
+    if prefix_wav:
+        sound = concatenate_wavs(prefix_wav, stimulus)
+    else:
+        sound = pg.mixer.Sound(stimulus)
 
     # get filename without extension
     filename = os.path.splitext(os.path.basename(stimulus))[0]
@@ -1095,11 +1098,14 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     """
     pg.mouse.set_visible(True)
     
-    # Load the actual target sound
+    # Load the block-appropriate target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
-    
-    # Use the second target file (actual target) if available, otherwise first
-    actual_target_path = os.path.join(audio_stimuli_dir, f'fullsentence_{block_name}.wav')
+    if block_name == 'imagined_sentence':
+        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
+        if not os.path.exists(actual_target_path):
+            raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
+    else:
+        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1234,9 +1240,14 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     """
     pg.mouse.set_visible(True)
     
-    # Load the actual target sound
+    # Load the block-appropriate target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
-    actual_target_path = os.path.join(audio_stimuli_dir, f'fullsentence_{block_name}.wav')
+    if block_name == 'imagined_sentence':
+        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
+        if not os.path.exists(actual_target_path):
+            raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
+    else:
+        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     actual_target_sound = pg.mixer.Sound(actual_target_path)
     
     play_count = 0
@@ -1386,7 +1397,7 @@ def showAudioLevelTest(win):
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
     # Load target wall sound
-    target_path = os.path.join(audio_stimuli_dir, 'fullsentence_low_frequency.wav')
+    target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     target_sound = pg.mixer.Sound(target_path)
     
     # Load 60-second background noise for continuous playback

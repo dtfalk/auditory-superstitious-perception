@@ -32,7 +32,10 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
     trial_number = 0
     
     # select an initial audio stimulus
-    prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", f"fullsentenceminuswall_{block}.wav")
+    if block == 'full_sentence':
+        prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", "fullsentenceminuswall.wav")
+    else:
+        prefix_wav = None
     sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav)
     
     # Don't auto-play the initial audio stimulus - let user press button
@@ -171,10 +174,10 @@ def main():
     familiarization_session_count = 0
 
     # Collects the stimuli for each condition and shuffles them
-    high_frequency_targets, high_frequency_distractors, low_frequency_targets, low_frequency_distractors = getStimuli()
+    full_sentence_targets, full_sentence_distractors, imagined_sentence_targets, imagined_sentence_distractors = getStimuli()
     block_dictionary = {
-        'high_frequency': (high_frequency_targets, high_frequency_distractors),
-        'low_frequency': (low_frequency_targets, low_frequency_distractors)
+        'full_sentence': (full_sentence_targets, full_sentence_distractors),
+        'imagined_sentence': (imagined_sentence_targets, imagined_sentence_distractors)
     }
     block_names = list(block_dictionary.keys())
     shuffle(block_names)
@@ -212,7 +215,7 @@ def main():
         # After first block (round one), add Stanford Sleepiness Scale labeled as "before break"
         if i == 0:  # After first block
             stanford_sleepiness_scale(sleepiness_responses, win, label="before break")
-            flow_state_scale(subjectNumber, "block-1", win)
+
             pg.mouse.set_visible(False)
         
         # give break screen between blocks
@@ -226,7 +229,7 @@ def main():
     
     pg.mouse.set_visible(True)
     stanford_sleepiness_scale(sleepiness_responses, win)
-    flow_state_scale(subjectNumber, "block-2", win)
+    flow_state_scale(subjectNumber, win)
     pg.mouse.set_visible(False)
     subjectExplanation_methodology = getSubjectInfo('selfReflect_explanation', win)
     with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_methodology_{subjectNumber}.txt'), mode = 'w') as f:
