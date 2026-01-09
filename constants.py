@@ -11,7 +11,7 @@ number_of_sona_credits = '1.5'
 
 # get screen size for each monitor in the syste m
 winfo = get_monitors()
-if len(winfo) > 1:
+if len(winfo) > 10:
     winX = winfo[1].x
     winY = winfo[1].y
     winWidth = winfo[1].width
@@ -132,18 +132,18 @@ Similarly, in this task, you will not clearly hear the word “Wall”. Instead,
 When doing the task, many people describe the act of identifying the word as almost superstitious—a gut feeling rather than a definite perception. That is perfectly okay and expected for this task.\n\n\
 The most important thing to remember is that as long as you try very hard, it is okay to rely on those superstitious feelings.'
 
-explanationText_3 = 'To help guide you, we will allow you to hear the “Wall” that we have hidden in half the audio samples. We will also show you an example of an audio sample where the target “Wall” is present and an audio sample where the target “Wall” is absent.\n\n\
+explanationText_3 = 'To help guide you, before each block you will be given a chance to listen to the target “Wall” and hear a couple example audio samples (one where “Wall” is present and one where it is absent).\n\n\
 Please keep in mind that for audio samples where "Wall" is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\n\
 Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.'
 
 explanationText_4 = 'Here is what you need to do: \n\
-        - Press "Y" if you have a sense or feeling that the word "Wall" is there, even if you are not certain.\n\
-        - Press "N" if you think the word "Wall" is absent.\n\n\
+    - Press "Y" if you have a sense or feeling that the word "Wall" is there, even if you are not certain.\n\
+    - Press "N" if you think the word "Wall" is absent.\n\n\
 Remember, even if you are unsure, as long as you are actively trying, your initial impression might still guide you to the right answer.\n\n\
 Important Notes:\n\
-        - If you have any questions during the task or decide to stop, please inform the experimenter immediately.\n\
-        - We know how difficult this task is and really appreciate your valuable help and thank you for contributing to this study.\n\n\
-When you are ready, you will listen to an example of the “Wall” that will be faintly present in half the audio samples before you begin.'
+    - If you have any questions during the task or decide to stop, please inform the experimenter immediately.\n\
+    - We know how difficult this task is and really appreciate your valuable help and thank you for contributing to this study.\n\n\
+Press the spacebar to continue.'
 
 explanationText_5 = 'What to keep in mind:\n\
     - For audio samples where the word “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\
@@ -155,8 +155,7 @@ If you have any questions please ask the experimenter now.\n\n\
 You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
 The main portion of experiment will begin immediately after you listen to the target "Wall".'
 
-showExamplesText = 'On the left is an example of an image where the “H” is present, while on the right is an image where the “H” is absent. As you can see, this task is quite difficult. Just from looking at the differences between these images, you can tell that identifying the “H” will not come from clearly seeing it. Instead, you may find yourself relying on subtle impressions, patterns, or even a gut feeling that the “H” is there.\n\n\
-    Press the spacebar to continue.'
+showExamplesText = ''
 # 'Welcome to this fascinating visual perception task! As part of this experiment, you will encounter a series of images filled with a mix of black and white dots. Within half of these images, a black "H" will be subtly embedded. Your challenge is to identify whether the "H" is present in each image. This task will test the limits of your perception, urging you to trust the subtle hints and the instincts that might suggest the presence of the "H".\n\n\
 # Even though spotting the "H" might seem daunting at first, believe in your intuitive abilities. Research has consistently shown that people can perform remarkably well on such tasks, often exceeding their own expectations. The "H" will be centered but obscured, and we will provide you with a reference image of the "H" before you start, to help guide your observations.\n\n\
 # When you are ready to make a decision for each image, press "Y" if you feel the "H" is there, or press "N" if you think it is absent. Remember, more often than not, your first impression might be more accurate than you realize.\n\n\
@@ -174,6 +173,44 @@ You will be given the opportunity to listen to the actual "Wall" that is hidden 
 Good luck, and believe in yourself! It is normal to feel unsure, as many participants think they are not doing well, but you will likely perform better than you expect! Please try your hardest — remember, the better you do, the better your chances of winning the raffle.\n\n\
 You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
 The main portion of experiment will resume immediately after you listen to the target "Wall".'
+
+# Block-specific instruction text
+# NOTE: If you want a specific sentence participants should imagine, edit IMAGINED_SENTENCE_TO_IMAGINE.
+IMAGINED_SENTENCE_TO_IMAGINE = 'The Picture Hung On The Wall'
+
+fullSentenceBlockInstructionsText = 'In this block, you will hear a full sentence with the final word replaced by an audio sample that may or may not contain the word "Wall".\n\n\
+Half of the sentences will end with an audio sample that contains the word "Wall" and half will not.\n\n\
+You will first hear the full target sentence ending with "Wall" and a couple of examples so that you know what to listen for during this block of the experiment.\n\n\
+Press "Y" if you believe the word "Wall" is present in the audio sample at the end of the sentence.\n\
+Press "N" if you believe it is absent from the audio sample at the end of the sentence.\n\n\
+Press the spacebar to continue.'
+
+imaginedSentenceBlockInstructionsText = f'In this block, you will IMAGINE the following sentence while listening to the audio samples:\n\n\
+{IMAGINED_SENTENCE_TO_IMAGINE}\n\n\
+Half of the samples contain the word "Wall" and half do not.\n\n\
+You will first hear the target "Wall" and a couple examples so that you know what to listen for.\n\n\
+On every trial try to imagine the sentence in your head and click to play the audio sample at the same time that you would be imagining the word ""Wall".\n\n\
+Press "Y" if you believe the word "Wall" is present.\n\
+Press "N" if you believe it is absent.\n\n\
+Press the spacebar to continue.'
+
+# Trial-by-trial instruction text (shown on every trial screen)
+# Edit these lists if you want different wording per block.
+trialInstructions_full_sentence = [
+    "Click 'Play Audio' to listen to the sentence.",
+    "",
+    "Press 'Y' if you believe the word 'Wall' is present in the audio sample.",
+    "Press 'N' if you believe the word 'Wall' is NOT present in the audio sample",
+]
+
+trialInstructions_imagined_sentence = [
+    "On each trial, imagine this sentence:",
+    IMAGINED_SENTENCE_TO_IMAGINE,
+    "",
+    "Click 'Play Audio' at the moment you would imagine the word 'Wall'.",
+    "Press 'Y' if you believe 'Wall' is present.",
+    "Press 'N' if you believe 'Wall' is absent.",
+]
 
 def breakScreenText(i):
     return f'You have now completed {i} out of 2 blocks.\n\n You have earned a break.\n\n Please let the experimenter know.\n\n\

@@ -12,9 +12,17 @@ class Button:
     # initializes an instance of a button
     def __init__(self, buttonType, questionnaireName, text, i, yPosQuestion):
 
+        surface = pg.display.get_surface()
+        if surface:
+            current_w, current_h = surface.get_size()
+        else:
+            current_w, current_h = winWidth, winHeight
+
+        base_medium_font = max(14, current_h // 20)
+
          # creates a box to click and text for questionnaire options
         if buttonType == 'option':
-            self.fontSize = mediumFont
+            self.fontSize = base_medium_font
             if questionnaireName == 'tellegen':
                 scalar = 1.75
             elif questionnaireName == 'launay':
@@ -23,20 +31,22 @@ class Button:
                 scalar = 1.5
             elif questionnaireName == 'sleepiness':
                 scalar = 1.3
-                self.fontSize = int(0.85 * mediumFont)
+                self.fontSize = int(0.85 * base_medium_font)
             elif questionnaireName == 'vhq':
                 scalar = 1.4  # Similar spacing to launay
+            elif "bias" in questionnaireName:
+                scalar = 1.3
             else:
                 scalar = 1.5  # Default fallback for any unknown questionnaire types
             spacing = scalar * i * self.fontSize 
-            buffer = winHeight // 20
-            maxY = (0.85 * winHeight) - self.fontSize
+            buffer = current_h // 20
+            maxY = (0.85 * current_h) - self.fontSize
             
             # Make option button size proportional to screen
-            button_size = int(0.015 * min(winWidth, winHeight))  # 1.5% of smaller screen dimension
+            button_size = int(0.015 * min(current_w, current_h))  # 1.5% of smaller screen dimension
             button_size = max(button_size, self.fontSize)  # Ensure it's at least as big as font
             
-            self.coords = ((0.05 * winWidth) + (0.45 * winWidth) * ((yPosQuestion + spacing + buffer) // maxY), 
+            self.coords = ((0.05 * current_w) + (0.45 * current_w) * ((yPosQuestion + spacing + buffer) // maxY), 
                            yPosQuestion + buffer + (spacing % (maxY - (yPosQuestion + buffer))), 
                            button_size, 
                            button_size)
@@ -44,7 +54,7 @@ class Button:
             self.text_y = self.coords[1] - 0.1 * button_size
             
         else: # creates the submit button so the user may submit their response
-            self.fontSize = int(0.85 * mediumFont)
+            self.fontSize = int(0.85 * base_medium_font)
             
             # Calculate text dimensions for responsive sizing
             font = pg.font.SysFont("times new roman", self.fontSize)
@@ -52,24 +62,24 @@ class Button:
             text_width, text_height = text_surface.get_size()
             
             # Make button size proportional to screen and text
-            padding_x = int(0.02 * winWidth)  # 2% of screen width padding
-            padding_y = int(0.01 * winHeight)  # 1% of screen height padding
+            padding_x = int(0.02 * current_w)  # 2% of screen width padding
+            padding_y = int(0.01 * current_h)  # 1% of screen height padding
             button_width = text_width + (2 * padding_x)
             button_height = text_height + (2 * padding_y)
             
             # Ensure minimum size (proportional to screen)
-            min_width = int(0.08 * winWidth)
-            min_height = int(0.04 * winHeight)
+            min_width = int(0.08 * current_w)
+            min_height = int(0.04 * current_h)
             button_width = max(button_width, min_width)
             button_height = max(button_height, min_height)
             
             # Center the button horizontally, position vertically at 85% of screen height
-            button_x = (winWidth - button_width) // 2
-            button_y = int(0.85 * winHeight)
+            button_x = (current_w - button_width) // 2
+            button_y = int(0.85 * current_h)
             
             self.coords = (button_x, button_y, button_width, button_height)
             # Text positioning will be handled by centering in draw method
-            self.text_x = 0.46 * winWidth  # Keep for compatibility, but draw() will center
+            self.text_x = 0.46 * current_w  # Keep for compatibility, but draw() will center
             self.text_y = self.coords[1]
         
         self.color = WHITE
@@ -635,9 +645,9 @@ def flow_state_scale(subjectNumber, win):
     # variables to hold all of the questions and their associated response options
     questions = []
 
-    dfs_instructions = 'Please answer the following questions in relation to your experience in your chosen activity. These questions relate to the thoughts and feelings you may experience during participation in this tasks or similar ones. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic during this type of task, then circle the number that best matches your experience.\n\n Press the spacebar to continue.'
+    dfs_instructions = 'Please answer the following questions in relation to your experience on general tasks. These questions relate to the thoughts and feelings you may experience while completing various tasks in your life. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic during your typical tasks, and then circle the number that best matches your experience.\n\n Press the spacebar to begin.'
 
-    responseOptions = ['1', '2', '3', '4', '5']
+    responseOptions = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
 
     question1 = 'I feel I am competent enough to meet the demands of the situation'
     questions.append([question1] + responseOptions)
@@ -673,6 +683,7 @@ def flow_state_scale(subjectNumber, win):
     for i, question in enumerate(questions):
         
         if i == 0:
+            pg.mouse.set_visible(False)
             multiLineMessage(dfs_instructions, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
@@ -911,9 +922,9 @@ def bais_v(subjectNumber, win):
 
     questions = []
 
-    bais_v_instructions = 'For the following questions please do the following: Read the item and consider whether you can imagine the described sound in your head. Then rate the vividness of the imagined sound in your head on a scale from 1 (no mental image) to 7 (as vivid as the actual sound).\n\nPress the spacebar to continue.'
+    bais_v_instructions = 'For the following questions please do the following: Read the item and consider whether you can imagine the described sound in your head. Then rate the vividness of the imagined sound in your head on a scale from 1 (no mental image) to 7 (as vivid as the actual sound).\n\nPress the spacebar to begin.'
 
-    responseOptions = ['1 (no imagined sound)', '2', '3', '4 (somewhat vivid)', '5', '6', '7 (extremely vivid)']
+    responseOptions = ['1 - No Imagined Sound', '2', '3', '4 - Somewhat Vivid', '5', '6', '7 - Extremely Vivid']
 
     questions.append(['For the first item, consider the beginning of the song “Happy Birthday.”\nThe sound of a trumpet beginning the piece.'] + responseOptions)
     questions.append(['For the next item, consider ordering something over the phone.\nThe voice of an elderly clerk assisting you.'] + responseOptions)
@@ -936,7 +947,7 @@ def bais_v(subjectNumber, win):
     for i, question in enumerate(questions):
 
         if i == 0:
-            pg.mouse.set_visible(True)
+            pg.mouse.set_visible(False)
             multiLineMessage(bais_v_instructions, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
@@ -989,9 +1000,9 @@ def bais_c(subjectNumber, win):
 
     questions = []
 
-    bais_c_instructions = 'For the following pairs of items you are asked to do the following: Read the first item (marked “a”) and consider whether you think of an image of the described sound in your head. Then read the second item (marked “b”) and consider how easily you could change your image of the first sound to that of the second sound and hold this image. Rate how easily you could make this change using the “Ease of Change Rating Scale.” If no images are generated, give a rating of 1. Please read “a” first and “b” second for each pair.\n\nPress the spacebar to continue.'
+    bais_c_instructions = 'For the following pairs of items you are asked to do the following: Read the first item (marked “a”) and consider whether you think of an image of the described sound in your head. Then read the second item (marked “b”) and consider how easily you could change your image of the first sound to that of the second sound and hold this image. Rate how easily you could make this change using the “Ease of Change Rating Scale.” If no images are generated, give a rating of 1. Please read “a” first and “b” second for each pair.\n\nPress the spacebar to begin.'
 
-    responseOptions = ['1 (no imagined sound)', '2', '3', '4 (somewhat easy to change)', '5', '6', '7 (easy to shift)']
+    responseOptions = ['1 - No Imagined Sound', '2', '3', '4 - Somewhat Vivid', '5', '6', '7 - Extremely Vivid']
 
     questions.append(['For the first pair, consider attending a choir rehearsal.\na. The sound of an all-children’s choir singing the first verse of a song.\nb. An all-adults’ choir now sings the second verse of the song.'] + responseOptions)
     questions.append(['For the next pair, consider being present at a jazz club.\na. The sound of a saxophone solo.\nb. The saxophone is now accompanied by a piano.'] + responseOptions)
@@ -1014,7 +1025,7 @@ def bais_c(subjectNumber, win):
     for i, question in enumerate(questions):
 
         if i == 0:
-            pg.mouse.set_visible(True)
+            pg.mouse.set_visible(False)
             multiLineMessage(bais_c_instructions, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)

@@ -50,7 +50,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
         
             can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
             can_respond = audio_played and (last_audio_start > 0) and (time_since_last_play >= audio_duration + 500)
-            button_rect = drawAudioInterface(win, play_count, MAX_PLAYS, audio_played, can_play, can_respond)
+            button_rect = drawAudioInterface(win, play_count, MAX_PLAYS, audio_played, can_play, can_respond, block_name=block)
             pg.display.flip()
         
         # handles key presses and mouse clicks
@@ -123,7 +123,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
             audio_duration = 0  # Reset audio duration
             
             # end experiment if we have shown all of the audio stimuli
-            if remaining_stimuli == 0:
+            if remaining_stimuli <= 148: # == 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
@@ -193,11 +193,15 @@ def main():
     experimentExplanation(win)
 
     # present the first of the stanford sleepiness scales
-    stanford_sleepiness_scale(sleepiness_responses, win)
+    # stanford_sleepiness_scale(sleepiness_responses, win)
     pg.event.clear()
 
     # give users all blocks
     for i, (block_name, (targets, distractors)) in enumerate(zip(block_names, blocks)):
+
+        # Block-specific instructions + examples
+        showBlockInstructions(win, block_name)
+        stanford_sleepiness_scale(sleepiness_responses, win)
 
         # Show target familiarization before each block
         familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name)
@@ -215,17 +219,11 @@ def main():
         # After first block (round one), add Stanford Sleepiness Scale labeled as "before break"
         if i == 0:  # After first block
             stanford_sleepiness_scale(sleepiness_responses, win, label="before break")
-
             pg.mouse.set_visible(False)
         
         # give break screen between blocks
         if i < len(blocks) - 1:
             breakScreen(i + 1, win)
-            pg.mouse.set_visible(False)
-            realInstructionsAlt(win)
-            pg.mouse.set_visible(True)
-            # Add Stanford Sleepiness Scale after break screen, labeled as "after break"
-            stanford_sleepiness_scale(sleepiness_responses, win, label="after break")
     
     pg.mouse.set_visible(True)
     stanford_sleepiness_scale(sleepiness_responses, win)
