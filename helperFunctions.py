@@ -205,6 +205,82 @@ def _current_window_size(win):
     return winWidth, winHeight
 
 
+def _wrap_text_to_width(font: pg.font.Font, text: str, max_width: int):
+    """Word-wrap `text` so each rendered line is <= max_width."""
+    if not text:
+        return [""]
+    if max_width <= 0:
+        return [text]
+
+    words = text.split()
+    if not words:
+        return [""]
+
+    lines = []
+    current = words[0]
+    for word in words[1:]:
+        trial = f"{current} {word}"
+        if font.size(trial)[0] <= max_width:
+            current = trial
+            continue
+
+        # If the current line is already too wide (single very long word), split it.
+        if font.size(current)[0] > max_width:
+            chunk = ""
+            for ch in current:
+                trial_chunk = chunk + ch
+                if font.size(trial_chunk)[0] <= max_width or not chunk:
+                    chunk = trial_chunk
+                else:
+                    lines.append(chunk)
+                    chunk = ch
+            if chunk:
+                lines.append(chunk)
+            current = word
+        else:
+            lines.append(current)
+            current = word
+
+    if font.size(current)[0] > max_width:
+        chunk = ""
+        for ch in current:
+            trial_chunk = chunk + ch
+            if font.size(trial_chunk)[0] <= max_width or not chunk:
+                chunk = trial_chunk
+            else:
+                lines.append(chunk)
+                chunk = ch
+        if chunk:
+            lines.append(chunk)
+    else:
+        lines.append(current)
+
+    return lines
+
+
+def _blit_wrapped_centered(
+    win,
+    font: pg.font.Font,
+    text: str,
+    center_x: int,
+    y_pos: int,
+    max_width: int,
+    color,
+    line_step: int | None = None,
+):
+    """Draw centered wrapped text, returning the next y position."""
+    if line_step is None:
+        line_step = font.get_linesize()
+
+    for line in _wrap_text_to_width(font, text, max_width):
+        if line:
+            surf = font.render(line, True, color)
+            rect = surf.get_rect(center=(center_x, y_pos))
+            win.blit(surf, rect)
+        y_pos += line_step
+    return y_pos
+
+
 # function to draw/fit a multiline message to the screen
 def multiLineMessage(text, textsize, win, xPos_start=None, yPos_start=None, xMax=None, yMax=None):
 
@@ -395,13 +471,14 @@ def getSubjectInfo(requestType, win):
         if requestType == 'signature':
             text = "Please type your name to confirm that you consent to participate in this study. Press Enter or Return to submit.\n\n"
         elif requestType == 'selfReflect_explanation':
-            text = 'During the experiment, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n'
+            text = 'During the previous block, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n'
         elif requestType == 'selfReflect_changes':
-            text = 'Did your methodology change or evolve over the course of the experiment?\n'
+            text = 'Did your methodology change or evolve over the course of the previous block?\n'
         elif requestType == 'Additional Comments':
-            text = 'Please provide any additional comments you may have about the experiment below. If you have no additional comments, simply press Enter or Return to continue.\n'
+            text = 'Please provide any additional comments you may have about the experiment below. If you have no additional comments, press Enter or Return to continue.\n'
         else:
             text = "Please enter the requested information. Then press Enter or Return to continue. Press ESC to exit or inform the observer of your decision. \n\n"
+        pg.mouse.set_visible(False)
         multiLineMessage(text + f'\n{prompter}: ' + response, mediumFont, win)
         pg.display.flip()
 
@@ -626,15 +703,6 @@ def showBlockExamples(win, block_name: str):
 
         button_width = int(0.15 * current_w)
         button_height = int(0.06 * current_h)
-        button_y = current_h // 2 - button_height // 2
-
-        sample_target_button_rect = pg.Rect(current_w // 6 - button_width // 2, button_y, button_width, button_height)
-        actual_target_button_rect = pg.Rect(current_w // 2 - button_width // 2, button_y, button_width, button_height)
-        sample_distractor_button_rect = pg.Rect(5 * current_w // 6 - button_width // 2, button_y, button_width, button_height)
-
-        continue_button_width = int(0.12 * current_w)
-        continue_button_height = int(0.05 * current_h)
-        continue_button_rect = pg.Rect(current_w // 2 - continue_button_width // 2, int(0.75 * current_h), continue_button_width, continue_button_height)
 
         win.fill(backgroundColor)
         if block_name == 'full_sentence':
@@ -642,8 +710,8 @@ def showBlockExamples(win, block_name: str):
                 header,
                 "",
                 "Click the buttons below to hear examples:",
-                "Green: Sample WITH the word \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT the word \"Wall\"",
-                "The blue button plays the ACTUAL \"Wall\" you should listen for",
+                "Green: Sentence WITH \"Wall\"    Blue: The actual \"Wall\"    Red: Sentence WITHOUT \"Wall\"",
+                "The blue button plays the the sentence with the ACTUAL \"Wall\" you should listen for.",
                 "When you are ready to proceed, press the continue button."
             ]
         else:
@@ -651,22 +719,57 @@ def showBlockExamples(win, block_name: str):
                 header,
                 "",
                 "Click the buttons below to hear examples:",
-                "Green: Sample WITH the word \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT the word \"Wall\"",
-                "The blue button plays the ACTUAL \"Wall\" you should listen for",
+                "Green: Sample WITH \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT \"Wall\"",
+                "The blue button plays the ACTUAL \"Wall\" you should listen for.",
+                "Please imagine the sentence in your head and play the sound at the moment you would imagine the word 'Wall'.",
+                "Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.",
                 "When you are ready to proceed, press the continue button."
             ]
         y_pos = current_h // 7
         font = pg.font.SysFont("times new roman", max(22, current_h // 28))
+        paragraph_step = max(28, current_h // 20)
+        wrapped_step = max(22, font.get_linesize())
+        max_text_width = int(0.90 * current_w)
         for instruction in instructions:
-            if instruction:
-                text_surface = font.render(instruction, True, BLACK)
-                text_rect = text_surface.get_rect(center=(current_w // 2, y_pos))
-                win.blit(text_surface, text_rect)
-            y_pos += max(28, current_h // 20)
+            if not instruction:
+                y_pos += paragraph_step
+                continue
+            before = y_pos
+            y_pos = _blit_wrapped_centered(
+                win,
+                font,
+                instruction,
+                center_x=current_w // 2,
+                y_pos=y_pos,
+                max_width=max_text_width,
+                color=BLACK,
+                line_step=wrapped_step,
+            )
+            # Add some extra spacing between instruction "paragraphs".
+            if y_pos == before:
+                y_pos += paragraph_step
+            else:
+                y_pos += max(0, paragraph_step - wrapped_step)
 
         current_time = pg.time.get_ticks()
         time_since_last_play = current_time - last_audio_start
         can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+
+        button_y = int(y_pos + 0.10 * (current_h - y_pos)) - button_height // 2
+
+        sample_target_button_rect = pg.Rect(current_w // 6 - button_width // 2, button_y, button_width, button_height)
+        actual_target_button_rect = pg.Rect(current_w // 2 - button_width // 2, button_y, button_width, button_height)
+        sample_distractor_button_rect = pg.Rect(5 * current_w // 6 - button_width // 2, button_y, button_width, button_height)
+
+        continue_button_width = int(0.12 * current_w)
+        continue_button_height = int(0.05 * current_h)
+        continue_y = int(y_pos + 0.50 * (current_h - y_pos)) - continue_button_height // 2
+        continue_button_rect = pg.Rect(
+            current_w // 2 - continue_button_width // 2,
+            continue_y,
+            continue_button_width,
+            continue_button_height
+        )
 
         pg.draw.rect(win, GREEN, sample_target_button_rect)
         pg.draw.rect(win, BLUE, actual_target_button_rect)
@@ -702,6 +805,8 @@ def showBlockExamples(win, block_name: str):
                 time_since_last_play = current_time - last_audio_start
                 can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
 
+                audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
+
                 if can_play:
                     if sample_target_button_rect.collidepoint(mouse_pos):
                         target_sound.play()
@@ -716,7 +821,7 @@ def showBlockExamples(win, block_name: str):
                         audio_duration = int(distractor_sound.get_length() * 1000)
                         last_audio_start = current_time
 
-                if continue_button_rect.collidepoint(mouse_pos):
+                if continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
                     return
 
 
@@ -791,6 +896,7 @@ def breakScreen(i, win):
 
 # exit screen thanking the participant
 def exitScreen(subjectNumber, win):
+    pg.mouse.set_visible(False)
     win.fill(backgroundColor)
     multiLineMessage(exitScreenText, mediumFont, win)
     pg.display.flip()
@@ -1171,17 +1277,28 @@ def drawAudioInterface(win, play_count, max_plays, audio_played=False, can_play=
     # Lay out instructions above the play button
     y_pos = current_h // 10
     font = pg.font.SysFont("times new roman", max(22, current_h // 28))
-    line_step = max(26, current_h // 18)
+    line_step = max(22, font.get_linesize())
+    paragraph_step = max(26, current_h // 18)
     max_text_y = max(0, button_rect.top - int(0.05 * current_h))
+
+    max_text_width = int(0.90 * current_w)
 
     for instruction in instructions:
         if y_pos + line_step > max_text_y:
             break
-        if instruction:
-            text_surface = font.render(instruction, True, BLACK)
-            text_rect = text_surface.get_rect(center=(current_w // 2, y_pos))
-            win.blit(text_surface, text_rect)
-        y_pos += line_step
+        if not instruction:
+            y_pos += paragraph_step
+            continue
+
+        for wrapped_line in _wrap_text_to_width(font, instruction, max_text_width):
+            if y_pos + line_step > max_text_y:
+                break
+            if wrapped_line:
+                text_surface = font.render(wrapped_line, True, BLACK)
+                text_rect = text_surface.get_rect(center=(current_w // 2, y_pos))
+                win.blit(text_surface, text_rect)
+            y_pos += line_step
+        y_pos += max(0, paragraph_step - line_step)
 
     # Draw play-count separately so it never overlaps the button
     counter_font = pg.font.SysFont("times new roman", max(18, current_h // 35))
@@ -1220,17 +1337,15 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
-    audio_duration = 0
+    audio_duration = int(actual_target_sound.get_length() * 1000)
     
     # Create play button (larger for this screen)
     button_width = int(0.2 * winWidth)  # 20% of screen width
     button_height = int(0.08 * winHeight)  # 8% of screen height
-    play_button_rect = pg.Rect((winWidth - button_width) // 2, winHeight // 2, button_width, button_height)
     
     # Create continue button
     continue_button_width = int(0.15 * winWidth)
     continue_button_height = int(0.06 * winHeight)
-    continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, int(0.75 * winHeight), continue_button_width, continue_button_height)
     
     while True:
         win.fill(backgroundColor)
@@ -1238,27 +1353,46 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
         # Check if play button can be clicked (timing system)
         current_time = pg.time.get_ticks()
         time_since_last_play = current_time - last_audio_start
-        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 250)
         
         # Display instructions
-        instructions = [
-            "Target Sound Familiarization",
-            "",
-            "This is the TARGET sound you should listen for in the upcoming block.",
-            "You can play it as much as you want to become familiar with it.",
-            "Click 'Play Target Sound' to hear the sound again",
-            "Click 'Continue' when you're ready to start the block"
-        ]
+        if block_name == "full_sentence":
+            instructions = [
+                "Target Sound Familiarization",
+                "",
+                "This is the TARGET sound you should listen for in the upcoming block.",
+                "You can play it as much as you want to become familiar with it.",
+                "Click 'Play Target Sound' to hear the sound.",
+                "Click 'Continue' when you're ready to start the block.",
+            ]
+        else:
+            instructions = [
+                "Target Sound Familiarization",
+                "",
+                "This is the TARGET sound you should listen for in the upcoming block.",
+                "You can play it as much as you want to become familiar with it.",
+                "Imagine the sentence EVERY TIME before playing the audio sample.",
+                "Do NOT say the sentence out loud, under your breath, or mouth it.",
+                "Click 'Play Target Sound' to hear the sound.",
+                "Click 'Continue' when you're ready to start the block.",
+            ]
         
         y_pos = winHeight // 8
-        font = pg.font.SysFont("times new roman", 32)
+        font = pg.font.SysFont("times new roman", mediumFont)
         
         for instruction in instructions:
             if instruction:
                 text_surface = font.render(instruction, True, BLACK)
                 text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
                 win.blit(text_surface, text_rect)
-            y_pos += 50
+            y_pos += (mediumFont + 10)
+        
+
+        play_y = int(y_pos + 0.25 * (winHeight - y_pos)) - button_height // 2
+        cont_y = int(y_pos + 0.50 * (winHeight - y_pos)) - continue_button_height // 2
+
+        play_button_rect = pg.Rect((winWidth - button_width) // 2, play_y, button_width, button_height)
+        continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, cont_y, continue_button_width, continue_button_height)
         
         play_button_color = BLUE
         play_text_color = WHITE
@@ -1273,7 +1407,7 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
         pg.draw.rect(win, BLACK, continue_button_rect, 3)
         
         # Button labels
-        font = pg.font.SysFont("times new roman", 24)
+        font = pg.font.SysFont("times new roman", smallFont)
         play_text = font.render(play_text_content, True, play_text_color)
         continue_text = font.render("Continue", True, BLACK if play_count > 0 else WHITE)
         
@@ -1289,12 +1423,16 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                     sys.exit()
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse_pos = pg.mouse.get_pos()
+
+                current_time = pg.time.get_ticks()
+                time_since_last_play = current_time - last_audio_start
+                audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
+
                 if play_button_rect.collidepoint(mouse_pos) and can_play:
                     actual_target_sound.play()
-                    audio_duration = int(actual_target_sound.get_length() * 1000)
                     last_audio_start = current_time
                     play_count += 1
-                elif continue_button_rect.collidepoint(mouse_pos) and play_count > 0:
+                elif continue_button_rect.collidepoint(mouse_pos) and play_count > 0 and not audio_still_playing:
                     # Save data and return
                     saveTargetFamiliarizationData(subjectNumber, saveFolder, session_number, play_count, block_name)
                     return
@@ -1362,45 +1500,57 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
-    audio_duration = 0
+    audio_duration = int(actual_target_sound.get_length() * 1000)
     
     # Create play button (larger for this screen)
     button_width = int(0.2 * winWidth)  # 20% of screen width
     button_height = int(0.08 * winHeight)  # 8% of screen height
-    play_button_rect = pg.Rect((winWidth - button_width) // 2, winHeight // 2, button_width, button_height)
     
     # Create continue button
     continue_button_width = int(0.15 * winWidth)
     continue_button_height = int(0.06 * winHeight)
-    continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, int(0.75 * winHeight), continue_button_width, continue_button_height)
-    
+
     while True:
         win.fill(backgroundColor)
         
         # Check if play button can be clicked (timing system)
         current_time = pg.time.get_ticks()
         time_since_last_play = current_time - last_audio_start
-        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 350)
         
         # Display instructions
-        instructions = [
-            "Target Sound Reminder",
-            "",
-            f"Here's a reminder of the \"WALL\" that you are searching for.",
-            f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
-            "Click 'Play Target Sound' to hear the sound",
-            "Click 'Continue' when you're ready to proceed"
-        ]
+        if block_name == "full_sentence":
+            instructions = [
+                "Target Sound Reminder",
+                "",
+                f"Here's a reminder of the \"Wall\" that you are searching for.",
+                "Click 'Play Target Sound' to hear the sound.",
+                "Click 'Continue' when you're ready to proceed.",
+                "",
+                f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
+            ]
+        else:
+            instructions = [
+                "Target Sound Reminder",
+                "",
+                f"Here's a reminder of the \"Wall\" that you are searching for.",
+                "Imagine the sentence EVERY TIME before playing the audio sample.",
+                "Do NOT say the sentence out loud, under your breath, or mouth it.",
+                "Click 'Play Target Sound' to hear the sound.",
+                "Click 'Continue' when you're ready to proceed.",
+                "",
+                f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
+            ]
         
         y_pos = winHeight // 8
-        font = pg.font.SysFont("times new roman", 32)
+        font = pg.font.SysFont("times new roman", mediumFont)
         
         for instruction in instructions:
             if instruction:
                 text_surface = font.render(instruction, True, BLACK)
                 text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
                 win.blit(text_surface, text_rect)
-            y_pos += 50
+            y_pos += mediumFont
         
         # Draw play button with timing consideration and max plays limit
         can_click = can_play and (play_count < REMINDER_MAX_PLAYS)
@@ -1414,7 +1564,13 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         else:  # waiting for audio to finish
             play_button_color = [c//2 for c in BLUE]  # Dimmed blue
             play_text_color = GRAY
-        
+
+        play_y = int(y_pos + 0.25 * (winHeight - y_pos)) - button_height // 2
+        cont_y = int(y_pos + 0.50 * (winHeight - y_pos)) - continue_button_height // 2
+
+        play_button_rect = pg.Rect((winWidth - button_width) // 2, play_y, button_width, button_height)
+        continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, cont_y, continue_button_width, continue_button_height)
+
         pg.draw.rect(win, play_button_color, play_button_rect)
         pg.draw.rect(win, BLACK, play_button_rect, 3)
         
@@ -1423,7 +1579,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         pg.draw.rect(win, BLACK, continue_button_rect, 3)
         
         # Button labels
-        font = pg.font.SysFont("times new roman", 24)
+        font = pg.font.SysFont("times new roman", smallFont)
         if play_count >= REMINDER_MAX_PLAYS:
             play_text_content = "Max Plays Reached"
         else:
@@ -1444,12 +1600,15 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
                     sys.exit()
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse_pos = pg.mouse.get_pos()
+                current_time = pg.time.get_ticks()
+                time_since_last_play = current_time - last_audio_start
+                audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
+
                 if play_button_rect.collidepoint(mouse_pos) and can_click:
                     actual_target_sound.play()
-                    audio_duration = int(actual_target_sound.get_length() * 1000)
                     last_audio_start = current_time
                     play_count += 1
-                elif continue_button_rect.collidepoint(mouse_pos):
+                elif continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
                     # Save data and return
                     savePeriodicReminderData(subjectNumber, saveFolder, trial_number, play_count, block_name)
                     return

@@ -123,7 +123,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
             audio_duration = 0  # Reset audio duration
             
             # end experiment if we have shown all of the audio stimuli
-            if remaining_stimuli <= 148: # == 0:
+            if remaining_stimuli == 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
@@ -191,9 +191,6 @@ def main():
         nonConsentScreen(win)
     sleepiness_responses = []
     experimentExplanation(win)
-
-    # present the first of the stanford sleepiness scales
-    # stanford_sleepiness_scale(sleepiness_responses, win)
     pg.event.clear()
 
     # give users all blocks
@@ -218,25 +215,30 @@ def main():
         
         # After first block (round one), add Stanford Sleepiness Scale labeled as "before break"
         if i == 0:  # After first block
+            subjectExplanation_methodology = getSubjectInfo('selfReflect_explanation', win)
+            with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_methodology_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
+                f.write(subjectExplanation_methodology)
+
+            subjectExplanation_changes = getSubjectInfo('selfReflect_changes', win)
+            with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_changes_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
+                f.write(subjectExplanation_changes)
             stanford_sleepiness_scale(sleepiness_responses, win, label="before break")
             pg.mouse.set_visible(False)
         
         # give break screen between blocks
         if i < len(blocks) - 1:
             breakScreen(i + 1, win)
-    
-    pg.mouse.set_visible(True)
-    stanford_sleepiness_scale(sleepiness_responses, win)
-    flow_state_scale(subjectNumber, win)
-    pg.mouse.set_visible(False)
-    subjectExplanation_methodology = getSubjectInfo('selfReflect_explanation', win)
-    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_methodology_{subjectNumber}.txt'), mode = 'w') as f:
-        f.write(subjectExplanation_methodology)
+        
+        if i == len(block_names) - 1:
+            subjectExplanation_methodology = getSubjectInfo('selfReflect_explanation', win)
+            with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_methodology_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
+                f.write(subjectExplanation_methodology)
 
-    subjectExplanation_changes = getSubjectInfo('selfReflect_changes', win)
-    with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_changes_{subjectNumber}.txt'), mode = 'w') as f:
-        f.write(subjectExplanation_changes)
-    
+            subjectExplanation_changes = getSubjectInfo('selfReflect_changes', win)
+            with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_changes_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
+                f.write(subjectExplanation_changes)
+            stanford_sleepiness_scale(sleepiness_responses, win)
+        
     # display questionnaires
     questions(subjectNumber, win)
 

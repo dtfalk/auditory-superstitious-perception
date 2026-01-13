@@ -5,12 +5,132 @@ import sys
 import os
 from helperFunctions import multiLineMessage, waitKey
 import csv
+import math
+
+
+def _current_window_size(win):
+    surface = pg.display.get_surface()
+    if surface:
+        return surface.get_size()
+    try:
+        return win.get_size()
+    except Exception:
+        return winWidth, winHeight
+
+
+def _questionnaire_option_style(questionnaireName: str, current_h: int):
+    """Return (font_size, scalar) used for spacing option buttons."""
+    base_medium_font = max(14, current_h // 20)
+    font_size = base_medium_font
+
+    if questionnaireName == 'tellegen':
+        scalar = 1.75
+    elif questionnaireName == 'launay':
+        scalar = 1.4
+    elif questionnaireName == 'dissociative':
+        scalar = 1.5
+    elif questionnaireName == 'sleepiness':
+        scalar = 1.3
+        font_size = int(0.85 * base_medium_font)
+    elif questionnaireName == 'vhq':
+        scalar = 1.4
+    elif "bias" in questionnaireName:
+        scalar = 1.3
+    else:
+        scalar = 1.5
+
+    return font_size, scalar
+
+
+def _worst_case_question_bottom_y(questions, win):
+    """Compute the maximum y position reached by any question text."""
+    y_positions = []
+    for q in questions:
+        try:
+            y_positions.append(multiLineMessage(q[0], mediumFont, win))
+        except Exception:
+            # If a render fails for any reason, ignore it and fall back.
+            pass
+    if not y_positions:
+        _, current_h = _current_window_size(win)
+        return int(0.25 * current_h)
+    return max(y_positions)
+
+
+def _precompute_option_slots(questionnaireName: str, win, yPosQuestion_fixed: int, max_options: int):
+    """Create stable checkbox positions based on worst-case option count.
+
+    The slots are reused for every question so options don't shift around.
+    Options are split across 1-2 columns as evenly as possible.
+    """
+    current_w, current_h = _current_window_size(win)
+    font_size, scalar = _questionnaire_option_style(questionnaireName, current_h)
+
+    buffer = current_h // 20
+
+    # Make option button size proportional to screen
+    button_size = int(0.015 * min(current_w, current_h))
+    button_size = max(button_size, font_size)
+
+    # Reserve space: bottom 15% for submit button area
+    y_start = int(yPosQuestion_fixed + buffer)
+    y_end = int((0.85 * current_h) - font_size)
+    if y_end <= y_start:
+        y_start = int(0.30 * current_h)
+        y_end = int(0.85 * current_h) - font_size
+
+    available_height = max(1, y_end - y_start)
+
+    # Desired spacing (matches previous behavior), but clamp to fit.
+    desired_row_step = max(1, int(scalar * font_size))
+    min_row_step = max(1, int(1.05 * font_size))
+
+    # If everything fits in one column with desired spacing, use one column.
+    max_rows_one_col = max(1, 1 + (available_height // max(1, desired_row_step)))
+    n_cols = 1 if max_options <= max_rows_one_col else 2
+
+    rows_per_col = max(1, int(math.ceil(max_options / n_cols)))
+    if rows_per_col > 1:
+        row_step_fit = max(1, available_height // (rows_per_col - 1))
+    else:
+        row_step_fit = desired_row_step
+
+    row_step = max(min_row_step, min(desired_row_step, row_step_fit))
+
+    # Column x positions (keeps the original left/right feel)
+    x_left = int(0.05 * current_w)
+    x_right = int(0.05 * current_w + 0.45 * current_w)
+
+    # Evenly split options across columns when using 2 cols
+    left_count = max_options if n_cols == 1 else int(math.ceil(max_options / 2))
+
+    slots = []
+    for idx in range(max_options):
+        if n_cols == 1 or idx < left_count:
+            col = 0
+            row = idx
+        else:
+            col = 1
+            row = idx - left_count
+
+        x = x_left if col == 0 else x_right
+        y = int(y_start + row * row_step)
+        slots.append(
+            {
+                'fontSize': font_size,
+                'coords': (x, y, button_size, button_size),
+                'text_x': x + int(1.5 * button_size),
+                'text_y': y - int(0.1 * button_size),
+            }
+        )
+
+    return slots
 
 # class for the buttons the user will see
 class Button:
 
     # initializes an instance of a button
-    def __init__(self, buttonType, questionnaireName, text, i, yPosQuestion):
+    def __init__(self, buttonType, questionnaireName, text, i, yPosQuestion, slot=None):
 
         surface = pg.display.get_surface()
         if surface:
@@ -22,36 +142,43 @@ class Button:
 
          # creates a box to click and text for questionnaire options
         if buttonType == 'option':
-            self.fontSize = base_medium_font
-            if questionnaireName == 'tellegen':
-                scalar = 1.75
-            elif questionnaireName == 'launay':
-                scalar = 1.4
-            elif questionnaireName == 'dissociative':
-                scalar = 1.5
-            elif questionnaireName == 'sleepiness':
-                scalar = 1.3
-                self.fontSize = int(0.85 * base_medium_font)
-            elif questionnaireName == 'vhq':
-                scalar = 1.4  # Similar spacing to launay
-            elif "bias" in questionnaireName:
-                scalar = 1.3
+            if slot is not None:
+                self.fontSize = int(slot['fontSize'])
+                self.coords = slot['coords']
+                self.text_x = slot['text_x']
+                self.text_y = slot['text_y']
             else:
-                scalar = 1.5  # Default fallback for any unknown questionnaire types
-            spacing = scalar * i * self.fontSize 
-            buffer = current_h // 20
-            maxY = (0.85 * current_h) - self.fontSize
-            
-            # Make option button size proportional to screen
-            button_size = int(0.015 * min(current_w, current_h))  # 1.5% of smaller screen dimension
-            button_size = max(button_size, self.fontSize)  # Ensure it's at least as big as font
-            
-            self.coords = ((0.05 * current_w) + (0.45 * current_w) * ((yPosQuestion + spacing + buffer) // maxY), 
-                           yPosQuestion + buffer + (spacing % (maxY - (yPosQuestion + buffer))), 
-                           button_size, 
-                           button_size)
-            self.text_x = self.coords[0] + 1.5 * button_size
-            self.text_y = self.coords[1] - 0.1 * button_size
+                self.fontSize = base_medium_font
+                if questionnaireName == 'tellegen':
+                    scalar = 1.75
+                elif questionnaireName == 'launay':
+                    scalar = 1.4
+                elif questionnaireName == 'dissociative':
+                    scalar = 1.5
+                elif questionnaireName == 'sleepiness':
+                    scalar = 1.3
+                    self.fontSize = int(0.85 * base_medium_font)
+                elif questionnaireName == 'vhq':
+                    scalar = 1.4
+                elif "bias" in questionnaireName:
+                    scalar = 1.3
+                else:
+                    scalar = 1.5
+                spacing = scalar * i * self.fontSize
+                buffer = current_h // 20
+                maxY = (0.85 * current_h) - self.fontSize
+
+                button_size = int(0.015 * min(current_w, current_h))
+                button_size = max(button_size, self.fontSize)
+
+                self.coords = (
+                    (0.05 * current_w) + (0.45 * current_w) * ((yPosQuestion + spacing + buffer) // maxY),
+                    yPosQuestion + buffer + (spacing % (maxY - (yPosQuestion + buffer))),
+                    button_size,
+                    button_size,
+                )
+                self.text_x = self.coords[0] + 1.5 * button_size
+                self.text_y = self.coords[1] - 0.1 * button_size
             
         else: # creates the submit button so the user may submit their response
             self.fontSize = int(0.85 * base_medium_font)
@@ -84,6 +211,7 @@ class Button:
         
         self.color = WHITE
         self.text = text
+        self.questionnaireName = questionnaireName
         self.checkbox = pg.Rect(self.coords)
         self.checked = False # is the checkbox checked or not
         self.buttonType = buttonType # question option vs submit button
@@ -108,8 +236,70 @@ class Button:
             # Enhanced styling for option buttons - add black border
             pg.draw.rect(win, self.color, self.checkbox)
             pg.draw.rect(win, BLACK, self.checkbox, 2)  # Black border for option buttons
-            text_surface = pg.font.SysFont("times new roman", self.fontSize).render(self.text, True, BLACK)     
-            win.blit(text_surface, (self.text_x, self.text_y))
+
+            def _wrap_two_lines(font_obj: pg.font.Font, text: str, max_width: int):
+                words = text.split()
+                if not words:
+                    return [""]
+                lines = []
+                current = words[0]
+                for w in words[1:]:
+                    trial = f"{current} {w}"
+                    if font_obj.size(trial)[0] <= max_width:
+                        current = trial
+                    else:
+                        lines.append(current)
+                        current = w
+                        if len(lines) >= 2:
+                            break
+                if len(lines) < 2:
+                    lines.append(current)
+                return lines[:2]
+
+            # Default: single-line render
+            if self.questionnaireName != 'bais_c':
+                text_surface = pg.font.SysFont("times new roman", self.fontSize).render(self.text, True, BLACK)
+                win.blit(text_surface, (self.text_x, self.text_y))
+                return
+
+            # BAIS-C: wrap long anchors to max 2 lines, and shrink if needed.
+            current_w, current_h = _current_window_size(win)
+            right_col_x = int(0.05 * current_w + 0.45 * current_w)
+            column_buffer = int(0.03 * current_w)  # "little buffer" before right column
+            right_margin = int(0.95 * current_w)
+
+            # Detect if this option is in the left or right column by x-position.
+            in_left_col = self.coords[0] < right_col_x - 1
+            if in_left_col:
+                max_text_right = right_col_x - column_buffer
+            else:
+                max_text_right = right_margin
+
+            max_width = max(40, int(max_text_right - self.text_x))
+
+            font_size = int(self.fontSize)
+            min_font = 10
+            while font_size >= min_font:
+                font_obj = pg.font.SysFont("times new roman", font_size)
+                lines = _wrap_two_lines(font_obj, self.text, max_width)
+
+                # If it still overflows in 2 lines, shrink.
+                widest = max(font_obj.size(line)[0] for line in lines if line)
+                if widest <= max_width:
+                    line_h = font_obj.get_linesize()
+                    # Prefer not to overlap: keep the 2-line block reasonably compact.
+                    win.blit(font_obj.render(lines[0], True, BLACK), (self.text_x, self.text_y))
+                    if len(lines) > 1 and lines[1] and lines[1] != lines[0]:
+                        win.blit(font_obj.render(lines[1], True, BLACK), (self.text_x, self.text_y + int(0.9 * line_h)))
+                    return
+                font_size -= 1
+
+            # Fallback at min font
+            font_obj = pg.font.SysFont("times new roman", min_font)
+            lines = _wrap_two_lines(font_obj, self.text, max_width)
+            win.blit(font_obj.render(lines[0], True, BLACK), (self.text_x, self.text_y))
+            if len(lines) > 1 and lines[1] and lines[1] != lines[0]:
+                win.blit(font_obj.render(lines[1], True, BLACK), (self.text_x, self.text_y + int(0.9 * font_obj.get_linesize())))
 
     # handles button clicks
     def handleClick(self, buttons):
@@ -286,26 +476,30 @@ def tellegen(subjectNumber, win):
     submitButton = Button('submit', 'tellegen', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
 
+    # Precompute stable option positions (worst-case question height + max option count)
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('tellegen', win, yPos_fixed, max_options)
+
     # iterate over each question and display to user
     for i, question in enumerate(questions):
 
         response = None
 
         if i == 0:
+            pg.mouse.set_visible(False)
             multiLineMessage(telleganScaleText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
             pg.mouse.set_visible(True)
 
-        # draw the question and return how far down the screen the text goes
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        # draw the question
+        multiLineMessage(question[0], mediumFont, win)
 
         # create all of the options for this particular questions
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'tellegen', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'tellegen', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
             win.fill(backgroundColor)
@@ -371,7 +565,7 @@ def vhq(subjectNumber, win):
     questions.append([q5a, 'True', 'False'])
 
     # 5b
-    q5b = "When I had an imaginary playmate, I could actually hear their voice aloud."
+    q5b = "When I had an imaginary playmate, I could actually hear their voice aloud. If you do not have an imaginary playmate, then respond 'False'."
     questions.append([q5b, 'True', 'False'])
 
     # 6
@@ -415,21 +609,27 @@ def vhq(subjectNumber, win):
     submitButton = Button('submit', 'vhq', 'Submit', -1, 0)
     responses = []
     pg.mouse.set_visible(False)
+
+    # Precompute stable option positions
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('vhq', win, yPos_fixed, max_options)
+
     for i, question in enumerate(questions):
         response = None
 
         if i == 0:
-            pg.mouse.set_visible(True)
-            introText = "The following questions describe experiences some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' depending on whether or not you have experienced the situation, or if you have experienced an situation that is analagous to the one described."
+            pg.mouse.set_visible(False)
+            introText = "The following questions describe experiences that some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' depending on whether or not you have experienced the situation, OR if you have experienced a situation that is analagous to the situation described.\n\nPress the spacebar to begin."
             multiLineMessage(introText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
             pg.mouse.set_visible(True)
 
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        multiLineMessage(question[0], mediumFont, win)
         buttons = [submitButton]
-        for j, opt in enumerate(question[1:]):
-            buttons.append(Button('option', 'vhq', opt, j + 1, yPos))
+        for opt_i, opt in enumerate(question[1:]):
+            buttons.append(Button('option', 'vhq', opt, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response is None:
             win.fill(backgroundColor)
@@ -518,11 +718,15 @@ def launay_slade(subjectNumber, win):
     submitButton = Button('submit', 'launay', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
 
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('launay', win, yPos_fixed, max_options)
+
     # iterate over each question and display to user
     for i, question in enumerate(questions):
         
         if i == 0:
-            pg.mouse.set_visible(True)
+            pg.mouse.set_visible(False)
             multiLineMessage(launeyScaleText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
@@ -530,15 +734,13 @@ def launay_slade(subjectNumber, win):
 
         response = None
 
-        # draw the question and return how far down the screen the text goes
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        # draw the question
+        multiLineMessage(question[0], mediumFont, win)
 
         # create all of the options for this particular questions
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'launay', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'launay', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
 
@@ -590,20 +792,22 @@ def stanford_sleepiness_scale(sleepinessResponses, win, label=None):
     submitButton = Button('submit', 'launay', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
 
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('sleepiness', win, yPos_fixed, max_options)
+
     # iterate over each question and display to user
     for i, question in enumerate(questions):
         
         response = None
 
-        # draw the question and return how far down the screen the text goes
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        # draw the question
+        multiLineMessage(question[0], mediumFont, win)
 
         # create all of the options for this particular questions
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'sleepiness', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'sleepiness', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
 
@@ -645,7 +849,7 @@ def flow_state_scale(subjectNumber, win):
     # variables to hold all of the questions and their associated response options
     questions = []
 
-    dfs_instructions = 'Please answer the following questions in relation to your experience on general tasks. These questions relate to the thoughts and feelings you may experience while completing various tasks in your life. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic during your typical tasks, and then circle the number that best matches your experience.\n\n Press the spacebar to begin.'
+    dfs_instructions = 'Please answer the following questions in relation to your experience on general tasks. These questions relate to the thoughts and feelings you may experience while completing various tasks in your life. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic and then select the number that best matches your experience.\n\n Press the spacebar to begin.'
 
     responseOptions = ['1 - Strongly disagree', '2', '3 - Neither agree nor disagree', '4', '5 - Strongly agree']
 
@@ -679,6 +883,10 @@ def flow_state_scale(subjectNumber, win):
     submitButton = Button('submit', 'launay', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
 
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('launay', win, yPos_fixed, max_options)
+
     # iterate over each question and display to user
     for i, question in enumerate(questions):
         
@@ -691,15 +899,13 @@ def flow_state_scale(subjectNumber, win):
 
         response = None
 
-        # draw the question and return how far down the screen the text goes
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        # draw the question
+        multiLineMessage(question[0], mediumFont, win)
 
         # create all of the options for this particular questions
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'launay', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'launay', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
 
@@ -859,28 +1065,30 @@ def dissociative_experiences(subjectNumber, win):
     submitButton = Button('submit', 'dissociative', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
 
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('dissociative', win, yPos_fixed, max_options)
+
     # iterate over each question and display to user
     for i, question in enumerate(questions):
 
         # instructions
         if i == 0:
-            pg.mouse.set_visible(True)
+            pg.mouse.set_visible(False)
             multiLineMessage(dissociativeExperiencesText, mediumFont, win)
             pg.display.flip()
             waitKey(pg.K_SPACE)
             pg.mouse.set_visible(True)
 
-        # draw the question and return how far down the screen the text goes
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        # draw the question
+        multiLineMessage(question[0], mediumFont, win)
 
         response = None
 
         # create all of the options for this particular questions
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'dissociative', question_option, i - 1, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'dissociative', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
             win.fill(backgroundColor)
@@ -922,27 +1130,31 @@ def bais_v(subjectNumber, win):
 
     questions = []
 
-    bais_v_instructions = 'For the following questions please do the following: Read the item and consider whether you can imagine the described sound in your head. Then rate the vividness of the imagined sound in your head on a scale from 1 (no mental image) to 7 (as vivid as the actual sound).\n\nPress the spacebar to begin.'
+    bais_v_instructions = 'The following scale is designed to measure auditory imagery, or the way in which you "think about sounds in your head".\n\nFor the following items you are asked to do the following:\n\nRead the item and consider whether you think of an image of the described sound in your head.\n\nThen rate the the vividness of your image using the provided scale.\n\nIf no mental image is generated, give a rating of 1.\n\nPlease feel free to use all of the levels in the scale when selecting your ratings.\n\nPress the spacebar to begin.'
 
-    responseOptions = ['1 - No Imagined Sound', '2', '3', '4 - Somewhat Vivid', '5', '6', '7 - Extremely Vivid']
+    responseOptions = ['1 - No Image Present at All', '2', '3', '4 - Fairly Vivid', '5', '6', '7 - As Vivid As The Actual Sound']
 
-    questions.append(['For the first item, consider the beginning of the song “Happy Birthday.”\nThe sound of a trumpet beginning the piece.'] + responseOptions)
-    questions.append(['For the next item, consider ordering something over the phone.\nThe voice of an elderly clerk assisting you.'] + responseOptions)
-    questions.append(['For the next item, consider being at the beach.\nThe sound of the waves crashing against nearby rocks.'] + responseOptions)
-    questions.append(['For the next item, consider going to a dentist appointment.\nThe loud sound of the dentist’s drill.'] + responseOptions)
-    questions.append(['For the next item, consider being present at a jazz club.\nThe sound of a saxophone solo.'] + responseOptions)
-    questions.append(['For the next item, consider being at a live baseball game.\nThe cheer of the crowd as a player hits the ball.'] + responseOptions)
-    questions.append(['For the next item, consider attending a choir rehearsal.\nThe sound of an all-children’s choir singing the first verse of a song.'] + responseOptions)
-    questions.append(['For the next item, consider attending an orchestral performance of Beethoven’s Fifth.\nThe sound of the ensemble playing.'] + responseOptions)
-    questions.append(['For the next item, consider listening to a rain storm.\nThe sound of gentle rain.'] + responseOptions)
-    questions.append(['For the next item, consider attending classes.\nThe slow-paced voice of your English teacher.'] + responseOptions)
-    questions.append(['For the next item, consider seeing a live opera performance.\nThe voice of an opera singer in the middle of a verse.'] + responseOptions)
-    questions.append(['For the next item, consider attending a new tap-dance performance.\nThe sound of tap-shoes on the stage.'] + responseOptions)
-    questions.append(['For the next item, consider a kindergarten class.\nThe voice of the teacher reading a story to the children.'] + responseOptions)
-    questions.append(['For the next item, consider driving in a car.\nThe sound of an upbeat rock song on the radio.'] + responseOptions)
+    questions.append(['For the first item, consider the beginning of the song “Happy Birthday.”\n\nThe sound of a trumpet beginning the piece.'] + responseOptions)
+    questions.append(['For the next item, consider ordering something over the phone.\n\nThe voice of an elderly clerk assisting you.'] + responseOptions)
+    questions.append(['For the next item, consider being at the beach.\n\nThe sound of the waves crashing against nearby rocks.'] + responseOptions)
+    questions.append(['For the next item, consider going to a dentist appointment.\n\nThe loud sound of the dentist’s drill.'] + responseOptions)
+    questions.append(['For the next item, consider being present at a jazz club.\n\nThe sound of a saxophone solo.'] + responseOptions)
+    questions.append(['For the next item, consider being at a live baseball game.\n\nThe cheer of the crowd as a player hits the ball.'] + responseOptions)
+    questions.append(['For the next item, consider attending a choir rehearsal.\n\nThe sound of an all-children’s choir singing the first verse of a song.'] + responseOptions)
+    questions.append(['For the next item, consider attending an orchestral performance of Beethoven’s Fifth.\n\nThe sound of the ensemble playing.'] + responseOptions)
+    questions.append(['For the next item, consider listening to a rain storm.\n\nThe sound of gentle rain.'] + responseOptions)
+    questions.append(['For the next item, consider attending classes.\n\nThe slow-paced voice of your English teacher.'] + responseOptions)
+    questions.append(['For the next item, consider seeing a live opera performance.\n\nThe voice of an opera singer in the middle of a verse.'] + responseOptions)
+    questions.append(['For the next item, consider attending a new tap-dance performance.\n\nThe sound of tap-shoes on the stage.'] + responseOptions)
+    questions.append(['For the next item, consider a kindergarten class.\n\nThe voice of the teacher reading a story to the children.'] + responseOptions)
+    questions.append(['For the next item, consider driving in a car.\n\nThe sound of an upbeat rock song on the radio.'] + responseOptions)
 
     submitButton = Button('submit', 'bais_v', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
+
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('bais_v', win, yPos_fixed, max_options)
 
     for i, question in enumerate(questions):
 
@@ -954,13 +1166,11 @@ def bais_v(subjectNumber, win):
             pg.mouse.set_visible(True)
 
         response = None
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        multiLineMessage(question[0], mediumFont, win)
 
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'bais_v', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'bais_v', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
 
@@ -1000,27 +1210,32 @@ def bais_c(subjectNumber, win):
 
     questions = []
 
-    bais_c_instructions = 'For the following pairs of items you are asked to do the following: Read the first item (marked “a”) and consider whether you think of an image of the described sound in your head. Then read the second item (marked “b”) and consider how easily you could change your image of the first sound to that of the second sound and hold this image. Rate how easily you could make this change using the “Ease of Change Rating Scale.” If no images are generated, give a rating of 1. Please read “a” first and “b” second for each pair.\n\nPress the spacebar to begin.'
+    bais_c_instructions = 'The following scale is designed to measure auditory imagery, or the way in which you "think about sounds in your head".\n\nFor the following pairs of items you are asked to do the following:\n\nRead the first item (marked "a") and consider whether you think of an image of the described sound in your head.\n\nThen read the second item (marked "b") and consider how easily you could change your image of the first sound to that of the second sound and hold this image.\n\nRate how easily you could make this change using the provided scale.\n\nIf no mental images are generated, give a rating of 1. Please read "a" first and "b" second for each pair.\n\nIt may be necessary to cover up "b" so that you focus first on "a" for each pair.\n\nPlease feel free to use all of the levels in the scale when selecting your ratings.\n\nPress the spacebar to begin.'
 
-    responseOptions = ['1 - No Imagined Sound', '2', '3', '4 - Somewhat Vivid', '5', '6', '7 - Extremely Vivid']
 
-    questions.append(['For the first pair, consider attending a choir rehearsal.\na. The sound of an all-children’s choir singing the first verse of a song.\nb. An all-adults’ choir now sings the second verse of the song.'] + responseOptions)
-    questions.append(['For the next pair, consider being present at a jazz club.\na. The sound of a saxophone solo.\nb. The saxophone is now accompanied by a piano.'] + responseOptions)
-    questions.append(['For the next pair, consider listening to a rain storm.\na. The sound of gentle rain.\nb. The gentle rain turns into a violent thunderstorm.'] + responseOptions)
-    questions.append(['For the next pair, consider driving in a car.\na. The sound of an upbeat rock song on the radio.\nb. The song is now masked by the sound of the car coming to a screeching halt.'] + responseOptions)
-    questions.append(['For the next pair, consider ordering something over the phone.\na. The voice of an elderly clerk assisting you.\nb. The elderly clerk leaves and the voice of a younger clerk is now on the line.'] + responseOptions)
-    questions.append(['For the next pair, consider seeing a live opera performance.\na. The voice of an opera singer in the middle of a verse.\nb. The opera singer now reaches the end of the piece and holds the final note.'] + responseOptions)
-    questions.append(['For the next pair, consider going to a dentist appointment.\na. The loud sound of the dentist’s drill.\nb. The drill stops and you can now hear the soothing voice of the receptionist.'] + responseOptions)
-    questions.append(['For the next pair, consider the beginning of the song “Happy Birthday.”\na. The sound of a trumpet beginning the piece.\nb. The trumpet stops and a violin continues the piece.'] + responseOptions)
-    questions.append(['For the next pair, consider attending an orchestral performance of Beethoven’s Fifth.\na. The sound of the ensemble playing.\nb. The ensemble stops but the sound of a piano solo is present.'] + responseOptions)
-    questions.append(['For the next pair, consider attending a new tap-dance performance.\na. The sound of tap-shoes on the stage.\nb. The sound of the shoes speeds up and gets louder.'] + responseOptions)
-    questions.append(['For the next pair, consider being at a live baseball game.\na. The cheer of the crowd as a player hits the ball.\nb. Now the crowd boos as the fielder catches the ball.'] + responseOptions)
-    questions.append(['For the next pair, consider a kindergarten class.\na. The voice of the teacher reading a story to the children.\nb. The teacher stops reading for a minute to talk to another teacher.'] + responseOptions)
-    questions.append(['For the next pair, consider attending classes.\na. The slow-paced voice of your English teacher.\nb. The pace of the teacher’s voice gets faster at the end of class.'] + responseOptions)
-    questions.append(['For the next pair, consider being at the beach.\na. The sound of the waves crashing against nearby rocks.\nb. The waves are now drowned out by the loud sound of a boat’s horn out at sea.'] + responseOptions)
+    responseOptions = ['1 - No Image Present At All', '2', '3', '4 - Could Change the Image but With Effort ', '5', '6', '7 - Extremely Easy to Change the Image']
+
+    questions.append(['For the first pair, consider attending a choir rehearsal.\n\na. The sound of an all-children’s choir singing the first verse of a song.\nb. An all-adults’ choir now sings the second verse of the song.'] + responseOptions)
+    questions.append(['For the next pair, consider being present at a jazz club.\n\na. The sound of a saxophone solo.\nb. The saxophone is now accompanied by a piano.'] + responseOptions)
+    questions.append(['For the next pair, consider listening to a rain storm.\n\na. The sound of gentle rain.\nb. The gentle rain turns into a violent thunderstorm.'] + responseOptions)
+    questions.append(['For the next pair, consider driving in a car.\n\na. The sound of an upbeat rock song on the radio.\nb. The song is now masked by the sound of the car coming to a screeching halt.'] + responseOptions)
+    questions.append(['For the next pair, consider ordering something over the phone.\n\na. The voice of an elderly clerk assisting you.\nb. The elderly clerk leaves and the voice of a younger clerk is now on the line.'] + responseOptions)
+    questions.append(['For the next pair, consider seeing a live opera performance.\n\na. The voice of an opera singer in the middle of a verse.\nb. The opera singer now reaches the end of the piece and holds the final note.'] + responseOptions)
+    questions.append(['For the next pair, consider going to a dentist appointment.\n\na. The loud sound of the dentist’s drill.\nb. The drill stops and you can now hear the soothing voice of the receptionist.'] + responseOptions)
+    questions.append(['For the next pair, consider the beginning of the song “Happy Birthday.”\n\na. The sound of a trumpet beginning the piece.\nb. The trumpet stops and a violin continues the piece.'] + responseOptions)
+    questions.append(['For the next pair, consider attending an orchestral performance of Beethoven’s Fifth.\n\na. The sound of the ensemble playing.\nb. The ensemble stops but the sound of a piano solo is present.'] + responseOptions)
+    questions.append(['For the next pair, consider attending a new tap-dance performance.\n\na. The sound of tap-shoes on the stage.\nb. The sound of the shoes speeds up and gets louder.'] + responseOptions)
+    questions.append(['For the next pair, consider being at a live baseball game.\n\na. The cheer of the crowd as a player hits the ball.\nb. Now the crowd boos as the fielder catches the ball.'] + responseOptions)
+    questions.append(['For the next pair, consider a kindergarten class.\n\na. The voice of the teacher reading a story to the children.\nb. The teacher stops reading for a minute to talk to another teacher.'] + responseOptions)
+    questions.append(['For the next pair, consider attending classes.\n\na. The slow-paced voice of your English teacher.\nb. The pace of the teacher’s voice gets faster at the end of class.'] + responseOptions)
+    questions.append(['For the next pair, consider being at the beach.\n\na. The sound of the waves crashing against nearby rocks.\nb. The waves are now drowned out by the loud sound of a boat’s horn out at sea.'] + responseOptions)
 
     submitButton = Button('submit', 'bais_c', 'Submit', -1, 0) # submit button
     responses = [] # for storing answers to each question
+
+    max_options = max((len(q) - 1) for q in questions)
+    yPos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots('bais_c', win, yPos_fixed, max_options)
 
     for i, question in enumerate(questions):
 
@@ -1032,13 +1247,11 @@ def bais_c(subjectNumber, win):
             pg.mouse.set_visible(True)
 
         response = None
-        yPos = multiLineMessage(question[0], mediumFont, win)
+        multiLineMessage(question[0], mediumFont, win)
 
         buttons = [submitButton]
-        for i, question_option in enumerate(question):
-            if i == 0:
-                continue
-            buttons.append(Button('option', 'bais_c', question_option, i, yPos))
+        for opt_i, question_option in enumerate(question[1:]):
+            buttons.append(Button('option', 'bais_c', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
 
@@ -1077,6 +1290,7 @@ def main(subjectNumber, win):
 
     tellegen(subjectNumber, win)
     vhq(subjectNumber, win)
+    flow_state_scale(subjectNumber, win)
     launay_slade(subjectNumber, win)
     dissociative_experiences(subjectNumber, win)
     bais_v(subjectNumber, win)

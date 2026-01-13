@@ -11,7 +11,7 @@ number_of_sona_credits = '1.5'
 
 # get screen size for each monitor in the syste m
 winfo = get_monitors()
-if len(winfo) > 10:
+if len(winfo) > 1:
     winX = winfo[1].x
     winY = winfo[1].y
     winWidth = winfo[1].width
@@ -51,7 +51,7 @@ screenCenter = ((winWidth // 2) - (stimSize // 2), (winHeight // 2) - (stimSize 
 MAX_PLAYS = 3  # Maximum number of times a participant can play an audio stimulus
 
 # Periodic reminder settings
-REMINDER_INTERVAL = 20 # Show reminder every N trials (change this number to control frequency)
+REMINDER_INTERVAL = 2 # Show reminder every N trials (change this number to control frequency)
 REMINDER_MAX_PLAYS = 5  # Maximum plays allowed in the reminder screen
 
 
@@ -142,8 +142,7 @@ explanationText_4 = 'Here is what you need to do: \n\
 Remember, even if you are unsure, as long as you are actively trying, your initial impression might still guide you to the right answer.\n\n\
 Important Notes:\n\
     - If you have any questions during the task or decide to stop, please inform the experimenter immediately.\n\
-    - We know how difficult this task is and really appreciate your valuable help and thank you for contributing to this study.\n\n\
-Press the spacebar to continue.'
+    - We know how difficult this task is and really appreciate your valuable help and thank you for contributing to this study.'
 
 explanationText_5 = 'What to keep in mind:\n\
     - For audio samples where the word “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\
@@ -151,9 +150,7 @@ explanationText_5 = 'What to keep in mind:\n\
     - It is okay to feel uncertain; the goal is to make your best guess based on what you sense in the audio sample.\n\n\
 Good luck, and remember that if you are actively trying, it is okay to trust your gut-feelings! \n\n\
 Please try your hardest — remember, the better you do, the better your chances of winning the raffle. \n\n\
-If you have any questions please ask the experimenter now.\n\n\
-You will be asked to respond to a single question and then you will be presented with the target "Wall". You will be allowed to replay it as many times as you like before you begin, and you will be allowed to listen to it again at various points throughout the experiment.\n\n\
-The main portion of experiment will begin immediately after you listen to the target "Wall".'
+If you have any questions please ask the experimenter now.'
 
 showExamplesText = ''
 # 'Welcome to this fascinating visual perception task! As part of this experiment, you will encounter a series of images filled with a mix of black and white dots. Within half of these images, a black "H" will be subtly embedded. Your challenge is to identify whether the "H" is present in each image. This task will test the limits of your perception, urging you to trust the subtle hints and the instincts that might suggest the presence of the "H".\n\n\
@@ -180,18 +177,20 @@ IMAGINED_SENTENCE_TO_IMAGINE = 'The Picture Hung On The Wall'
 
 fullSentenceBlockInstructionsText = 'In this block, you will hear a full sentence with the final word replaced by an audio sample that may or may not contain the word "Wall".\n\n\
 Half of the sentences will end with an audio sample that contains the word "Wall" and half will not.\n\n\
-You will first hear the full target sentence ending with "Wall" and a couple of examples so that you know what to listen for during this block of the experiment.\n\n\
 Press "Y" if you believe the word "Wall" is present in the audio sample at the end of the sentence.\n\
 Press "N" if you believe it is absent from the audio sample at the end of the sentence.\n\n\
+You will now hear the full sentence ending with "Wall", an example where "Wall" is present, and an example where "Wall" is absent.\n\n\
 Press the spacebar to continue.'
 
 imaginedSentenceBlockInstructionsText = f'In this block, you will IMAGINE the following sentence while listening to the audio samples:\n\n\
 {IMAGINED_SENTENCE_TO_IMAGINE}\n\n\
 Half of the samples contain the word "Wall" and half do not.\n\n\
-You will first hear the target "Wall" and a couple examples so that you know what to listen for.\n\n\
 On every trial try to imagine the sentence in your head and click to play the audio sample at the same time that you would be imagining the word ""Wall".\n\n\
+Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.\n\n\
+It is important that you imagine the sentence EVERY TIME before playing the audio sample.\n\n\
 Press "Y" if you believe the word "Wall" is present.\n\
 Press "N" if you believe it is absent.\n\n\
+You will now hear the actual "Wall" you are searching for, an example where "Wall" is present, and an example where "Wall" is absent.\n\n\
 Press the spacebar to continue.'
 
 # Trial-by-trial instruction text (shown on every trial screen)
@@ -204,8 +203,10 @@ trialInstructions_full_sentence = [
 ]
 
 trialInstructions_imagined_sentence = [
-    "On each trial, imagine this sentence:",
+    "Imagine this sentence:",
     IMAGINED_SENTENCE_TO_IMAGINE,
+    "Imagine the sentence EVERY TIME before playing the audio sample.",
+    "Do NOT say the sentence out loud, under your breath, or mouth it."
     "",
     "Click 'Play Audio' at the moment you would imagine the word 'Wall'.",
     "Press 'Y' if you believe 'Wall' is present.",
@@ -224,7 +225,7 @@ telleganScaleText = 'Please respond True or False to the following questions.\n\
 launeyScaleText = 'Please indicate the degree to which the following statements describe you on a scale from 1 (not at all like me) to 8 (extremely like me).\n\nPress the spacebar to begin.'
 dissociativeExperiencesText = 'This questionnaire consists of twenty-eight questions about experiences that you may have in your daily life. We are interested in how often you have these experiences. It is important, however, that your answers show how often these experiences happen to you when you are not under the influence of alcohol or drugs.\n\nTo answer the questions, please determine to what degree the type of experience described in the question applies to you and click the box corresponding to what percentage of the time you have the experience.\n\n Press the spacebar to begin.'
 
-flow_state_instructions = 'Please respond to this questionnaire about your experience so far. \n\nPress the spacebar to continue.'
+flow_state_instructions = 'Please respond to this questionnaire about your experience so far. \n\nPress the spacebar to begin.'
 studyInfoText = f'Study Number: IRB24-1770\nStudy Title: Superstitious Perception\nResearcher(s): Shannon Heald\n\n\
 Description: We are researchers at the University of Chicago doing a research study about the limits of human perception. You will be asked to engage with different types of stimuli (such as images and sounds) and indicate whether or not you believe a particular target is present within them. You will also be asked to fill out a couple of questionnaires.\n\n\
 Depending on your performance, we may reach out to you for follow up studies. If we reach out to you again, your participation is entirely voluntary, and you will be compensated for any further experiments in which you are a participant.\n\n\
