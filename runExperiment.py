@@ -130,7 +130,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, audio_eng
             start_ns = None
             
             # end experiment if we have shown all of the audio stimuli
-            if remaining_stimuli == 0:
+            if remaining_stimuli <= 149:#== 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
@@ -276,6 +276,11 @@ def main():
             subjectExplanation_changes = getSubjectInfo('selfReflect_changes', win)
             with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_changes_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
                 f.write(subjectExplanation_changes)
+            
+            if block_name == 'imagined_sentence':
+                imagination_rule_following = getSubjectInfo('imagination_rule_following', win)
+                with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'imagination_rule_following_{subjectNumber}.txt'), mode = 'w') as f:
+                    f.write(imagination_rule_following)
             stanford_sleepiness_scale(sleepiness_responses, win, label="before break")
             pg.mouse.set_visible(False)
         

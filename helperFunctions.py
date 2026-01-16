@@ -485,7 +485,7 @@ def getSubjectInfo(requestType, win):
 
     response = "" 
     prompter = requestType
-    if requestType == 'selfReflect_changes' or requestType == 'selfReflect_explanation':
+    if requestType in ['selfReflect_changes', 'selfReflect_explanation', 'imagination_rule_following']:
         prompter = 'Response'
     exit = False
 
@@ -532,6 +532,8 @@ def getSubjectInfo(requestType, win):
             text = 'During the previous block, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n'
         elif requestType == 'selfReflect_changes':
             text = 'Did your methodology change or evolve over the course of the previous block?\n'
+        elif requestType == 'imagination_rule_following':
+            text = 'During this block did you imagine the sentence before playing the simuli and then click "Play Audio" at the moment you would have imagined the word "Wall"? Please begin your response with either "Yes." or "No." You may include additional information after typing "Yes." or "No."\n'
         elif requestType == 'Additional Comments':
             text = 'Please provide any additional comments you may have about the experiment below. If you have no additional comments, press Enter or Return to continue.\n'
         else:
