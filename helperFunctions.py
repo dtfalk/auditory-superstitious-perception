@@ -4,11 +4,12 @@ import io
 import csv
 from random import choice
 from scipy.stats import norm
+from scipy.signal import resample_poly
 import pygame as pg
 import pytz
 from datetime import datetime
 import wave
-from random import choice
+import numpy as np
 from constants import *
 
 
@@ -153,6 +154,63 @@ class Button:
             if button.checked:
                 button.checked = False
                 button.color = WHITE
+
+# Audio resampling helpers
+def load_wav_mono_int16(path: str):
+    with wave.open(path, "rb") as wf:
+        ch = wf.getnchannels()
+        fs = wf.getframerate()
+        sw = wf.getsampwidth()
+        n = wf.getnframes()
+        raw = wf.readframes(n)
+
+    if sw != 2:
+        raise ValueError(f"{path}: expected 16-bit PCM WAV, got sampwidth={sw}")
+
+    x = np.frombuffer(raw, dtype=np.int16)
+    if ch == 2:
+        x = x.reshape(-1, 2).mean(axis=1).astype(np.int16)
+    elif ch != 1:
+        raise ValueError(f"{path}: expected mono or stereo, got {ch} channels")
+
+    return x, fs
+
+def resample_int16(x16: np.ndarray, fs_in: int, fs_out: int) -> np.ndarray:
+    if fs_in == fs_out:
+        return x16
+
+    x = x16.astype(np.float32) / 32768.0
+    g = np.gcd(fs_in, fs_out)
+    y = resample_poly(x, fs_out // g, fs_in // g)
+    y = np.clip(y, -1.0, 1.0)
+    return (y * 32767.0).astype(np.int16)
+
+
+# Cached WAV loading (prevents disk I/O during trials)
+_PCM_CACHE: dict[tuple[str, int], np.ndarray] = {}
+_CONCAT_CACHE: dict[tuple[str, str, bool, int, int], np.ndarray] = {}
+
+
+def get_pcm16_mono(path: str, fs_out: int) -> np.ndarray:
+    """Load a WAV once, convert to mono int16, resample to fs_out, and cache."""
+    key = (os.path.abspath(path), int(fs_out))
+    pcm = _PCM_CACHE.get(key)
+    if pcm is not None:
+        return pcm
+
+    x16, fs_in = load_wav_mono_int16(path)
+    y16 = resample_int16(x16, fs_in, fs_out)
+    _PCM_CACHE[key] = y16
+    return y16
+
+
+def preload_pcm16_mono(paths: list[str], fs_out: int):
+    """Best-effort preload of multiple WAV paths into the cache."""
+    for p in paths:
+        if not p:
+            continue
+        if os.path.exists(p):
+            get_pcm16_mono(p, fs_out)
 
 # This block of code handles lab streaming layer functionality
 # =======================================================================
@@ -468,7 +526,7 @@ def getSubjectInfo(requestType, win):
         if exit == True:
             break
         win.fill(backgroundColor) 
-        if requestType == 'signature':
+        if requestType == 'Signature':
             text = "Please type your name to confirm that you consent to participate in this study. Press Enter or Return to submit.\n\n"
         elif requestType == 'selfReflect_explanation':
             text = 'During the previous block, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n'
@@ -630,6 +688,38 @@ def getStimuli():
     return full_sentence_targets, full_sentence_distractors, imagined_sentence_targets, imagined_sentence_distractors 
 
 
+def preload_experiment_audio(fs_out: int = 44100):
+    """Preload all known experiment audio into the PCM cache (no disk I/O during trials)."""
+    audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
+
+    full_sentence_targets, full_sentence_distractors, imagined_sentence_targets, imagined_sentence_distractors = getStimuli()
+
+    extras = [
+        os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav'),
+        os.path.join(audio_stimuli_dir, 'fullsentence.wav'),
+        os.path.join(audio_stimuli_dir, 'targetwall.wav'),
+        os.path.join(audio_stimuli_dir, 'target_example.wav'),
+        os.path.join(audio_stimuli_dir, 'distractor_example.wav'),
+        os.path.join(audio_stimuli_dir, '60s_background_noise.wav'),
+    ]
+
+    preload_pcm16_mono(
+        full_sentence_targets
+        + full_sentence_distractors
+        + imagined_sentence_targets
+        + imagined_sentence_distractors
+        + extras,
+        fs_out,
+    )
+
+    # Precompute prefix+stimulus concatenations for the full-sentence block.
+    prefix = os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav')
+    if os.path.exists(prefix):
+        for stim in full_sentence_targets + full_sentence_distractors:
+            if os.path.exists(stim):
+                concatenate_wavs(prefix, stim, add_gap=False, fs_out=fs_out)
+
+
 
 # This code is for showing various message screens (e.g. experiment explanation)
 # and functions that display images
@@ -637,7 +727,7 @@ def getStimuli():
 # =======================================================================
 
 
-def showBlockExamples(win, block_name: str):
+def showBlockExamples(win, block_name: str, audio_engine):
     """Show the 'actual / target / distractor' example buttons for a given block."""
     pg.mouse.set_visible(True)
 
@@ -668,14 +758,15 @@ def showBlockExamples(win, block_name: str):
     if prefix_wav and not os.path.exists(prefix_wav):
         raise FileNotFoundError(f"Missing {prefix_wav}")
 
+    fs_out = int(audio_engine.fs)
     if prefix_wav:
-        target_sound = concatenate_wavs(prefix_wav, target_example_path, add_gap=False)
-        distractor_sound = concatenate_wavs(prefix_wav, distractor_example_path, add_gap=False)
+        target_sound = concatenate_wavs(prefix_wav, target_example_path, add_gap=False, fs_out=fs_out)
+        distractor_sound = concatenate_wavs(prefix_wav, distractor_example_path, add_gap=False, fs_out=fs_out)
+        actual_target_sound = get_pcm16_mono(actual_target_path, fs_out)
     else:
-        target_sound = pg.mixer.Sound(target_example_path)
-        distractor_sound = pg.mixer.Sound(distractor_example_path)
-
-    actual_target_sound = pg.mixer.Sound(actual_target_path)
+        target_sound = get_pcm16_mono(target_example_path, fs_out)
+        distractor_sound = get_pcm16_mono(distractor_example_path, fs_out)
+        actual_target_sound = get_pcm16_mono(actual_target_path, fs_out)
 
     last_audio_start = 0
     audio_duration = 0
@@ -809,16 +900,13 @@ def showBlockExamples(win, block_name: str):
 
                 if can_play:
                     if sample_target_button_rect.collidepoint(mouse_pos):
-                        target_sound.play()
-                        audio_duration = int(target_sound.get_length() * 1000)
+                        audio_duration = playAudioStimulus(audio_engine, target_sound)
                         last_audio_start = current_time
                     elif actual_target_button_rect.collidepoint(mouse_pos):
-                        actual_target_sound.play()
-                        audio_duration = int(actual_target_sound.get_length() * 1000)
+                        audio_duration = playAudioStimulus(audio_engine, actual_target_sound)
                         last_audio_start = current_time
                     elif sample_distractor_button_rect.collidepoint(mouse_pos):
-                        distractor_sound.play()
-                        audio_duration = int(distractor_sound.get_length() * 1000)
+                        audio_duration = playAudioStimulus(audio_engine, distractor_sound)
                         last_audio_start = current_time
 
                 if continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
@@ -826,11 +914,14 @@ def showBlockExamples(win, block_name: str):
 
 
 # shows the example audio stimuli (kept for backward-compatibility with the original intro)
-def showExamples(win, text = ''):
-    showBlockExamples(win, block_name='full_sentence')
+def showExamples(win, text = '', audio_engine=None):
+    # Backward-compatible wrapper (defaults to full-sentence examples)
+    if audio_engine is None:
+        raise RuntimeError("showExamples() now requires audio_engine")
+    showBlockExamples(win, block_name='full_sentence', audio_engine=audio_engine)
 
 
-def showBlockInstructions(win, block_name: str):
+def showBlockInstructions(win, block_name: str, audio_engine):
     """One block-specific instruction screen + the example-audio screen."""
     if block_name == 'imagined_sentence':
         text = imaginedSentenceBlockInstructionsText
@@ -842,7 +933,7 @@ def showBlockInstructions(win, block_name: str):
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    showBlockExamples(win, block_name)
+    showBlockExamples(win, block_name, audio_engine)
     pg.mouse.set_visible(False)
 
 
@@ -1157,37 +1248,27 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
 # =======================================================================
 # =======================================================================
 
-def concatenate_wavs(prefix_path, stimulus_path, add_gap=True, gap_ms=120):
-    with wave.open(prefix_path, 'rb') as w1, wave.open(stimulus_path, 'rb') as w2:
-        p1, p2 = w1.getparams(), w2.getparams()
+def concatenate_wavs(prefix_path, stimulus_path, add_gap=True, gap_ms=120, fs_out: int = 44100):
+    """Concatenate two WAVs as cached mono int16 arrays (optionally with a silence gap)."""
+    key = (os.path.abspath(prefix_path), os.path.abspath(stimulus_path), bool(add_gap), int(gap_ms), int(fs_out))
+    cached = _CONCAT_CACHE.get(key)
+    if cached is not None:
+        return cached
 
-        # Compare actual format fields (not nframes)
-        fmt1 = (p1.nchannels, p1.sampwidth, p1.framerate, p1.comptype)
-        fmt2 = (p2.nchannels, p2.sampwidth, p2.framerate, p2.comptype)
-        if fmt1 != fmt2:
-            raise ValueError(f"WAV format mismatch: {fmt1} vs {fmt2}")
+    prefix_pcm = get_pcm16_mono(prefix_path, fs_out)
+    stim_pcm = get_pcm16_mono(stimulus_path, fs_out)
 
-        prefix_frames = w1.readframes(p1.nframes)
-        stim_frames = w2.readframes(p2.nframes)
+    if add_gap and gap_ms > 0:
+        gap_samples = int(round(fs_out * (gap_ms / 1000.0)))
+        silence = np.zeros((gap_samples,), dtype=np.int16)
+        out = np.concatenate([prefix_pcm, silence, stim_pcm])
+    else:
+        out = np.concatenate([prefix_pcm, stim_pcm])
 
-        if add_gap and gap_ms > 0:
-            # Compute silence length in frames and bytes
-            gap_frames = int(round(p1.framerate * (gap_ms / 1000.0)))
-            bytes_per_frame = p1.sampwidth * p1.nchannels
-            silence = b'\x00' * (gap_frames * bytes_per_frame)
-            frames = prefix_frames + silence + stim_frames
-        else:
-            frames = prefix_frames + stim_frames
-
-        buffer = io.BytesIO()
-        with wave.open(buffer, 'wb') as out:
-            out.setparams(p1)  # preserve original format
-            out.writeframes(frames)
-
-        buffer.seek(0)
-        return pg.mixer.Sound(buffer)
+    _CONCAT_CACHE[key] = out
+    return out
     
-def selectStimulus(targets, distractors, prefix_wav):
+def selectStimulus(targets, distractors, prefix_wav, fs_out: int = 44100):
     # select a stimulus and remove it from its associated list
     masterList = targets + distractors
     stimulus = choice(masterList)
@@ -1199,11 +1280,11 @@ def selectStimulus(targets, distractors, prefix_wav):
         stimulusType = 'distractor'
         distractors.remove(stimulus)
 
-    # If prefix_wav is provided, concatenate; otherwise play stimulus as-is.
+    # If prefix_wav is provided, concatenate; otherwise use stimulus as-is.
     if prefix_wav:
-        sound = concatenate_wavs(prefix_wav, stimulus)
+        sound = concatenate_wavs(prefix_wav, stimulus, add_gap=False, fs_out=fs_out)
     else:
-        sound = pg.mixer.Sound(stimulus)
+        sound = get_pcm16_mono(stimulus, fs_out)
 
     # get filename without extension
     filename = os.path.splitext(os.path.basename(stimulus))[0]
@@ -1213,12 +1294,13 @@ def selectStimulus(targets, distractors, prefix_wav):
 
 # Audio playback and replay functionality
 # =======================================================================
-
-def playAudioStimulus(sound):
-    """Play an audio stimulus and return the duration"""
-    sound.play()
-    # Get the length of the audio file in milliseconds
-    duration_ms = int(sound.get_length() * 1000)
+def wait_ms(ms: int):
+    end = pg.time.get_ticks() + ms
+    while pg.time.get_ticks() < end:
+        pg.event.pump()
+        pg.time.delay(2)
+def playAudioStimulus(audio_engine, pcm16):
+    duration_ms = audio_engine.play(pcm16)
     return duration_ms
 
 def createPlayButton(win):
@@ -1312,7 +1394,7 @@ def drawAudioInterface(win, play_count, max_plays, audio_played=False, can_play=
     return button_rect
 
 
-def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, block_name):
+def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, block_name, audio_engine):
     """
     Show the target familiarization screen where users can play the target sound as many times as they want.
     
@@ -1332,12 +1414,13 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
             raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-    actual_target_sound = pg.mixer.Sound(actual_target_path)
+    fs_out = int(audio_engine.fs)
+    actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
     
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
-    audio_duration = int(actual_target_sound.get_length() * 1000)
+    audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
     
     # Create play button (larger for this screen)
     button_width = int(0.2 * winWidth)  # 20% of screen width
@@ -1429,7 +1512,7 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                 audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
 
                 if play_button_rect.collidepoint(mouse_pos) and can_play:
-                    actual_target_sound.play()
+                    audio_duration = playAudioStimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
                 elif continue_button_rect.collidepoint(mouse_pos) and play_count > 0 and not audio_still_playing:
@@ -1473,7 +1556,7 @@ def saveTargetFamiliarizationData(subjectNumber, saveFolder, session_number, pla
         print(f"Error saving target familiarization data: {e}")
 
 
-def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_name):
+def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_name, audio_engine):
     """
     Show a periodic reminder screen that appears every N trials to let users replay the target.
     Similar to target familiarization but with limited plays.
@@ -1495,12 +1578,13 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-    actual_target_sound = pg.mixer.Sound(actual_target_path)
+    fs_out = int(audio_engine.fs)
+    actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
     
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
-    audio_duration = int(actual_target_sound.get_length() * 1000)
+    audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
     
     # Create play button (larger for this screen)
     button_width = int(0.2 * winWidth)  # 20% of screen width
@@ -1605,7 +1689,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
                 audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
 
                 if play_button_rect.collidepoint(mouse_pos) and can_click:
-                    actual_target_sound.play()
+                    audio_duration = playAudioStimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
                 elif continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
@@ -1650,7 +1734,7 @@ def savePeriodicReminderData(subjectNumber, saveFolder, trial_number, play_count
         print(f"Error saving periodic reminder data: {e}")
 
 
-def showAudioLevelTest(win):
+def showAudioLevelTest(win, audio_engine):
     """
     Show audio level testing screen for the experimenter to normalize audio levels.
     Allows playing white noise and target wall sounds as many times as needed.
@@ -1664,19 +1748,16 @@ def showAudioLevelTest(win):
     # Load audio files
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
     
-    # Load target wall sound
+    fs_out = int(audio_engine.fs)
+
     target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-    target_sound = pg.mixer.Sound(target_path)
-    
-    # Load 60-second background noise for continuous playback
     background_noise_path = os.path.join(audio_stimuli_dir, '60s_background_noise.wav')
-    background_noise_sound = pg.mixer.Sound(background_noise_path)
-    
-    # Track audio states for both streams
+
+    target_pcm = get_pcm16_mono(target_path, fs_out)
+    background_pcm = get_pcm16_mono(background_noise_path, fs_out)
+
     background_playing = False
-    background_channel = None
     target_playing = False
-    target_channel = None
     
     while True:
         current_w, current_h = _current_window_size(win)
@@ -1773,34 +1854,26 @@ def showAudioLevelTest(win):
                 # Handle background noise start/stop
                 if background_button_rect.collidepoint(mouse_pos):
                     if background_playing:
-                        # Stop background noise
-                        if background_channel:
-                            background_channel.stop()
+                        audio_engine.stop_loop('background')
                         background_playing = False
-                        background_channel = None
                     else:
-                        # Start background noise (loop indefinitely)
-                        background_channel = background_noise_sound.play(loops=-1)
+                        audio_engine.start_loop('background', background_pcm)
                         background_playing = True
                 
                 # Handle target wall start/stop
                 elif target_button_rect.collidepoint(mouse_pos):
                     if target_playing:
-                        # Stop target wall
-                        if target_channel:
-                            target_channel.stop()
+                        audio_engine.stop_loop('target')
                         target_playing = False
-                        target_channel = None
                     else:
-                        # Start target wall (loop indefinitely)
-                        target_channel = target_sound.play(loops=-1)
+                        audio_engine.start_loop('target', target_pcm)
                         target_playing = True
                 
                 elif continue_button_rect.collidepoint(mouse_pos):
                     # Stop all audio if playing when exiting
-                    if background_playing and background_channel:
-                        background_channel.stop()
-                    if target_playing and target_channel:
-                        target_channel.stop()
+                    if background_playing:
+                        audio_engine.stop_loop('background')
+                    if target_playing:
+                        audio_engine.stop_loop('target')
                     return
 

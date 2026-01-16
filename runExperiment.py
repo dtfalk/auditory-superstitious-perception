@@ -1,28 +1,32 @@
+import os
+import sys
+import csv
 import pygame as pg
+import sounddevice as sd
 from random import shuffle
-from time import sleep
+import time
 from helperFunctions import *
 from questionnaires import main as questions
-from questionnaires import flow_state_scale, stanford_sleepiness_scale
+from questionnaires import stanford_sleepiness_scale
+from audio_engine import AudioEngine
 
-
-def showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name):
+def showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name, audio_engine):
     """
     Wrapper function to show target familiarization and increment session count.
     Returns the updated session count.
     """
     familiarization_session_count += 1
-    showTargetFamiliarization(win, subjectNumber, saveFolder, session_number=familiarization_session_count, block_name=block_name)
+    showTargetFamiliarization(win, subjectNumber, saveFolder, session_number=familiarization_session_count, block_name=block_name, audio_engine=audio_engine)
     return familiarization_session_count
 
 
 # The experiment itself
-def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
+def experiment(subjectNumber, block, targets, distractors, saveFolder, audio_engine, win):
 
     # various variables for handling the game
     pg.event.clear()
     reset = False
-    startTime = pg.time.get_ticks()
+    start_ns: int | None = None
     play_count = 0  # Changed from replay_count to play_count
     audio_played = False  # Track if audio has been played at least once
     last_audio_start = 0  # Track when audio last started playing
@@ -36,7 +40,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
         prefix_wav = os.path.join(os.path.dirname(__file__), "audio_stimuli", "fullsentenceminuswall.wav")
     else:
         prefix_wav = None
-    sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav)
+    sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav, fs_out=audio_engine.fs)
     
     # Don't auto-play the initial audio stimulus - let user press button
 
@@ -80,13 +84,16 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
                             response = 'distractor'
 
                         # saves user's response (including play count)
-                        responseTime = pg.time.get_ticks() - startTime
+                        if start_ns is None:
+                            responseTime = float('nan')
+                        else:
+                            responseTime = (time.perf_counter_ns() - start_ns) / 1e6  # ms
                         recordResponse(subjectNumber, block, stimulusNumber, stimulusType, response, responseTime, saveFolder, play_count)
                         
                         # 2 second rest between each stimulus
                         win.fill(backgroundColor)
                         pg.display.flip()
-                        sleep(2)
+                        wait_ms(2000)
                         pg.event.clear()
             
             # Handle mouse clicks for play button
@@ -98,13 +105,12 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
                 can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
                 
                 if button_rect.collidepoint(mouse_pos) and play_count < MAX_PLAYS and can_play:
-                    audio_duration = playAudioStimulus(sound)
+                    audio_duration = playAudioStimulus(audio_engine, sound)
                     last_audio_start = current_time
+                    if play_count == 0:
+                        start_ns = time.perf_counter_ns()
                     play_count += 1
                     audio_played = True
-                    # Reset timer when audio is first played
-                    if play_count == 1:
-                        startTime = pg.time.get_ticks()
         # end of a trial
         if reset:
             # Increment trial number
@@ -113,7 +119,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
             # Check if we should show periodic reminder (but not after the last trial)
             remaining_stimuli = len(targets) + len(distractors)
             if (trial_number % REMINDER_INTERVAL == 0) and (remaining_stimuli > 0):
-                showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block)
+                showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block, audio_engine)
 
             # update the restart variables 
             reset = False
@@ -121,27 +127,73 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, win):
             audio_played = False  # Reset audio played flag
             last_audio_start = 0  # Reset audio timing
             audio_duration = 0  # Reset audio duration
+            start_ns = None
             
             # end experiment if we have shown all of the audio stimuli
             if remaining_stimuli == 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
-            sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav)
+            sound, stimulusNumber, stimulusType = selectStimulus(targets, distractors, prefix_wav, fs_out=audio_engine.fs)
 
             # clear events so spamming keys doesn't mess things up
             pg.event.clear()
 
 
+def pick_output_device(prefer_substrings=("Speakers", "Realtek")):
+    devs = sd.query_devices()
+    hostapis = sd.query_hostapis()
+    wasapi_ids = [i for i, api in enumerate(hostapis) if "WASAPI" in api["name"].upper()]
+    wasapi_id = wasapi_ids[0] if wasapi_ids else None
+
+    # 1) Try PortAudio default output first
+    default_out = sd.default.device[1]
+    if default_out is not None and default_out >= 0:
+        d = devs[default_out]
+        if d["max_output_channels"] > 0:
+            return default_out, d["name"]
+
+    # 2) Prefer common speaker strings on WASAPI devices
+    if wasapi_id is not None:
+        candidates = [(i, d["name"]) for i, d in enumerate(devs)
+                      if d["max_output_channels"] > 0 and d["hostapi"] == wasapi_id]
+        for substr in prefer_substrings:
+            for i, name in candidates:
+                if substr.lower() in name.lower():
+                    return i, name
+        if candidates:
+            return candidates[0]
+
+    # 3) Final fallback: first output device
+    for i, d in enumerate(devs):
+        if d["max_output_channels"] > 0:
+            return i, d["name"]
+
+    raise RuntimeError("No output devices found")
+
+
+def set_high_priority():
+    if sys.platform != "win32":
+        return
+    try:
+        import psutil
+        p = psutil.Process(os.getpid())
+        p.nice(psutil.HIGH_PRIORITY_CLASS)
+    except Exception as e:
+        print("Could not set HIGH priority:", e)
+
 # handles the overall experiment flow
 def main():
-
+    set_high_priority()
     # Initializing Pygame
     # =================================================================
 
     # == Initiate pygame and collect user information ==
     pg.init()
-    pg.mixer.init()
+    AUDIO_DEVICE, dev_name = pick_output_device()
+    print("Using output:", AUDIO_DEVICE, dev_name)
+
+    audio_engine = AudioEngine(device_index=AUDIO_DEVICE, samplerate=44100, blocksize=256)
 
     # == Set window ==
     win = pg.display.set_mode((winWidth, winHeight), pg.FULLSCREEN)
@@ -155,7 +207,8 @@ def main():
     # ============================================================================================
 
     # Audio level testing for experimenter
-    showAudioLevelTest(win)
+    preload_experiment_audio(fs_out=audio_engine.fs)
+    showAudioLevelTest(win, audio_engine)
 
     # get user info and where to store their results
     experimenterName = getSubjectInfo('experimenter name', win)
@@ -197,11 +250,11 @@ def main():
     for i, (block_name, (targets, distractors)) in enumerate(zip(block_names, blocks)):
 
         # Block-specific instructions + examples
-        showBlockInstructions(win, block_name)
+        showBlockInstructions(win, block_name, audio_engine)
         stanford_sleepiness_scale(sleepiness_responses, win)
 
         # Show target familiarization before each block
-        familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name)
+        familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name, audio_engine)
 
         # display stimuli
         pg.mouse.set_visible(True)
@@ -211,6 +264,7 @@ def main():
             targets = targets, 
             distractors = distractors, 
             saveFolder = saveFolder, 
+            audio_engine = audio_engine,
             win = win)   
         
         # After first block (round one), add Stanford Sleepiness Scale labeled as "before break"
@@ -254,6 +308,7 @@ def main():
 
     # calculate overall data and write to a user-specific data file
     writeSummaryData(subjectNumber, block_names, saveFolder)
+    audio_engine.close()
 
 if __name__ == '__main__':
     main()

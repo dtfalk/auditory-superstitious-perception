@@ -11,7 +11,7 @@ number_of_sona_credits = '1.5'
 
 # get screen size for each monitor in the syste m
 winfo = get_monitors()
-if len(winfo) > 1:
+if len(winfo) > 10:
     winX = winfo[1].x
     winY = winfo[1].y
     winWidth = winfo[1].width
@@ -51,7 +51,7 @@ screenCenter = ((winWidth // 2) - (stimSize // 2), (winHeight // 2) - (stimSize 
 MAX_PLAYS = 3  # Maximum number of times a participant can play an audio stimulus
 
 # Periodic reminder settings
-REMINDER_INTERVAL = 2 # Show reminder every N trials (change this number to control frequency)
+REMINDER_INTERVAL = 15 # Show reminder every N trials (change this number to control frequency)
 REMINDER_MAX_PLAYS = 5  # Maximum plays allowed in the reminder screen
 
 
@@ -206,8 +206,7 @@ trialInstructions_imagined_sentence = [
     "Imagine this sentence:",
     IMAGINED_SENTENCE_TO_IMAGINE,
     "Imagine the sentence EVERY TIME before playing the audio sample.",
-    "Do NOT say the sentence out loud, under your breath, or mouth it."
-    "",
+    "Do NOT say the sentence out loud, under your breath, or mouth it.",
     "Click 'Play Audio' at the moment you would imagine the word 'Wall'.",
     "Press 'Y' if you believe 'Wall' is present.",
     "Press 'N' if you believe 'Wall' is absent.",
