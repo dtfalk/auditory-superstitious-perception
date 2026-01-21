@@ -196,7 +196,7 @@ Press the spacebar to continue.'
 imaginedSentenceBlockInstructionsText = f'In this block, you will IMAGINE the following sentence while listening to the audio samples:\n\n\
 "{IMAGINED_SENTENCE_TO_IMAGINE}"\n\n\
 Half of the samples contain the word “Wall” and half do not.\n\n\
-On every trial try to imagine the sentence in your head and click "Play Audio" at the same time that you would be imagining the word "“Wall”.\n\n\
+On every trial try to imagine the sentence in your head and click "Play Audio" at the same time that you would be imagining the word “Wall”.\n\n\
 Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.\n\n\
 It is important that you imagine the sentence EVERY TIME before playing the audio sample.\n\n\
 You will now hear example audio samples where “Wall” is present and example audio samples where “Wall” is absent.\n\n\

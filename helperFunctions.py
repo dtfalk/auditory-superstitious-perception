@@ -1488,10 +1488,7 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
 
         audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
-        
-        # Display instructions
-        if block_name == "full_sentence":
-            instructions = [
+        instructions = [
                 "Target Sound Familiarization",
                 "",
                 "This is the TARGET sound you should listen for in the upcoming block.",
@@ -1499,17 +1496,27 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                 "Click 'Play Target Sound' to hear the sound.",
                 "Click 'Continue' after you have finished all required plays.",
             ]
-        else:
-            instructions = [
-                "Target Sound Familiarization",
-                "",
-                "This is the TARGET sound you should listen for in the upcoming block.",
-                f"You must play it {required_plays} time(s) before you can continue.",
-                "Imagine the sentence EVERY TIME before playing the audio sample.",
-                "Do NOT say the sentence out loud, under your breath, or mouth it.",
-                "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' after you have finished all required plays.",
-            ]
+        # # Display instructions
+        # if block_name == "full_sentence":
+        #     instructions = [
+        #         "Target Sound Familiarization",
+        #         "",
+        #         "This is the TARGET sound you should listen for in the upcoming block.",
+        #         f"You must play it {required_plays} time(s) before you can continue.",
+        #         "Click 'Play Target Sound' to hear the sound.",
+        #         "Click 'Continue' after you have finished all required plays.",
+        #     ]
+        # else:
+        #     instructions = [
+        #         "Target Sound Familiarization",
+        #         "",
+        #         "This is the TARGET sound you should listen for in the upcoming block.",
+        #         f"You must play it {required_plays} time(s) before you can continue.",
+        #         "Imagine the sentence EVERY TIME before playing the audio sample.",
+        #         "Do NOT say the sentence out loud, under your breath, or mouth it.",
+        #         "Click 'Play Target Sound' to hear the sound.",
+        #         "Click 'Continue' after you have finished all required plays.",
+        #     ]
         
         y_pos = winHeight // 8
         font = pg.font.SysFont("times new roman", mediumFont)
@@ -1675,6 +1682,17 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
         
+        instructions = [
+                "Target Sound Reminder",
+                "",
+                f"Here's a reminder of the \"Wall\" that you are searching for.",
+                "Click 'Play Target Sound' to hear the sound.",
+                f"You must play it {required_plays} times before you can continue.",
+                "Click 'Continue' after you have finished all required plays.",
+                "",
+                f"Plays: {play_count}/{required_plays}",
+            ]
+            
         # Display instructions
         if block_name == "full_sentence":
             instructions = [

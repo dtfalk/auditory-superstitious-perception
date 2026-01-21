@@ -131,7 +131,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, audio_eng
             start_ns = None
             
             # end experiment if we have shown all of the audio stimuli
-            if remaining_stimuli <= 149:#== 0:
+            if remaining_stimuli == 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
