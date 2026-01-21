@@ -15,3 +15,10 @@ Hi all! Here is a little explainer for running the Experiment
 
 3) Running the code
     1) Type "python runExperiment.py" into the terminal and press enter. The code should now be running! If it doesn't pop up, sometimes you have to click the python icon in the bottom right of the taskbar in the bottom middle of the screen and then it will pop up.
+
+    If Windows tries to route audio to an HDMI/monitor device while you're developing:
+    - Use the dev flag: "python runExperiment.py --dev-speakers"
+    - Or set an environment variable once in that terminal: "$env:ASP_DEV_SPEAKERS=1" then run "python runExperiment.py"
+
+    Advanced:
+    - You can hard-pick a PortAudio device index (printed by sounddevice) with: "python runExperiment.py --audio-device 12"

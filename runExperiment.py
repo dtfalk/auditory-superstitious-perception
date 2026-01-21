@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import argparse
 import pygame as pg
 import sounddevice as sd
 from random import shuffle
@@ -140,23 +141,37 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, audio_eng
             pg.event.clear()
 
 
-def pick_output_device(prefer_substrings=("Speakers", "Realtek")):
+def pick_output_device(
+    prefer_substrings=("Speakers", "Realtek"),
+    exclude_substrings=(),
+    skip_default: bool = False,
+):
     devs = sd.query_devices()
     hostapis = sd.query_hostapis()
     wasapi_ids = [i for i, api in enumerate(hostapis) if "WASAPI" in api["name"].upper()]
     wasapi_id = wasapi_ids[0] if wasapi_ids else None
 
+    def _name_ok(name: str) -> bool:
+        lname = name.lower()
+        for bad in exclude_substrings:
+            if bad and bad.lower() in lname:
+                return False
+        return True
+
     # 1) Try PortAudio default output first
-    default_out = sd.default.device[1]
-    if default_out is not None and default_out >= 0:
-        d = devs[default_out]
-        if d["max_output_channels"] > 0:
-            return default_out, d["name"]
+    if not skip_default:
+        default_out = sd.default.device[1]
+        if default_out is not None and default_out >= 0:
+            d = devs[default_out]
+            if d["max_output_channels"] > 0 and _name_ok(d["name"]):
+                return default_out, d["name"]
 
     # 2) Prefer common speaker strings on WASAPI devices
     if wasapi_id is not None:
-        candidates = [(i, d["name"]) for i, d in enumerate(devs)
-                      if d["max_output_channels"] > 0 and d["hostapi"] == wasapi_id]
+        candidates = [
+            (i, d["name"]) for i, d in enumerate(devs)
+            if d["max_output_channels"] > 0 and d["hostapi"] == wasapi_id and _name_ok(d["name"])
+        ]
         for substr in prefer_substrings:
             for i, name in candidates:
                 if substr.lower() in name.lower():
@@ -166,7 +181,7 @@ def pick_output_device(prefer_substrings=("Speakers", "Realtek")):
 
     # 3) Final fallback: first output device
     for i, d in enumerate(devs):
-        if d["max_output_channels"] > 0:
+        if d["max_output_channels"] > 0 and _name_ok(d["name"]):
             return i, d["name"]
 
     raise RuntimeError("No output devices found")
@@ -184,13 +199,42 @@ def set_high_priority():
 
 # handles the overall experiment flow
 def main():
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument(
+        "--audio-device",
+        type=int,
+        default=None,
+        help="Force a specific sounddevice output device index (overrides all auto-selection).",
+    )
+    parser.add_argument(
+        "--dev-speakers",
+        action="store_true",
+        help="Dev mode: bypass system default (often HDMI) and prefer built-in laptop speakers.",
+    )
+    args = parser.parse_args()
+
     set_high_priority()
     # Initializing Pygame
     # =================================================================
 
     # == Initiate pygame and collect user information ==
     pg.init()
-    AUDIO_DEVICE, dev_name = pick_output_device()
+
+    env_dev = os.getenv("ASP_DEV_SPEAKERS", "").strip().lower() in {"1", "true", "yes", "on"}
+    dev_speakers = bool(args.dev_speakers or env_dev)
+
+    if args.audio_device is not None:
+        AUDIO_DEVICE = int(args.audio_device)
+        dev_name = sd.query_devices(AUDIO_DEVICE)["name"]
+    elif dev_speakers:
+        AUDIO_DEVICE, dev_name = pick_output_device(
+            prefer_substrings=("Speakers", "Realtek", "Internal"),
+            exclude_substrings=("HDMI", "NVIDIA", "Intel", "Display", "Monitor"),
+            skip_default=True,
+        )
+    else:
+        AUDIO_DEVICE, dev_name = pick_output_device()
+
     print("Using output:", AUDIO_DEVICE, dev_name)
 
     audio_engine = AudioEngine(device_index=AUDIO_DEVICE, samplerate=44100, blocksize=256)
