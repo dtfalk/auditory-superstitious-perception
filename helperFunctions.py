@@ -728,191 +728,136 @@ def preload_experiment_audio(fs_out: int = 44100):
 # =======================================================================
 # =======================================================================
 
+def showBlockExamples(win, audio_engine):
+    """Show example targets then distractors as two separate screens.
 
-def showBlockExamples(win, block_name: str, audio_engine):
-    """Show the 'actual / target / distractor' example buttons for a given block."""
+    For each screen: load the five example WAVs from `audio_stimuli/examples/targets` or
+    `audio_stimuli/examples/distractors`, display them as five buttons in order, and allow
+    the subject to play each audio exactly once in sequence. Only the next-to-play button is
+    active (normal color); all others are greyed out. A Continue button is grey until all
+    examples on that screen have been played.
+    """
     pg.mouse.set_visible(True)
 
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
+    examples_targets_dir = os.path.join(audio_stimuli_dir, 'examples', 'targets')
+    examples_distractors_dir = os.path.join(audio_stimuli_dir, 'examples', 'distractors')
 
-    if block_name == 'imagined_sentence':
-        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
-        prefix_wav = None
-    else:
-        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-        prefix_wav = os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav')
-    
-    target_example_path = os.path.join(audio_stimuli_dir, 'target_example.wav')
-    distractor_example_path = os.path.join(audio_stimuli_dir, 'distractor_example.wav')
+    def _run_examples_screen(win, files_dir, header_text, instruction_lines, playable_color):
+        # gather files (expect numeric filenames like '123.wav') sorted by name
+        if not os.path.isdir(files_dir):
+            raise FileNotFoundError(f"Examples folder not found: {files_dir}")
+        files = sorted([p for p in os.listdir(files_dir) if p.lower().endswith('.wav')])
+        if len(files) == 0:
+            raise FileNotFoundError(f"No example wavs found in {files_dir}")
 
-    # Fallbacks (keeps the screen working even if folders are empty)
-    if not target_example_path:
-        target_example_path = os.path.join(audio_stimuli_dir, 'target_example.wav')
-    if not distractor_example_path:
-        distractor_example_path = os.path.join(audio_stimuli_dir, 'distractor_example.wav')
+        # Load PCM for each file
+        fs_out = int(audio_engine.fs)
+        pcms = []
+        for fname in files:
+            path = os.path.join(files_dir, fname)
+            pcms.append(get_pcm16_mono(path, fs_out))
 
-    if not os.path.exists(actual_target_path):
-        raise FileNotFoundError(f"Missing {actual_target_path}")
-    if not os.path.exists(target_example_path):
-        raise FileNotFoundError(f"Missing {target_example_path}")
-    if not os.path.exists(distractor_example_path):
-        raise FileNotFoundError(f"Missing {distractor_example_path}")
-    if prefix_wav and not os.path.exists(prefix_wav):
-        raise FileNotFoundError(f"Missing {prefix_wav}")
+        total = len(pcms)
+        play_index = 0
+        last_audio_start = 0
+        audio_duration = 0
 
-    fs_out = int(audio_engine.fs)
-    if prefix_wav:
-        target_sound = concatenate_wavs(prefix_wav, target_example_path, add_gap=False, fs_out=fs_out)
-        distractor_sound = concatenate_wavs(prefix_wav, distractor_example_path, add_gap=False, fs_out=fs_out)
-        actual_target_sound = get_pcm16_mono(actual_target_path, fs_out)
-    else:
-        target_sound = get_pcm16_mono(target_example_path, fs_out)
-        distractor_sound = get_pcm16_mono(distractor_example_path, fs_out)
-        actual_target_sound = get_pcm16_mono(actual_target_path, fs_out)
+        while True:
+            current_w, current_h = _current_window_size(win)
+            win.fill(backgroundColor)
 
-    last_audio_start = 0
-    audio_duration = 0
+            # render header + instructions
+            font = pg.font.SysFont('times new roman', max(20, current_h // 30))
+            y_pos = current_h // 10
+            multi = [header_text, ''] + instruction_lines
+            for line in multi:
+                y_pos = _blit_wrapped_centered(font=font, win=win, text=line, center_x=current_w // 2, y_pos=y_pos, max_width=int(0.9 * current_w), color=BLACK)
+                y_pos += 6
 
-    header = "Audio Examples"
-    if block_name == 'imagined_sentence':
-        header = "Audio Examples (Imagined Sentence Block)"
-    else:
-        header = "Audio Examples (Full Sentence Block)"
+            # layout buttons horizontally
+            button_width = int(0.14 * current_w)
+            button_height = int(0.08 * current_h)
+            spacing = int((current_w - (button_width * total)) / (total + 1))
+            button_y = int(y_pos + 0.05 * (current_h - y_pos))
 
-    while True:
-        current_w, current_h = _current_window_size(win)
+            button_rects = []
+            for i in range(total):
+                x = spacing + i * (button_width + spacing)
+                rect = pg.Rect(x, button_y, button_width, button_height)
+                button_rects.append(rect)
 
-        def _render_text_fit(text: str, rect: pg.Rect, color, max_font_size: int):
-            pad_x = max(6, int(0.06 * rect.width))
-            pad_y = max(4, int(0.20 * rect.height))
-            size = max_font_size
-            while size >= 10:
-                font_local = pg.font.SysFont("times new roman", size)
-                surf = font_local.render(text, True, color)
-                if surf.get_width() <= rect.width - pad_x and surf.get_height() <= rect.height - pad_y:
-                    return surf
-                size -= 1
-            return pg.font.SysFont("times new roman", 10).render(text, True, color)
+            # continue button
+            continue_w = int(0.18 * current_w)
+            continue_h = int(0.06 * current_h)
+            continue_rect = pg.Rect((current_w - continue_w) // 2, button_y + button_height + int(0.06 * current_h), continue_w, continue_h)
 
-        button_width = int(0.15 * current_w)
-        button_height = int(0.06 * current_h)
+            # draw buttons
+            for i, rect in enumerate(button_rects):
+                if i == play_index:
+                    color = playable_color
+                    text_color = WHITE
+                else:
+                    color = GRAY
+                    text_color = BLACK
+                pg.draw.rect(win, color, rect)
+                pg.draw.rect(win, BLACK, rect, 2)
+                label = f"Example {i+1}"
+                lab = pg.font.SysFont('times new roman', max(14, current_h // 40)).render(label, True, text_color)
+                win.blit(lab, lab.get_rect(center=rect.center))
 
-        win.fill(backgroundColor)
-        if block_name == 'full_sentence':
-            instructions = [
-                header,
-                "",
-                "Click the buttons below to hear examples:",
-                "Green: Sentence WITH \"Wall\"    Blue: The actual \"Wall\"    Red: Sentence WITHOUT \"Wall\"",
-                "The blue button plays the the sentence with the ACTUAL \"Wall\" you should listen for.",
-                "When you are ready to proceed, press the continue button."
-            ]
-        else:
-            instructions = [
-                header,
-                "",
-                "Click the buttons below to hear examples:",
-                "Green: Sample WITH \"Wall\"    Blue: Actual \"Wall\"    Red: Sample WITHOUT \"Wall\"",
-                "The blue button plays the ACTUAL \"Wall\" you should listen for.",
-                "Please imagine the sentence in your head and play the sound at the moment you would imagine the word 'Wall'.",
-                "Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.",
-                "When you are ready to proceed, press the continue button."
-            ]
-        y_pos = current_h // 7
-        font = pg.font.SysFont("times new roman", max(22, current_h // 28))
-        paragraph_step = max(28, current_h // 20)
-        wrapped_step = max(22, font.get_linesize())
-        max_text_width = int(0.90 * current_w)
-        for instruction in instructions:
-            if not instruction:
-                y_pos += paragraph_step
-                continue
-            before = y_pos
-            y_pos = _blit_wrapped_centered(
-                win,
-                font,
-                instruction,
-                center_x=current_w // 2,
-                y_pos=y_pos,
-                max_width=max_text_width,
-                color=BLACK,
-                line_step=wrapped_step,
-            )
-            # Add some extra spacing between instruction "paragraphs".
-            if y_pos == before:
-                y_pos += paragraph_step
-            else:
-                y_pos += max(0, paragraph_step - wrapped_step)
+            # continue button state
+            all_played = (play_index >= total)
+            cont_color = GREEN if all_played else GRAY
+            cont_text_color = BLACK if all_played else WHITE
+            pg.draw.rect(win, cont_color, continue_rect)
+            pg.draw.rect(win, BLACK, continue_rect, 2)
+            cont_label = pg.font.SysFont('times new roman', max(16, current_h // 36)).render('Continue', True, cont_text_color)
+            win.blit(cont_label, cont_label.get_rect(center=continue_rect.center))
 
-        current_time = pg.time.get_ticks()
-        time_since_last_play = current_time - last_audio_start
-        can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
+            # plays used counter
+            counter_font = pg.font.SysFont('times new roman', max(14, current_h // 50))
+            counter_surf = counter_font.render(f"Plays: {min(play_index, total)}/{total}", True, BLACK)
+            win.blit(counter_surf, (10, 10))
 
-        button_y = int(y_pos + 0.10 * (current_h - y_pos)) - button_height // 2
+            pg.display.flip()
 
-        sample_target_button_rect = pg.Rect(current_w // 6 - button_width // 2, button_y, button_width, button_height)
-        actual_target_button_rect = pg.Rect(current_w // 2 - button_width // 2, button_y, button_width, button_height)
-        sample_distractor_button_rect = pg.Rect(5 * current_w // 6 - button_width // 2, button_y, button_width, button_height)
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        pg.quit(); sys.exit()
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    mouse = pg.mouse.get_pos()
+                    current_time = pg.time.get_ticks()
+                    time_since_last = current_time - last_audio_start
+                    audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
 
-        continue_button_width = int(0.12 * current_w)
-        continue_button_height = int(0.05 * current_h)
-        continue_y = int(y_pos + 0.50 * (current_h - y_pos)) - continue_button_height // 2
-        continue_button_rect = pg.Rect(
-            current_w // 2 - continue_button_width // 2,
-            continue_y,
-            continue_button_width,
-            continue_button_height
-        )
+                    # If continue clicked and all played, return
+                    if continue_rect.collidepoint(mouse) and all_played and not audio_still_playing:
+                        return
 
-        pg.draw.rect(win, GREEN, sample_target_button_rect)
-        pg.draw.rect(win, BLUE, actual_target_button_rect)
-        pg.draw.rect(win, RED, sample_distractor_button_rect)
-        pg.draw.rect(win, [255, 165, 0], continue_button_rect)
-
-        pg.draw.rect(win, BLACK, sample_target_button_rect, 3)
-        pg.draw.rect(win, BLACK, actual_target_button_rect, 3)
-        pg.draw.rect(win, BLACK, sample_distractor_button_rect, 3)
-        pg.draw.rect(win, BLACK, continue_button_rect, 3)
-
-        max_label_size = max(14, current_h // 40)
-        sample_target_text = _render_text_fit("Sample WITH \"Wall\"", sample_target_button_rect, WHITE, max_label_size)
-        actual_target_text = _render_text_fit("ACTUAL \"Wall\"", actual_target_button_rect, WHITE, max_label_size)
-        sample_distractor_text = _render_text_fit("Sample WITHOUT \"Wall\"", sample_distractor_button_rect, WHITE, max_label_size)
-        continue_text = _render_text_fit("Continue", continue_button_rect, BLACK, max_label_size)
-
-        win.blit(sample_target_text, sample_target_text.get_rect(center=sample_target_button_rect.center))
-        win.blit(actual_target_text, actual_target_text.get_rect(center=actual_target_button_rect.center))
-        win.blit(sample_distractor_text, sample_distractor_text.get_rect(center=sample_distractor_button_rect.center))
-        win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
-
-        pg.display.flip()
-
-        for event in pg.event.get():
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_ESCAPE:
-                    pg.quit()
-                    sys.exit()
-            elif event.type == pg.MOUSEBUTTONDOWN:
-                mouse_pos = pg.mouse.get_pos()
-                current_time = pg.time.get_ticks()
-                time_since_last_play = current_time - last_audio_start
-                can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 500)
-
-                audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
-
-                if can_play:
-                    if sample_target_button_rect.collidepoint(mouse_pos):
-                        audio_duration = playAudioStimulus(audio_engine, target_sound)
+                    # If next button clicked and not playing, play it
+                    if play_index < total and button_rects[play_index].collidepoint(mouse) and not audio_still_playing:
+                        audio_duration = playAudioStimulus(audio_engine, pcms[play_index])
                         last_audio_start = current_time
-                    elif actual_target_button_rect.collidepoint(mouse_pos):
-                        audio_duration = playAudioStimulus(audio_engine, actual_target_sound)
-                        last_audio_start = current_time
-                    elif sample_distractor_button_rect.collidepoint(mouse_pos):
-                        audio_duration = playAudioStimulus(audio_engine, distractor_sound)
-                        last_audio_start = current_time
+                        play_index += 1
 
-                if continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
-                    return
+            # loop continues until return
+
+    # run targets then distractors
+    header_t = 'Target Examples'
+    instr_t = [
+        'These stimuli contain the actual target. You may listen to each example once.',
+        'Only the highlighted button can be played next; others are greyed out.'
+    ]
+    header_d = 'Distractor Examples'
+    instr_d = [
+        'These stimuli are distractors (do NOT contain the target). You may listen to each example once.',
+        'Only the highlighted button can be played next; others are greyed out.'
+    ]
+
+    _run_examples_screen(win, examples_targets_dir, header_t, instr_t, BLUE)
+    _run_examples_screen(win, examples_distractors_dir, header_d, instr_d, BLUE)
 
 
 # shows the example audio stimuli (kept for backward-compatibility with the original intro)
@@ -920,7 +865,7 @@ def showExamples(win, text = '', audio_engine=None):
     # Backward-compatible wrapper (defaults to full-sentence examples)
     if audio_engine is None:
         raise RuntimeError("showExamples() now requires audio_engine")
-    showBlockExamples(win, block_name='full_sentence', audio_engine=audio_engine)
+    showBlockExamples(win, audio_engine=audio_engine)
 
 
 def showBlockInstructions(win, block_name: str, audio_engine):
@@ -935,8 +880,17 @@ def showBlockInstructions(win, block_name: str, audio_engine):
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    showBlockExamples(win, block_name, audio_engine)
+    showBlockExamples(win, audio_engine)
     pg.mouse.set_visible(False)
+
+
+def showPreTrialQuickResponseScreen(win):
+    """Instruction screen shown immediately before the first trial of each block."""
+    pg.mouse.set_visible(False)
+    win.fill(backgroundColor)
+    multiLineMessage(preTrialQuickResponseText, mediumFont, win)
+    pg.display.flip()
+    waitKey(pg.K_SPACE)
 
 
 # explains the experiment to the subject
@@ -1398,7 +1352,8 @@ def drawAudioInterface(win, play_count, max_plays, audio_played=False, can_play=
 
 def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, block_name, audio_engine):
     """
-    Show the target familiarization screen where users can play the target sound as many times as they want.
+    Show the target familiarization screen.
+    Participants must play the target sound a fixed number of times before they can continue.
     
     Args:
         win: pygame window
@@ -1410,15 +1365,16 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     
     # Load the block-appropriate target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
+    
+    # Both blocks do the same thing but they were previously different that is why an if/else exists here
     if block_name == 'imagined_sentence':
-        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
-        if not os.path.exists(actual_target_path):
-            raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
+        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
     actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
     
+    required_plays = int(FAMILIARIZATION_MAX_PLAYS)
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
@@ -1439,6 +1395,9 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
         current_time = pg.time.get_ticks()
         time_since_last_play = current_time - last_audio_start
         can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 250)
+
+        audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
+        continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
         
         # Display instructions
         if block_name == "full_sentence":
@@ -1446,20 +1405,20 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                 "Target Sound Familiarization",
                 "",
                 "This is the TARGET sound you should listen for in the upcoming block.",
-                "You can play it as much as you want to become familiar with it.",
+                f"You must play it {required_plays} time(s) before you can continue.",
                 "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' when you're ready to start the block.",
+                "Click 'Continue' after you have finished all required plays.",
             ]
         else:
             instructions = [
                 "Target Sound Familiarization",
                 "",
                 "This is the TARGET sound you should listen for in the upcoming block.",
-                "You can play it as much as you want to become familiar with it.",
+                f"You must play it {required_plays} time(s) before you can continue.",
                 "Imagine the sentence EVERY TIME before playing the audio sample.",
                 "Do NOT say the sentence out loud, under your breath, or mouth it.",
                 "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' when you're ready to start the block.",
+                "Click 'Continue' after you have finished all required plays.",
             ]
         
         y_pos = winHeight // 8
@@ -1479,25 +1438,44 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
         play_button_rect = pg.Rect((winWidth - button_width) // 2, play_y, button_width, button_height)
         continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, cont_y, continue_button_width, continue_button_height)
         
-        play_button_color = BLUE
-        play_text_color = WHITE
-        play_text_content = "Play Target Sound"
+        can_click_play = can_play and (play_count < required_plays)
+
+        if can_click_play:
+            play_button_color = BLUE
+            play_text_color = WHITE
+            play_text_content = "Play Target Sound"
+        elif play_count >= required_plays:
+            play_button_color = GRAY
+            play_text_color = BLACK
+            play_text_content = "Max Plays Reached"
+        else:
+            play_button_color = [c//2 for c in BLUE]
+            play_text_color = GRAY
+            play_text_content = "Play Target Sound"
         
         pg.draw.rect(win, play_button_color, play_button_rect)
         pg.draw.rect(win, BLACK, play_button_rect, 3)
         
-        # Draw continue button (green when ready)
-        continue_color = GREEN if play_count > 0 else GRAY
+        # Draw continue button (green only after all required plays)
+        continue_color = GREEN if continue_enabled else GRAY
         pg.draw.rect(win, continue_color, continue_button_rect)
         pg.draw.rect(win, BLACK, continue_button_rect, 3)
         
         # Button labels
         font = pg.font.SysFont("times new roman", smallFont)
         play_text = font.render(play_text_content, True, play_text_color)
-        continue_text = font.render("Continue", True, BLACK if play_count > 0 else WHITE)
+        continue_text = font.render("Continue", True, BLACK if continue_enabled else WHITE)
         
         win.blit(play_text, play_text.get_rect(center=play_button_rect.center))
         win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
+
+        # Progress indicator
+        counter_font = pg.font.SysFont("times new roman", max(18, winHeight // 35))
+        counter_surface = counter_font.render(f"Plays used: {play_count}/{required_plays}", True, BLACK)
+        counter_y = play_button_rect.top - int(0.03 * winHeight)
+        if counter_y < int(0.02 * winHeight):
+            counter_y = int(0.02 * winHeight)
+        win.blit(counter_surface, counter_surface.get_rect(center=(winWidth // 2, counter_y)))
         
         pg.display.flip()
         
@@ -1513,11 +1491,11 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                 time_since_last_play = current_time - last_audio_start
                 audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
 
-                if play_button_rect.collidepoint(mouse_pos) and can_play:
+                if play_button_rect.collidepoint(mouse_pos) and can_click_play:
                     audio_duration = playAudioStimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
-                elif continue_button_rect.collidepoint(mouse_pos) and play_count > 0 and not audio_still_playing:
+                elif continue_button_rect.collidepoint(mouse_pos) and (play_count >= required_plays) and not audio_still_playing:
                     # Save data and return
                     saveTargetFamiliarizationData(subjectNumber, saveFolder, session_number, play_count, block_name)
                     return
@@ -1574,15 +1552,15 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     
     # Load the block-appropriate target sound
     audio_stimuli_dir = os.path.join(os.path.dirname(__file__), 'audio_stimuli')
+    # Both blocks do the same thing but they were previously different that is why an if/else exists here
     if block_name == 'imagined_sentence':
-        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
-        if not os.path.exists(actual_target_path):
-            raise FileNotFoundError(f"Missing {actual_target_path}. Put your imagined-block familiarization file at audio_stimuli\\targetwall.wav")
+        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
     actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
     
+    required_plays = int(REMINDER_MAX_PLAYS)
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
@@ -1603,6 +1581,9 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         current_time = pg.time.get_ticks()
         time_since_last_play = current_time - last_audio_start
         can_play = (last_audio_start == 0) or (time_since_last_play >= audio_duration + 350)
+
+        audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
+        continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
         
         # Display instructions
         if block_name == "full_sentence":
@@ -1611,9 +1592,10 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
                 "",
                 f"Here's a reminder of the \"Wall\" that you are searching for.",
                 "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' when you're ready to proceed.",
+                f"You must play it {required_plays} times before you can continue.",
+                "Click 'Continue' after you have finished all required plays.",
                 "",
-                f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
+                f"Plays used: {play_count}/{required_plays}",
             ]
         else:
             instructions = [
@@ -1623,9 +1605,10 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
                 "Imagine the sentence EVERY TIME before playing the audio sample.",
                 "Do NOT say the sentence out loud, under your breath, or mouth it.",
                 "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' when you're ready to proceed.",
+                f"You must play it {required_plays} times before you can continue.",
+                "Click 'Continue' after you have finished all required plays.",
                 "",
-                f"Times played: {play_count}/{REMINDER_MAX_PLAYS}",
+                f"Plays used: {play_count}/{required_plays}",
             ]
         
         y_pos = winHeight // 8
@@ -1639,12 +1622,12 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             y_pos += mediumFont
         
         # Draw play button with timing consideration and max plays limit
-        can_click = can_play and (play_count < REMINDER_MAX_PLAYS)
+        can_click = can_play and (play_count < required_plays)
         
         if can_click:
             play_button_color = BLUE
             play_text_color = WHITE
-        elif play_count >= REMINDER_MAX_PLAYS:
+        elif play_count >= required_plays:
             play_button_color = GRAY
             play_text_color = BLACK
         else:  # waiting for audio to finish
@@ -1660,19 +1643,20 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         pg.draw.rect(win, play_button_color, play_button_rect)
         pg.draw.rect(win, BLACK, play_button_rect, 3)
         
-        # Draw continue button (always available)
-        pg.draw.rect(win, GREEN, continue_button_rect)
+        # Draw continue button (only available after all required plays)
+        continue_color = GREEN if continue_enabled else GRAY
+        pg.draw.rect(win, continue_color, continue_button_rect)
         pg.draw.rect(win, BLACK, continue_button_rect, 3)
         
         # Button labels
         font = pg.font.SysFont("times new roman", smallFont)
-        if play_count >= REMINDER_MAX_PLAYS:
+        if play_count >= required_plays:
             play_text_content = "Max Plays Reached"
         else:
             play_text_content = "Play Target Sound"
         
         play_text = font.render(play_text_content, True, play_text_color)
-        continue_text = font.render("Continue", True, BLACK)
+        continue_text = font.render("Continue", True, BLACK if continue_enabled else WHITE)
         
         win.blit(play_text, play_text.get_rect(center=play_button_rect.center))
         win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
@@ -1694,7 +1678,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
                     audio_duration = playAudioStimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
-                elif continue_button_rect.collidepoint(mouse_pos) and not audio_still_playing:
+                elif continue_button_rect.collidepoint(mouse_pos) and (play_count >= required_plays) and not audio_still_playing:
                     # Save data and return
                     savePeriodicReminderData(subjectNumber, saveFolder, trial_number, play_count, block_name)
                     return

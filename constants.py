@@ -48,11 +48,12 @@ stimSize = round(deg2pix())
 screenCenter = ((winWidth // 2) - (stimSize // 2), (winHeight // 2) - (stimSize // 2))
 
 # Audio experiment settings
-MAX_PLAYS = 3  # Maximum number of times a participant can play an audio stimulus
+MAX_PLAYS = 1  # Maximum number of times a participant can play an audio stimulus
 
 # Periodic reminder settings
 REMINDER_INTERVAL = 15 # Show reminder every N trials (change this number to control frequency)
-REMINDER_MAX_PLAYS = 5  # Maximum plays allowed in the reminder screen
+REMINDER_MAX_PLAYS = 3  # Maximum plays allowed in the reminder screen
+FAMILIARIZATION_MAX_PLAYS = 3 # Maximum plays during the refresher screen
 
 
 # define some font sizes and colors for easy access
@@ -196,8 +197,10 @@ Press the spacebar to continue.'
 # Trial-by-trial instruction text (shown on every trial screen)
 # Edit these lists if you want different wording per block.
 trialInstructions_full_sentence = [
-    "Click 'Play Audio' to listen to the sentence.",
+    "Click 'Play Audio' to listen to the sentence (you may only listen ONCE).",
     "",
+    "After listening, respond as quickly as you feel comfortable.",
+    "Trust your gut feeling — it is okay to be unsure.",
     "Press 'Y' if you believe the word 'Wall' is present in the audio sample.",
     "Press 'N' if you believe the word 'Wall' is NOT present in the audio sample",
 ]
@@ -207,10 +210,21 @@ trialInstructions_imagined_sentence = [
     IMAGINED_SENTENCE_TO_IMAGINE,
     "Imagine the sentence EVERY TIME before playing the audio sample.",
     "Do NOT say the sentence out loud, under your breath, or mouth it.",
-    "Click 'Play Audio' at the moment you would imagine the word 'Wall'.",
+    "Click 'Play Audio' at the moment you would imagine the word 'Wall' (you may only listen ONCE).",
+    "After listening, respond as quickly as you feel comfortable.",
+    "Trust your gut feeling — it is okay to be unsure.",
     "Press 'Y' if you believe 'Wall' is present.",
     "Press 'N' if you believe 'Wall' is absent.",
 ]
+
+# Screen shown immediately before the first trial of each block
+preTrialQuickResponseText = (
+    "Before you begin:\n\n"
+    "- You may listen to each audio sample only ONCE.\n"
+    "- After listening, please answer as quickly as you feel comfortable.\n"
+    "- Trust your gut feelings — it is okay to be uncertain.\n\n"
+    "Press the spacebar to begin this block."
+)
 
 def breakScreenText(i):
     return f'You have now completed {i} out of 2 blocks.\n\n You have earned a break.\n\n Please let the experimenter know.\n\n\

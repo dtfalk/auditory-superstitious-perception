@@ -25,16 +25,19 @@ import os
 from pathlib import Path
 from statistics import median
 
-ROOT = Path(__file__).resolve().parent
-ROOT_DIR = os.path.dirname(__file__)
-SRC = ROOT / 'new_h_wavs'
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+ROOT_DIR = os.path.dirname(PROJECT_ROOT)
+
+# Source directory lives in the project root (one level up from this script)
+SRC = PROJECT_ROOT / 'new_h_wavs'
 HIGH_DIR = SRC / 'high_correlation'
 LOW_DIR = SRC / 'low_correlation'
 HIGH_CSV = SRC / 'high.csv'
 LOW_CSV = SRC / 'low.csv'
 
 # Write into the folder your experiment loads from (`helperFunctions.getStimuli()`).
-OUT_ROOT = ROOT / 'audio_stimuli'
+OUT_ROOT = PROJECT_ROOT / 'audio_stimuli'
 MAP = {
     0: ('full_sentence', 'targets'),
     1: ('imagined_sentence', 'targets'),
@@ -74,6 +77,9 @@ def make_output_dirs():
     for g in MAP.values():
         d = OUT_ROOT / g[0] / g[1]
         d.mkdir(parents=True, exist_ok=True)
+    # examples dirs
+    (OUT_ROOT / 'examples' / 'targets').mkdir(parents=True, exist_ok=True)
+    (OUT_ROOT / 'examples' / 'distractors').mkdir(parents=True, exist_ok=True)
 
 
 def get_available_files(pool_dir):
@@ -220,9 +226,9 @@ def optimize_two_groups(items, target_size=75, iterations=200000, seed=0, init_m
 def write_mapping_csv(out_root, folder_a, folder_b, group_a, group_b):
     a_path = out_root / folder_a[0] / folder_a[1]
     b_path = out_root / folder_b[0] / folder_b[1]
-    # Save mappings at repo root so they're easy to find.
-    a_csv = ROOT / f"mapping_{folder_a[0]}_{folder_a[1]}.csv"
-    b_csv = ROOT / f"mapping_{folder_b[0]}_{folder_b[1]}.csv"
+    # Save mappings at project root so they're easy to find.
+    a_csv = PROJECT_ROOT / f"mapping_{folder_a[0]}_{folder_a[1]}.csv"
+    b_csv = PROJECT_ROOT / f"mapping_{folder_b[0]}_{folder_b[1]}.csv"
     with open(a_csv, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['stimulus_number', 'r_score', 'relative_wav_path'])
@@ -267,8 +273,41 @@ def main():
     print(f"Selecting {SELECT_PER_POOL_OPT} items per pool")
     print(f"Init method: {INIT_METHOD} | iterations: {ITERATIONS}")
 
-    high_items = select_evenly_by_r(high_df, high_avail, SELECT_PER_POOL_OPT)
-    low_items = select_evenly_by_r(low_df, low_avail, SELECT_PER_POOL_OPT)
+    # Select 5 random examples from the source directories (high -> targets, low -> distractors)
+    EXAMPLES_PER_POOL = 5
+    if len(high_avail) < EXAMPLES_PER_POOL:
+        raise ValueError(f"Not enough high-correlation files to select {EXAMPLES_PER_POOL} examples")
+    if len(low_avail) < EXAMPLES_PER_POOL:
+        raise ValueError(f"Not enough low-correlation files to select {EXAMPLES_PER_POOL} examples")
+
+    rng = random.SystemRandom()
+    high_examples = set(rng.sample(sorted(high_avail), EXAMPLES_PER_POOL))
+    low_examples = set(rng.sample(sorted(low_avail), EXAMPLES_PER_POOL))
+
+    print(f"Selected high examples: {sorted(high_examples)}")
+    print(f"Selected low examples: {sorted(low_examples)}")
+
+    # Copy examples into audio_stimuli/examples and remove the leading 'chunk_' from filenames
+    examples_targets_dir = out_root / 'examples' / 'targets'
+    examples_distractors_dir = out_root / 'examples' / 'distractors'
+    for stim in sorted(high_examples):
+        src = HIGH_DIR / f'chunk_{stim}.wav'
+        if not src.exists():
+            raise FileNotFoundError(f"Missing example file: {src}")
+        shutil.copy2(src, examples_targets_dir / f'{stim}.wav')
+    for stim in sorted(low_examples):
+        src = LOW_DIR / f'chunk_{stim}.wav'
+        if not src.exists():
+            raise FileNotFoundError(f"Missing example file: {src}")
+        shutil.copy2(src, examples_distractors_dir / f'{stim}.wav')
+
+    # Exclude examples from the remaining selection pools
+    high_avail_for_selection = set(high_avail) - set(high_examples)
+    low_avail_for_selection = set(low_avail) - set(low_examples)
+
+    # Select remaining items evenly by r_score (examples excluded)
+    high_items = select_evenly_by_r(high_df, high_avail_for_selection, SELECT_PER_POOL_OPT)
+    low_items = select_evenly_by_r(low_df, low_avail_for_selection, SELECT_PER_POOL_OPT)
 
     high_A, high_B = optimize_two_groups(
         high_items,

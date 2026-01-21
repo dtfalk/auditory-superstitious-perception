@@ -256,6 +256,9 @@ def main():
         # Show target familiarization before each block
         familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name, audio_engine)
 
+        # Pre-trial reminder (one listen only + respond quickly + trust gut)
+        showPreTrialQuickResponseScreen(win)
+
         # display stimuli
         pg.mouse.set_visible(True)
         experiment(
@@ -296,6 +299,11 @@ def main():
             subjectExplanation_changes = getSubjectInfo('selfReflect_changes', win)
             with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'selfReflect_changes_{block_name}_{subjectNumber}.txt'), mode = 'w') as f:
                 f.write(subjectExplanation_changes)
+            
+            if block_name == 'imagined_sentence':
+                imagination_rule_following = getSubjectInfo('imagination_rule_following', win)
+                with open(os.path.join(os.path.dirname(__file__), 'results', subjectNumber, f'imagination_rule_following_{subjectNumber}.txt'), mode = 'w') as f:
+                    f.write(imagination_rule_following)
             stanford_sleepiness_scale(sleepiness_responses, win)
         
     # display questionnaires
