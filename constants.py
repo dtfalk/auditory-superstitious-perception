@@ -11,7 +11,7 @@ number_of_sona_credits = '1.5'
 
 # get screen size for each monitor in the syste m
 winfo = get_monitors()
-if len(winfo) > 10:
+if len(winfo) > 1:
     winX = winfo[1].x
     winY = winfo[1].y
     winWidth = winfo[1].width
@@ -208,28 +208,36 @@ trialInstructions_full_sentence = [
     "Click 'Play Audio' to listen to the sentence (you may only listen ONCE).",
     "",
     "After listening, respond as quickly as you feel comfortable.",
-    "Trust your gut feeling — it is okay to be unsure.",
-    "Press 'Y' if you believe the word 'Wall' is present in the audio sample.",
-    "Press 'N' if you believe the word 'Wall' is NOT present in the audio sample",
+    "Press 'Y' if you believe the word 'Wall' is present.",
+    "Press 'N' if you believe the word 'Wall' is NOT present.",
 ]
 
 trialInstructions_imagined_sentence = [
     "Imagine this sentence:",
-    IMAGINED_SENTENCE_TO_IMAGINE,
-    "Imagine the sentence EVERY TIME before playing the audio sample.",
-    "Do NOT say the sentence out loud, under your breath, or mouth it.",
+    f'{IMAGINED_SENTENCE_TO_IMAGINE}',
+    "Imagine the sentence EVERY TIME before playing the audio sample and DO NOT subvocalize.",
     "Click 'Play Audio' at the moment you would imagine the word 'Wall' (you may only listen ONCE).",
     "After listening, respond as quickly as you feel comfortable.",
-    "Trust your gut feeling — it is okay to be unsure.",
     "Press 'Y' if you believe 'Wall' is present.",
-    "Press 'N' if you believe 'Wall' is absent.",
+    "Press 'N' if you believe 'Wall' is NOT present.",
 ]
 
 # Screen shown immediately before the first trial of each block
-preTrialQuickResponseText = (
+preTrialQuickResponseTextFullSentence = (
     "Before you begin:\n\n"
     "- You may listen to each audio sample only ONCE.\n"
     "- After listening, please answer as quickly as you feel comfortable.\n"
+    "- Trust your gut feelings — it is okay to be uncertain.\n\n"
+    "Press the spacebar to begin this block."
+)
+
+preTrialQuickResponseTextImaginedSentence = (
+    "Before you begin:\n\n"
+    "- You may listen to each audio sample only ONCE.\n"
+    "- After listening, please answer as quickly as you feel comfortable.\n"
+    "- On every trial try to imagine the sentence in your head and click 'Play Audio' at the same time that you would be imagining the word “Wall”\n"
+    "- Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.\n"
+    "- It is important that you imagine the sentence EVERY TIME before playing the audio sample.\n"
     "- Trust your gut feelings — it is okay to be uncertain.\n\n"
     "Press the spacebar to begin this block."
 )

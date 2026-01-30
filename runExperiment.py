@@ -301,7 +301,7 @@ def main():
         familiarization_session_count = showTargetFamiliarizationWrapper(win, subjectNumber, saveFolder, familiarization_session_count, block_name, audio_engine)
 
         # Pre-trial reminder (one listen only + respond quickly + trust gut)
-        showPreTrialQuickResponseScreen(win)
+        showPreTrialQuickResponseScreen(win, block_name)
 
         # display stimuli
         pg.mouse.set_visible(True)

@@ -974,11 +974,14 @@ def showBlockInstructions(win, block_name: str, audio_engine):
     pg.mouse.set_visible(False)
 
 
-def showPreTrialQuickResponseScreen(win):
+def showPreTrialQuickResponseScreen(win, block_name):
     """Instruction screen shown immediately before the first trial of each block."""
     pg.mouse.set_visible(False)
     win.fill(backgroundColor)
-    multiLineMessage(preTrialQuickResponseText, mediumFont, win)
+    if block_name == "full_sentence":
+        multiLineMessage(preTrialQuickResponseTextFullSentence, mediumFont, win)
+    else:
+        multiLineMessage(preTrialQuickResponseTextImaginedSentence, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
