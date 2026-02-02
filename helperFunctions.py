@@ -998,10 +998,10 @@ def experimentExplanation(win):
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    win.fill(backgroundColor)
-    multiLineMessage(explanationText_3, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
+    # win.fill(backgroundColor)
+    # multiLineMessage(explanationText_3, mediumFont, win)
+    # pg.display.flip()
+    # waitKey(pg.K_SPACE)
 
     win.fill(backgroundColor)
     multiLineMessage(explanationText_4, mediumFont, win)

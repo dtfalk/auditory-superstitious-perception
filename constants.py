@@ -129,9 +129,8 @@ explanationText_1 = 'Welcome to the experiment!\n\n\
 In this experiment, you will listen to a series of static-y audio samples and determine whether or not the word “Wall” is present in each audio sample.\n\n\
 You will be searching for the target “Wall” in the context of the following sentence:\n\n\
     "The Picture Hung on The Wall"\n\n\
-In one block of the experiment, you will be asked to imagine the beginning of the sentence (i.e. "The Picture Hung on The...") and then listen to an audio sample that may or may not contain the word “Wall”.\n\n\
-In the other block of the experiment, you will listen to someone speaking the beginning of the sentence (i.e. "The Picture Hung on The...") and then listen to an audio sample that may or may not contain the word “Wall”.\n\n\
-Regardless of the block, half of the audio samples will contain the word “Wall” and half will not. In both blocks your job is to correctly identify whether the word “Wall” is present in each audio sample.' 
+Please keep in mind that for audio samples where “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\n\
+Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.' 
 
 explanationText_2 = 'To help you think about the task, imagine you are driving toward a city while tuning your radio through static. At first, all you hear is noise, but as you get closer, faint notes or rhythms from a song begin to emerge. Even if the melody is not clear, you might sense its presence through subtle patterns in the noise.\n\n\
 Similarly, in this task, you will not clearly hear the word “Wall”. Instead, you may feel as though certain patterns or impressions suggest its presence, even if it is just a hunch.\n\n\
@@ -195,10 +194,10 @@ Press the spacebar to continue.'
 
 imaginedSentenceBlockInstructionsText = f'In this block, you will IMAGINE the following sentence while listening to the audio samples:\n\n\
 "{IMAGINED_SENTENCE_TO_IMAGINE}"\n\n\
-Half of the samples contain the word “Wall” and half do not.\n\n\
 On every trial try to imagine the sentence in your head and click "Play Audio" at the same time that you would be imagining the word “Wall”.\n\n\
 Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.\n\n\
 It is important that you imagine the sentence EVERY TIME before playing the audio sample.\n\n\
+Please note that half of the samples in the experiment contain the word “Wall” and half do not.\n\n\
 You will now hear example audio samples where “Wall” is present and example audio samples where “Wall” is absent.\n\n\
 Press the spacebar to continue.'
 
