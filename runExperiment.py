@@ -131,7 +131,7 @@ def experiment(subjectNumber, block, targets, distractors, saveFolder, audio_eng
             start_ns = None
             
             # end experiment if we have shown all of the audio stimuli
-            if remaining_stimuli == 0:
+            if remaining_stimuli <= 149:#== 0:
                 return  # Return without trial count since it resets per block
             
             # otherwise select a new audio stimulus
@@ -251,14 +251,18 @@ def main():
     # ============================================================================================
 
     # Audio level testing for experimenter
-    preload_experiment_audio(fs_out=audio_engine.fs)
+    preload_experiment_audio(fs_out = audio_engine.fs)
     showAudioLevelTest(win, audio_engine)
 
     # get user info and where to store their results
-    experimenterName = getSubjectInfo('experimenter name', win)
-    subjectNumber = getSubjectInfo('subject number', win)
-    subjectName = getSubjectInfo('subject name', win)
-    subjectEmail = getSubjectInfo('subject email', win)
+    # experimenterName = getSubjectInfo('experimenter name', win)
+    # subjectNumber = getSubjectInfo('subject number', win)
+    # subjectName = getSubjectInfo('subject name', win)
+    # subjectEmail = getSubjectInfo('subject email', win)
+    experimenterName = "xxx"
+    subjectNumber = "000"
+    subjectName = "xxx"
+    subjectEmail = "xxx"
 
     # create a new folder for the subject's results
     saveFolder = os.path.join(os.path.dirname(__file__), 'results', subjectNumber)
@@ -283,9 +287,9 @@ def main():
     # ============================================================================================
     
     # Get the user's consent and explain the experiment
-    consented = consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win)
-    if not consented:
-        nonConsentScreen(win)
+    # consented = consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win)
+    # if not consented:
+    #     nonConsentScreen(win)
     sleepiness_responses = []
     experimentExplanation(win)
     pg.event.clear()
@@ -294,7 +298,7 @@ def main():
     for i, (block_name, (targets, distractors)) in enumerate(zip(block_names, blocks)):
 
         # Block-specific instructions + examples
-        showBlockInstructions(win, block_name, audio_engine)
+        showBlockInstructions(win, block_name, audio_engine, saveFolder=saveFolder, subjectNumber=subjectNumber)
         stanford_sleepiness_scale(sleepiness_responses, win)
 
         # Show target familiarization before each block

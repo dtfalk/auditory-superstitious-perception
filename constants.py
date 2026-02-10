@@ -128,7 +128,7 @@ validLetters, validNumbers = getValidChars()
 explanationText_1 = 'Welcome to the experiment!\n\n\
 In this experiment, you will listen to a series of static-y audio samples and determine whether or not the word “Wall” is present in each audio sample.\n\n\
 You will be searching for the target “Wall” in the context of the following sentence:\n\n\
-    "The Picture Hung on The Wall"\n\n\
+"The Picture Hung on The Wall"\n\n\
 Please keep in mind that for audio samples where “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\n\
 Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.' 
 
@@ -142,10 +142,7 @@ Before each block, regardless of the condition, you will listen to the full spok
 Please keep in mind that for audio samples where “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\n\
 Your job is to trust your instincts and listen for any subtle hints that suggest that the word “Wall” might be present.'
 
-explanationText_4 = 'Here is what you will need to do: \n\
-    - Press "Y" if you have a sense or feeling that the word “Wall” is there, even if you are not certain.\n\
-    - Press "N" if you think the word “Wall” is absent.\n\n\
-What to keep in mind:\n\
+explanationText_4 = 'What to keep in mind:\n\
     - For audio samples where the word “Wall” is present, the word will always begin at the very start of the audio sample and end at the very end of the audio sample.\n\
     - Trust your instincts—this task is designed to challenge the very limits of perception.\n\
     - It is okay to feel uncertain; the goal is to make your best guess based on what you sense in the audio sample.\n\n\
@@ -187,39 +184,63 @@ The main portion of experiment will resume immediately after you listen to the t
 # NOTE: If you want a specific sentence participants should imagine, edit IMAGINED_SENTENCE_TO_IMAGINE.
 IMAGINED_SENTENCE_TO_IMAGINE = 'The Picture Hung On The Wall'
 
-fullSentenceBlockInstructionsText = 'In this block, you will hear a full sentence with the final word replaced by an audio sample that may or may not contain the word “Wall”.\n\n\
-Half of the sentences will end with an audio sample that contains the word “Wall” and half will not.\n\n\
-You will now hear example audio samples where “Wall” is present and example audio samples where “Wall” is absent.\n\n\
-Press the spacebar to continue.'
+fullSentenceBlockInstructionsText = (
+    "Full Sentences Portion of the Task:\n"
+    "   On every trial, you will hear a sentence spoken out loud. The sentence is the same each time, except the final word is replaced by a short, static-y audio sample. Your task is always the same: decide whether the word \"Wall\" is hidden inside that final, noisy audio sample.\n\n"
+    "How hard this will feel:\n"
+    "   This task is extremely difficult on purpose. You will NEVER clearly hear the word \"Wall\" the way you would in normal speech. The audio samples will sound like static, even on trials where \"Wall\" is truly present. It is normal to feel surprised, confused, or unsure at first, and it is normal to feel unsure on many trials. Do not wait for a clear, confident moment of recognition. Instead, try to notice any faint hints, patterns, or impressions that make you lean one way or the other.\n\n"
+    "What to keep in mind:\n"
+    "   - The audio samples are NOT spoken by the speaker. Instead, they are noisy clips that we have potentially hidden the word \"Wall\" in.\n"
+    "   - If the speaker's \"Wall\" is present, it fills the entire audio sample: it starts at the very beginning of the clip and ends at the very end.\n"
+    "   - The speaker's \"Wall\" is present in half of the audio samples that you will hear.\n"
+    "   - You are searching for the speaker's \"Wall\". You are NOT searching for your own version of \"Wall\".\n\n"
+    "You will now hear example audio samples where \"Wall\" is present and example audio samples where \"Wall\" is absent.\n\n"
+    "Press the spacebar to continue."
+)
 
-imaginedSentenceBlockInstructionsText = f'In this block, you will IMAGINE the following sentence while listening to the audio samples:\n\n\
-"{IMAGINED_SENTENCE_TO_IMAGINE}"\n\n\
-On every trial try to imagine the sentence in your head and click "Play Audio" at the same time that you would be imagining the word “Wall”.\n\n\
-Importantly, you may only IMAGINE the sentence in your head. This means you cannot subvocalize the sentence. In other words, do NOT say the sentence out loud, under your breath, or mouth it.\n\n\
-It is important that you imagine the sentence EVERY TIME before playing the audio sample.\n\n\
-Please note that half of the samples in the experiment contain the word “Wall” and half do not.\n\n\
-You will now hear example audio samples where “Wall” is present and example audio samples where “Wall” is absent.\n\n\
-Press the spacebar to continue.'
+
+
+imaginedSentenceBlockInstructionsText = (
+    "Imagined Sentences Portion of the Task:\n"
+    "   Before this portion of the experiment begins you will hear a recording of the speaker saying the following sentence out loud: \"The Picture Hung On The Wall\". On every trial, you will imagine the beginning of this sentence and then listen to a short, noisy, static-y audio sample. Your task is always the same: decide whether the word \"Wall\" is hidden inside that noisy audio sample.\n\n"
+    "On every trial:\n"
+    "   - Imagine the speaker saying the beginning of the sentence in their voice and click \"Play Audio\" at the moment when your imagined sentence reaches the word \"Wall\".\n"
+    "   - Listen to the audio sample and make your judgment.\n\n"
+    "How hard this will feel:\n"
+    "   This task is extremely difficult on purpose. You will NEVER clearly hear the word \"Wall\" the way you would in normal speech. The audio samples will sound like static, even on trials where the speaker’s \"Wall\" is truly present. It is normal to feel surprised, confused, or unsure at first, and it is normal to feel unsure on many trials. Do not wait for a clear, confident moment of recognition. Instead, try to notice any faint hints, patterns, or impressions that make you lean one way or the other.\n\n"
+    "What to keep in mind:\n"
+    "   - The audio samples are NOT spoken by the speaker. Instead, they are noisy clips that we have potentially hidden the word \"Wall\" in.\n"
+    "   - If the speaker's \"Wall\" is present, it fills the entire audio sample: it starts at the very beginning of the clip and ends at the very end.\n"
+    "   - The speaker's \"Wall\" is present in half of the audio samples that you will hear.\n"
+    "   - You are searching for the SPEAKER's \"Wall\". You are NOT searching for your own version of \"Wall\".\n"
+    "   - When imagining the sentence, you must imagine the SPEAKER saying it in their voice. You are NOT imagining your own version of the sentence.\n"
+    "   - When imagining the sentence, you must do so silently. Do NOT say the sentence out loud, under your breath, or mouth the words. Do NOT subvocalize.\n\n"
+    "You will now hear example audio samples where \"Wall\" is present and example audio samples where \"Wall\" is absent.\n\n"
+    "Press the spacebar to continue."
+)
+
+
+
 
 # Trial-by-trial instruction text (shown on every trial screen)
 # Edit these lists if you want different wording per block.
 trialInstructions_full_sentence = [
-    "Click 'Play Audio' to listen to the sentence (you may only listen ONCE).",
+    "Click 'Play Audio' to listen to the speaker saying the sentence.",
     "",
     "After listening, respond as quickly as you feel comfortable.",
-    "Press 'Y' if you believe the word 'Wall' is present.",
-    "Press 'N' if you believe the word 'Wall' is NOT present.",
+    "Press 'Y' if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
+    "Press 'N' if you believe the speaker's \"Wall\" is NOT hidden in the noisy audio sample.",
 ]
 
 trialInstructions_imagined_sentence = [
-    "Imagine this sentence:",
+    "Silently imagine the speaker saying this sentence in their voice:",
     f'{IMAGINED_SENTENCE_TO_IMAGINE}',
-    "Imagine the sentence EVERY TIME before playing the audio sample and DO NOT subvocalize.",
-    "Click 'Play Audio' at the moment you would imagine the word 'Wall' (you may only listen ONCE).",
+    "Imagine the speaker saying the beginning of the sentence and click 'Play Audio' when your imagined sentence reaches the word \"Wall\".",
     "After listening, respond as quickly as you feel comfortable.",
-    "Press 'Y' if you believe 'Wall' is present.",
-    "Press 'N' if you believe 'Wall' is NOT present.",
+    "Press 'Y' if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
+    "Press 'N' if you believe the speaker's \"Wall\" is NOT hidden in the noisy audio sample.",
 ]
+
 
 # Screen shown immediately before the first trial of each block
 preTrialQuickResponseTextFullSentence = (
