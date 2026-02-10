@@ -820,7 +820,7 @@ def showBlockExamples(win, audio_engine, block_name: str | None = None, saveFold
         # Header/instructions
         header_font = pg.font.SysFont('times new roman', max(22, current_h // 28))
         body_font = pg.font.SysFont('times new roman', max(18, current_h // 36))
-        y_pos = int(0.07 * current_h)
+        y_pos = int(0.03 * current_h)
 
         header = 'Example Audio Samples'
 
@@ -833,27 +833,26 @@ def showBlockExamples(win, audio_engine, block_name: str | None = None, saveFold
             max_width=int(0.92 * current_w),
             color=BLACK,
         )
-        y_pos += 8
-
-        exampleInstructions_full_sentence = (
-            "For each example, you will hear the speaker say the full sentence, with the final word replaced by a noisy audio sample.\n\n"
-            "At first, only one example button will be active at a time. After you have listened to all examples once, all example buttons will become active and you may replay any example as many times as you like.\n\n"
-            "The examples labelled \"Wall\" contain the speaker’s \"Wall\" hidden in the noise, and the examples labelled \"No Wall\" do not contain the speaker’s \"Wall\". The \"Actual Audio\" button plays the full, original sentence.\n\n"
-            "Take your time and use these examples to get a sense of what the speaker’s \"Wall\" sounds like when it is present versus when it is absent.\n\n"
-            "Once you feel you understand the difference, click \"Continue\" to proceed."
-        )
-        exampleInstructions_imagined_sentence = (
-            "Before each example, imagine the speaker saying the sentence in their voice and click \"Play Audio\" at the moment when your imagined sentence reaches the word \"Wall\".\n\n"
-            "At first, only one example button will be active at a time. After you have listened to all examples once, all example buttons will become active and you may replay any example as many times as you like.\n\n"
-            "The examples labelled \"Wall\" have the speaker’s real \"Wall\" hidden in the noise, and the examples labelled \"No Wall\" do not.\n\n"
-            "Take your time and use these examples to get a sense of what the speaker’s \"Wall\" sounds like when it is present versus when it is absent.\n\n"
-            "Once you feel you understand the difference, click \"Continue\" to proceed."
-        )
+        y_pos += max(22, current_h // 28)
 
         if block_name == 'imagined_sentence':
-            instruction_text = exampleInstructions_imagined_sentence
+            instruction_text = (
+                "These are examples of the audio samples that you will hear in the task.\n\n"
+                "For each example, imagine the speaker saying the sentence in their voice, and click active button when your imagined sentence reaches the word \"Wall\".\n\n"
+                "Initially, only one example button will be active at a time. After you have listened to all examples once, all buttons will become active and you may replay any example as many times as you like.\n\n"
+                "Examples labeled \"Wall\" contain the speaker’s \"Wall\" hidden in the noise. Examples labeled \"No Wall\" do not.\n\n"
+                "Use these examples to get a sense of how the audio samples that contain speaker’s \"Wall\" differ from audio samples that do not contain the speaker's \"Wall\".\n\n"
+                "When you are ready to begin the actual task, click \"Continue\" to proceed."
+            )
         elif block_name == 'full_sentence':
-            instruction_text = exampleInstructions_full_sentence
+            instruction_text = ( 
+                "These are examples of the audio samples that you will hear in the task.\n\n"
+                "In each example, you will hear the speaker say the sentence, with the final word replaced by a noisy audio sample.\n\n"
+                "Initially, only one example button will be active at a time. After you have listened to all examples once, all buttons will become active and you may replay any example as many times as you like.\n\n"
+                "Examples labeled \"Wall\" contain the speaker’s \"Wall\" hidden in the noise. Examples labeled \"No Wall\" do not. The \"Actual Audio\" button plays the full, original sentence spoken by the speaker.\n\n"
+                "Use these examples to get a sense of how the audio samples that contain speaker’s \"Wall\" differ from audio samples that do not contain the speaker's \"Wall\".\n\n"
+                "When you are ready to begin the actual task, click \"Continue\" to proceed."
+            )
         else:
             instruction_text = ""
 
@@ -1087,12 +1086,11 @@ def showBlockInstructions(win, block_name: str, audio_engine, saveFolder: str | 
         text = fullSentenceBlockInstructionsText
 
     win.fill(backgroundColor)
-    multiLineMessage(text, mediumFont, win, xPos_start = 0.02, yPos_start = 0.02, xMax = 0.98, yMax = 0.98)
+    multiLineMessage(text, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    if block_name == "imagined_sentence":
-        showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, audio_engine)
+    showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, audio_engine)
     showBlockExamples(win, audio_engine, block_name=block_name, saveFolder=saveFolder, subjectNumber=subjectNumber)
     pg.mouse.set_visible(False)
 
@@ -1111,23 +1109,39 @@ def showPreTrialQuickResponseScreen(win, block_name):
 
 # explains the experiment to the subject
 def experimentExplanation(win):
+
+    # Welcome to the experiment screen
     win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
     multiLineMessage(explanationText_1, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
+    # Emotional Task Priming Screen
     win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
     multiLineMessage(explanationText_2, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    # win.fill(backgroundColor)
-    # multiLineMessage(explanationText_3, mediumFont, win)
-    # pg.display.flip()
-    # waitKey(pg.K_SPACE)
-
+    # Introducing the premise of hearing wall in the context of the sentence 
     win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
+    multiLineMessage(explanationText_3, mediumFont, win)
+    pg.display.flip()
+    waitKey(pg.K_SPACE)
+
+    # General what to keep in mind things 
+    win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
     multiLineMessage(explanationText_4, mediumFont, win)
+    pg.display.flip()
+    waitKey(pg.K_SPACE)
+
+    # Difficulty disclaimer 
+    win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
+    multiLineMessage(explanationText_5, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
@@ -1135,20 +1149,6 @@ def experimentExplanation(win):
     # multiLineMessage(explanationText_5, mediumFont, win)
     # pg.display.flip()
     # waitKey(pg.K_SPACE)
-
-# instructions for the real trials
-def finalInstructions(win):
-    win.fill(backgroundColor)
-    multiLineMessage(realText, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
-
-# instructions for the real trials
-def realInstructionsAlt(win):
-    win.fill(backgroundColor)
-    multiLineMessage(realTextAlt, mediumFont, win)
-    pg.display.flip()
-    waitKey(pg.K_SPACE)
 
 # break screen thanking the participant
 def breakScreen(i, win):
@@ -1567,8 +1567,7 @@ def drawAudioInterface(win, play_count, max_plays, audio_played=False, can_play=
 
 def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, audio_engine):
     """
-    Show the target familiarization screen.
-    Participants must play the target sound a fixed number of times before they can continue.
+    Show the pre examples target familiarization screen.
     
     Args:
         win: pygame window
@@ -1589,7 +1588,7 @@ def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, a
     fs_out = int(audio_engine.fs)
     actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
     
-    required_plays = int(FAMILIARIZATION_MAX_PLAYS)
+    required_plays = 5
     play_count = 0
     # Add timing variables for delay system
     last_audio_start = 0
@@ -1613,21 +1612,40 @@ def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, a
 
         audio_still_playing = (last_audio_start != 0) and (time_since_last_play < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
-        instructions = [
-            "Sentence Familiarization",
-            "",
-            "This is the sentence you will imagine before listening to audio samples.",
-            f"You must play it at least {required_plays} times before you can continue.",
-            f"However, you are not limited to listening to it {required_plays} times.",
-            "You can and should listen to it until you feel that you can hear the sentence in your head without listening to the actual audio.",
-            "",
-            "Click 'Play Target Sound' to hear the sound.",
-            "Click 'Continue' when you are ready to proceed.",
+        if block_name == "full_sentence":
+            instructions = [
+                "Sentence Familiarization",
+                "",
+                "You will now hear the speaker say the full sentence.",
+                "",
+                "In the next screen, you will hear examples where this sentence is played, with the final word replaced by a noisy audio sample.",
+                "",
+                f"You must listen to the sentence at least {required_plays} times before continuing. You may listen to it as many additional times as you like.",
+                "",
+                "Use this time to become very familiar with how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence. You should continue listening until you feel confident you recognize the sentence and the speaker’s voice.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" when you are ready to hear examples."
+            ]
+        elif block_name == "imagined_sentence":
+            instructions = [
+                "Sentence Familiarization",
+                "",
+                "You will now hear the speaker say the full sentence.",
+                "",
+                "On the very next screen, you will hear examples where you must imagine the speaker saying this sentence before listening to each audio sample. This means you will need to actively use your memory of this sentence right away, without hearing it spoken aloud.",
+                "",
+                f"You must listen to the sentence at least {required_plays} times before continuing. You may listen to it as many additional times as you like.",
+                "",
+                "Use this time to get the sentence clearly and reliably into your head in the speaker’s voice. You should continue listening until you feel confident you can imagine the speaker saying the sentence accurately, without needing to hear the audio, as you will need to imagine this sentence on the very next screen.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" only when you feel ready to use the sentence in the next screen."
             ]
         
         current_w, current_h = _current_window_size(win)
-        y_pos = current_h // 8
-        font = pg.font.SysFont("times new roman", int(mediumFont / 1.5))
+        y_pos = int(0.05 * current_h)
+        font = pg.font.SysFont("times new roman", int(mediumFont / 1.7))
         
         for instruction in instructions:
             if instruction:
@@ -1641,7 +1659,7 @@ def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, a
                     color=BLACK,
                 )
             else:
-                y_pos += int(mediumFont / 1.5)
+                y_pos += int(mediumFont / 1.7)
         
 
         play_y = int(y_pos + 0.25 * (current_h - y_pos)) - button_height // 2
@@ -1676,14 +1694,6 @@ def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, a
         
         win.blit(play_text, play_text.get_rect(center=play_button_rect.center))
         win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
-
-        # # Progress indicator
-        # counter_font = pg.font.SysFont("times new roman", max(18, winHeight // 35))
-        # counter_surface = counter_font.render(f"Plays: {play_count}, True, BLACK)
-        # counter_y = play_button_rect.top - int(0.03 * winHeight)
-        # if counter_y < int(0.02 * winHeight):
-        #     counter_y = int(0.02 * winHeight)
-        # win.blit(counter_surface, counter_surface.get_rect(center=(winWidth // 2, counter_y)))
         
         pg.display.flip()
         
@@ -1759,35 +1769,43 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
 
         
         if block_name == "full_sentence":
-            instructionsFullSentence = [
-                    "Sentence Familiarization",
-                    "",
-                    "You will hear the beginning of this sentence before listening to each audio sample.",
-                    "During the experiment, the last word (\"Wall\") will be replaced with a noisy audio sample.",
-                    "This is your opportunity to hear the full sentence without the final word (\"Wall\") removed.",
-                    "Please listen carefully and remember how the speaker says \"Wall\"."
-                    f"You must play it {required_plays} times before you can continue.",
-                    "",
-                    "Click 'Play Sentence' to hear the sentence.",
-                    "Click 'Continue' after you have finished all required plays.",
-                ]
-            instructions = instructionsFullSentence
-        elif block_name == "imagined_sentence":
-            instructionsImaginedSentence = [
-                "Sentence Familiarization",
+            instructions = [
+                "Sentence Preparation",
                 "",
-                "This is the sentence that you will be IMAGINING before listening to each audio sample.",
-                f"You must play it {required_plays} time(s) before you can continue.",
-                "Please listen carefully and remember how the speaker says the entire sentence."
+                "You will now hear the speaker say the full sentence a limited number of times.",
                 "",
-                "Click 'Play Sentence' to hear the sentence.",
-                "Click 'Continue' after you have finished all required plays.",
+                "This sentence will be played on each trial in the next block, with the final word replaced by a noisy audio sample.",
+                "",
+                f"You will hear the sentence exactly {required_plays} times before continuing.",
+                "",
+                "Use these listens to firmly anchor how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
+                "",
+                "Once these plays are complete, you will begin this portion of the experiment.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" when the listens are complete."
             ]
-            instructions = instructionsImaginedSentence
+        elif block_name == "imagined_sentence":
+            instructions = [
+                "Sentence Preparation",
+                "",
+                "You will now hear the speaker say the full sentence a limited number of times.",
+                "",
+                "In the next screen, you will immediately begin the task, where you must imagine the speaker saying this sentence before listening to each audio sample.",
+                "",
+                f"You will hear the sentence exactly {required_plays} times before continuing.",
+                "",
+                "Use these listens to firmly establish the sentence in the speaker’s voice so that you can reliably imagine it without hearing the audio.",
+                "",
+                "Once these plays are complete, you will begin this portion of the experiment.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" when the listens are complete."
+            ]
 
         current_w, current_h = _current_window_size(win)
-        y_pos = current_h // 8
-        font = pg.font.SysFont("times new roman", int(mediumFont / 1.5))
+        y_pos = int(0.05 * current_h)
+        font = pg.font.SysFont("times new roman", int(mediumFont / 1.7))
         
         for instruction in instructions:
             if instruction:
@@ -1797,11 +1815,11 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
                     text=instruction,
                     center_x=current_w // 2,
                     y_pos=y_pos,
-                    max_width=int(0.90 * current_w),
+                    max_width=int(0.98 * current_w),
                     color=BLACK,
                 )
             else:
-                y_pos += int(mediumFont / 1.5)
+                y_pos += int(mediumFont / 1.7)
         
 
         play_y = int(y_pos + 0.25 * (current_h - y_pos)) - button_height // 2
@@ -1963,32 +1981,47 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             instructions = [
                 "Sentence Reminder",
                 "",
-                f"This is a reminder of the full sentence.",
-                f"You must play it {required_plays} times before you can continue.",
+                "You will now hear the speaker say the full sentence again.",
                 "",
-                "Click 'Play Sentence' to hear the sentence.",
-                "Click 'Continue' after you have finished all required plays.",
+                f"Please listen to the sentence {required_plays} times before continuing.",
+                "",
+                "Use this as a brief reminder of how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" when the required plays are complete."
             ]
         else:
             instructions = [
                 "Sentence Reminder",
                 "",
-                f"This is a reminder of the the sentence that you are IMAGINING before listening to each audio sample.",
-                f"You must play it {required_plays} times before you can continue.",
+                "You will now hear the speaker say the full sentence again.",
                 "",
-                "Click 'Play Target Sound' to hear the sound.",
-                "Click 'Continue' after you have finished all required plays.",
+                f"Please listen to the sentence {required_plays} times before continuing.",
+                "",
+                "Use this as a reminder of how the sentence sounds in the speaker’s voice, so you can continue imagining it clearly before each audio sample.",
+                "",
+                "Click \"Play Sentence\" to listen.",
+                "Click \"Continue\" when the required plays are complete."
             ]
+
         
-        y_pos = winHeight // 8
-        font = pg.font.SysFont("times new roman", int(mediumFont / 1.5))
+        current_w, current_h = _current_window_size(win)
+        y_pos = int(0.05 * current_h)
+        font = pg.font.SysFont("times new roman", int(mediumFont / 1.7))
         
         for instruction in instructions:
             if instruction:
-                text_surface = font.render(instruction, True, BLACK)
-                text_rect = text_surface.get_rect(center=(winWidth // 2, y_pos))
-                win.blit(text_surface, text_rect)
-            y_pos += mediumFont
+                y_pos = _blit_wrapped_centered(
+                    font=font,
+                    win=win,
+                    text=instruction,
+                    center_x=current_w // 2,
+                    y_pos=y_pos,
+                    max_width=int(0.98 * current_w),
+                    color=BLACK,
+                )
+            else:
+                y_pos += int(mediumFont / 1.7)
         
         # Draw play button with timing consideration and max plays limit
         can_click = can_play and (play_count < required_plays)
@@ -2022,7 +2055,7 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
         if play_count >= required_plays:
             play_text_content = "Max Plays Reached"
         else:
-            play_text_content = "Play Target Sound"
+            play_text_content = "Play Sentence"
         
         play_text = font.render(play_text_content, True, play_text_color)
         continue_text = font.render("Continue", True, BLACK if continue_enabled else WHITE)

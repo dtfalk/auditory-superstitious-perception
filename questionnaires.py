@@ -1288,6 +1288,13 @@ def bais_c(subjectNumber, win):
 
 def main(subjectNumber, win):
 
+    # Introducing the premise of hearing wall in the context of the sentence 
+    win.fill(backgroundColor)
+    pg.mouse.set_visible(False)
+    multiLineMessage("You will now respond to some questionnaires.\n\nPlease press the spacebar to continue.", mediumFont, win)
+    pg.display.flip()
+    waitKey(pg.K_SPACE)
+
     tellegen(subjectNumber, win)
     vhq(subjectNumber, win)
     flow_state_scale(subjectNumber, win)
