@@ -1,11 +1,20 @@
-from constants import *
 import pygame as pg
-from constants import *
 import sys
 import os
-from helperFunctions import multiLineMessage, waitKey
 import csv
 import math
+
+# Add experiment_helpers to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'experiment_helpers'))
+from experimenterLevers import WIN_WIDTH, WIN_HEIGHT
+
+from helperFunctions import (
+    multiLineMessage, waitKey,
+    BLACK, WHITE, RED, BACKGROUND_COLOR, mediumFont,
+)
+from text_blocks.questionnairesTextBlocks import (
+    telleganScaleText, launeyScaleText, dissociativeExperiencesText,
+)
 
 
 def _current_window_size(win):
@@ -15,7 +24,7 @@ def _current_window_size(win):
     try:
         return win.get_size()
     except Exception:
-        return winWidth, winHeight
+        return WIN_WIDTH, WIN_HEIGHT
 
 
 def _questionnaire_option_style(questionnaireName: str, current_h: int):
@@ -136,7 +145,7 @@ class Button:
         if surface:
             current_w, current_h = surface.get_size()
         else:
-            current_w, current_h = winWidth, winHeight
+            current_w, current_h = WIN_WIDTH, WIN_HEIGHT
 
         base_medium_font = max(14, current_h // 20)
 
@@ -502,7 +511,7 @@ def tellegen(subjectNumber, win):
             buttons.append(Button('option', 'tellegen', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -632,7 +641,7 @@ def vhq(subjectNumber, win):
             buttons.append(Button('option', 'vhq', opt, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response is None:
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     pg.quit(); sys.exit()
@@ -744,7 +753,7 @@ def launay_slade(subjectNumber, win):
 
         while response == None:
 
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -811,7 +820,7 @@ def stanford_sleepiness_scale(sleepinessResponses, win, label=None):
 
         while response == None:
 
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -909,7 +918,7 @@ def flow_state_scale(subjectNumber, win):
 
         while response == None:
 
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -1091,7 +1100,7 @@ def dissociative_experiences(subjectNumber, win):
             buttons.append(Button('option', 'dissociative', question_option, opt_i + 1, yPos_fixed, slot=option_slots[opt_i]))
 
         while response == None:
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -1174,7 +1183,7 @@ def bais_v(subjectNumber, win):
 
         while response == None:
 
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
@@ -1255,7 +1264,7 @@ def bais_c(subjectNumber, win):
 
         while response == None:
 
-            win.fill(backgroundColor)
+            win.fill(BACKGROUND_COLOR)
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
@@ -1289,7 +1298,7 @@ def bais_c(subjectNumber, win):
 def main(subjectNumber, win):
 
     # Introducing the premise of hearing wall in the context of the sentence 
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage("You will now respond to some questionnaires.\n\nPlease press the spacebar to continue.", mediumFont, win)
     pg.display.flip()

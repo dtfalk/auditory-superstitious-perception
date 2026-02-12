@@ -10,150 +10,64 @@ import pytz
 from datetime import datetime
 import wave
 import numpy as np
-from constants import *
+
+# Add experiment_helpers to path for imports
+_HELPERS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'experiment_helpers')
+sys.path.insert(0, _HELPERS_DIR)
+from experimenterLevers import WIN_WIDTH, WIN_HEIGHT, MAX_PLAYS, REMINDER_INTERVAL, FAMILIARIZATION_MAX_PLAYS, REMINDER_MAX_PLAYS
+
+# Import text blocks
+from text_blocks.consentTextBlocks import (
+    studyInfoText, risksAndBenefitsText, confidentialityText, 
+    contactsAndQuestionsText, nonConsentText
+)
+from text_blocks.experimentTextBlocks import (
+    explanationText_1, explanationText_2, explanationText_3, explanationText_4, explanationText_5,
+    breakScreenText, exitScreenText,
+    fullSentenceBlockInstructionsText, imaginedSentenceBlockInstructionsText,
+    preTrialQuickResponseTextFullSentence, preTrialQuickResponseTextImaginedSentence,
+    trialInstructions_full_sentence, trialInstructions_imagined_sentence,
+    preExamplesFamiliarizationInstructions_full_sentence, preExamplesFamiliarizationInstructions_imagined_sentence,
+    targetFamiliarizationInstructions_full_sentence, targetFamiliarizationInstructions_imagined_sentence,
+    periodicReminderInstructions_full_sentence, periodicReminderInstructions_imagined_sentence,
+    blockExamplesInstructions_imagined_sentence, blockExamplesInstructions_full_sentence,
+    audioLevelTestInstructions,
+)
+
+# =============================================================================
+# FONT SIZES (relative to screen height for portability)
+# =============================================================================
+extraLargeFont = WIN_HEIGHT // 5
+largeFont = WIN_HEIGHT // 10
+mediumFont = WIN_HEIGHT // 20
+smallFont = WIN_HEIGHT // 30
+
+# =============================================================================
+# COLORS (as RGB tuples for pygame compatibility)
+# =============================================================================
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+BLUE = (50, 50, 255)
+GRAY = (128, 128, 128)
+GREY = (128, 128, 128)
+RED = (255, 50, 50)
+GREEN = (0, 128, 0)
+BACKGROUND_COLOR = GREY
 
 
-imageWidth, imageHeight = 50, 50
-imageSize = imageWidth * imageHeight
+# =============================================================================
+# SCREEN SIZE HELPER
+# =============================================================================
+def _current_window_size(win):
+    """Get the current window size, with fallback to configured dimensions."""
+    surface = pg.display.get_surface()
+    if surface:
+        return surface.get_size()
+    try:
+        return win.get_size()
+    except Exception:
+        return WIN_WIDTH, WIN_HEIGHT
 
-# class for the buttons the user will see
-class Button:
-
-    # initializes an instance of a button
-    def __init__(self, buttonType, questionnaireName, text, i, yPosQuestion):
-
-        surface = pg.display.get_surface()
-        if surface:
-            current_w, current_h = surface.get_size()
-        else:
-            current_w, current_h = winWidth, winHeight
-
-        base_medium_font = max(14, current_h // 20)
-
-         # creates a box to click and text for questionnaire options
-        if buttonType == 'option':
-            self.fontSize = base_medium_font
-            if questionnaireName == 'binary':
-                scalar = 1.4
-            elif questionnaireName == 'tellegen':
-                scalar = 1.75
-            elif questionnaireName == 'launay':
-                scalar = 1.4
-            elif questionnaireName == 'dissociative':
-                scalar = 1.5
-
-            buffer = current_h // 20
-
-            # Make option button size proportional to screen
-            button_size = int(0.015 * min(current_w, current_h))
-            button_size = max(button_size, self.fontSize)
-
-            # Binary options (e.g., Yes/No) should always be a single vertical column
-            if questionnaireName == 'binary':
-                option_index = max(0, i - 1)
-                start_y = int(min(yPosQuestion + buffer, 0.60 * current_h))
-                x = int(0.08 * current_w)
-                y = start_y + int(option_index * scalar * self.fontSize)
-                self.coords = (x, y, button_size, button_size)
-                self.text_x = self.coords[0] + 1.5 * button_size
-                self.text_y = self.coords[1] - 0.1 * button_size
-            else:
-                spacing = scalar * i * self.fontSize
-                maxY = (0.85 * current_h) - self.fontSize
-
-                self.coords = ((0.05 * current_w) + (0.45 * current_w) * ((yPosQuestion + spacing + buffer) // maxY),
-                               yPosQuestion + buffer + (spacing % (maxY - (yPosQuestion + buffer))),
-                               button_size,
-                               button_size)
-                self.text_x = self.coords[0] + 1.5 * button_size
-                self.text_y = self.coords[1] - 0.1 * button_size
-            
-        else: # creates the submit button so the user may submit their response
-            self.fontSize = int(0.85 * base_medium_font)
-            
-            # Calculate text dimensions for responsive sizing
-            font = pg.font.SysFont("times new roman", self.fontSize)
-            text_surface = font.render(text, True, BLACK)
-            text_width, text_height = text_surface.get_size()
-            
-            # Make button size proportional to screen and text
-            padding_x = int(0.02 * current_w)  # 2% of screen width padding
-            padding_y = int(0.01 * current_h)  # 1% of screen height padding
-            button_width = text_width + (2 * padding_x)
-            button_height = text_height + (2 * padding_y)
-            
-            # Ensure minimum size (proportional to screen)
-            min_width = int(0.08 * current_w)
-            min_height = int(0.04 * current_h)
-            button_width = max(button_width, min_width)
-            button_height = max(button_height, min_height)
-            
-            # Center the button horizontally, position vertically at 85% of screen height
-            button_x = (current_w - button_width) // 2
-            button_y = int(0.85 * current_h)
-            
-            self.coords = (button_x, button_y, button_width, button_height)
-            # Text positioning will be handled by centering in draw method
-            self.text_x = 0.46 * current_w  # Keep for compatibility, but draw() will center
-            self.text_y = self.coords[1]
-        
-        self.color = WHITE
-        self.text = text
-        self.checkbox = pg.Rect(self.coords)
-        self.checked = False # is the checkbox checked or not
-        self.buttonType = buttonType # question option vs submit button
-    
-    # draw function for each button
-    def draw(self, win):
-        if self.buttonType == 'submit':
-            # Enhanced styling for submit buttons
-            # Use white background with black text
-            button_color = WHITE  # White background
-            text_color = BLACK    # Black text
-            
-            # Draw filled rectangle with border
-            pg.draw.rect(win, button_color, self.checkbox)
-            pg.draw.rect(win, BLACK, self.checkbox, 3)  # Black border
-            
-            # Center the text properly
-            text_surface = pg.font.SysFont("times new roman", self.fontSize).render(self.text, True, text_color)
-            text_rect = text_surface.get_rect(center=self.checkbox.center)
-            win.blit(text_surface, text_rect)
-        else:
-            # Enhanced styling for option buttons - add black border
-            pg.draw.rect(win, self.color, self.checkbox)
-            pg.draw.rect(win, BLACK, self.checkbox, 2)  # Black border for option buttons
-            text_surface = pg.font.SysFont("times new roman", self.fontSize).render(self.text, True, BLACK)     
-            win.blit(text_surface, (self.text_x, self.text_y))
-
-    # handles button clicks
-    def handleClick(self, buttons):
-        if self.buttonType == 'option':
-            self.checked = not self.checked # switch button state
-            if self.checked: # if selected, change color to red
-                self.color = RED
-            else: # if unselected, change color to white
-                self.color = WHITE 
-            self.unselectOthers(buttons)
-            return None
-        else:
-            for button in buttons:
-                if button.checked and button != self:
-                    self.checked = True
-                    return button.text
-            
-    # unselects all other questions
-    def unselectOthers(self, buttons):
-        for button in buttons:
-
-            # don't unclick button just clicked or "unclick" the submit button
-            if button == self or button.buttonType != 'option':
-                continue
-
-            # if something is already checked, then uncheck it
-            if button.checked:
-                button.checked = False
-                button.color = WHITE
 
 # Audio resampling helpers
 def load_wav_mono_int16(path: str):
@@ -248,20 +162,26 @@ def waitKey(key):
                     pg.quit()
                     sys.exit()
 
+# getting the valid letters and numbers for user info.
+def getValidChars():
+    validLetters = []
+    validNumbers = []
+    
+    # valid digits (0 - 9)
+    for i in range(48, 58):
+        validNumbers.append(chr(i))
+        
+    # valid lowercase letters (a - z)
+    for i in range(97, 123):
+        validLetters.append(chr(i))
+        
+    # valid uppercase letters (A - Z)
+    for i in range(65, 91):
+        validLetters.append(chr(i))
+    
+    return validLetters, validNumbers
 
-def _current_window_size(win):
-    """Best-effort current window size (works even if constants winWidth/winHeight are wrong)."""
-    try:
-        w, h = win.get_size()
-        if w and h:
-            return w, h
-    except Exception:
-        pass
-    surface = pg.display.get_surface()
-    if surface:
-        return surface.get_width(), surface.get_height()
-    return winWidth, winHeight
-
+validLetters, validNumbers = getValidChars()
 
 def _wrap_text_to_width(font: pg.font.Font, text: str, max_width: int):
     """Word-wrap `text` so each rendered line is <= max_width."""
@@ -342,7 +262,7 @@ def _blit_wrapped_centered(
 # function to draw/fit a multiline message to the screen
 def multiLineMessage(text, textsize, win, xPos_start=None, yPos_start=None, xMax=None, yMax=None):
 
-    current_w, current_h = _current_window_size(win)
+    current_w, current_h = WIN_WIDTH, WIN_HEIGHT
     if xPos_start is None:
         xPos_start = 0.05 * current_w
     else:
@@ -427,7 +347,7 @@ def multiLineMessage(text, textsize, win, xPos_start=None, yPos_start=None, xMax
         font = pg.font.SysFont("times new roman", textsize)
 
     # Draw the background and boundaries only once
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
 
     # Now draw the text with the properly adjusted font size
     xPos = xPos_start
@@ -548,7 +468,7 @@ def getSubjectInfo(requestType, win):
                         response = response + chr(event.key).lower()
         if exit == True:
             break
-        win.fill(backgroundColor) 
+        win.fill(BACKGROUND_COLOR) 
         if requestType == 'Signature':
             text = "Please type your name to confirm that you consent to participate in this study. Press Enter or Return to submit.\n\n"
         elif requestType == 'selfReflect_explanation':
@@ -814,8 +734,8 @@ def showBlockExamples(win, audio_engine, block_name: str | None = None, saveFold
     last_played_index = None
 
     while True:
-        current_w, current_h = _current_window_size(win)
-        win.fill(backgroundColor)
+        current_w, current_h = WIN_WIDTH, WIN_HEIGHT
+        win.fill(BACKGROUND_COLOR)
 
         # Header/instructions
         header_font = pg.font.SysFont('times new roman', max(22, current_h // 28))
@@ -1085,7 +1005,7 @@ def showBlockInstructions(win, block_name: str, audio_engine, saveFolder: str | 
     else:
         text = fullSentenceBlockInstructionsText
 
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     multiLineMessage(text, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
@@ -1098,7 +1018,7 @@ def showBlockInstructions(win, block_name: str, audio_engine, saveFolder: str | 
 def showPreTrialQuickResponseScreen(win, block_name):
     """Instruction screen shown immediately before the first trial of each block."""
     pg.mouse.set_visible(False)
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     if block_name == "full_sentence":
         multiLineMessage(preTrialQuickResponseTextFullSentence, mediumFont, win)
     else:
@@ -1111,56 +1031,56 @@ def showPreTrialQuickResponseScreen(win, block_name):
 def experimentExplanation(win):
 
     # Welcome to the experiment screen
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage(explanationText_1, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
     # Emotional Task Priming Screen
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage(explanationText_2, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
     # Introducing the premise of hearing wall in the context of the sentence 
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage(explanationText_3, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
     # General what to keep in mind things 
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage(explanationText_4, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
     # Difficulty disclaimer 
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     pg.mouse.set_visible(False)
     multiLineMessage(explanationText_5, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
 
-    # win.fill(backgroundColor)
+    # win.fill(BACKGROUND_COLOR)
     # multiLineMessage(explanationText_5, mediumFont, win)
     # pg.display.flip()
     # waitKey(pg.K_SPACE)
 
 # break screen thanking the participant
 def breakScreen(i, win):
-    win.fill(backgroundColor)
-    multiLineMessage(breakScreenText(i), mediumFont, win)
+    win.fill(BACKGROUND_COLOR)
+    multiLineMessage(breakScreenText, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_f)
 
 # exit screen thanking the participant
 def exitScreen(subjectNumber, win):
     pg.mouse.set_visible(False)
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     multiLineMessage(exitScreenText, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_f)
@@ -1173,7 +1093,7 @@ def exitScreen(subjectNumber, win):
 # exit screen thanking the participant
 def nonConsentScreen(win):
     pg.mouse.set_visible(False)
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
     multiLineMessage(nonConsentText, mediumFont, win)
     pg.display.flip()
     waitKey(pg.K_SPACE)
@@ -1183,6 +1103,9 @@ def nonConsentScreen(win):
 
 # contains questionnaire questions and displays questionnaire to the subject
 def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, win):
+    # Lazy import to avoid circular dependency with questionnaires.py
+    from questionnaires import Button
+    
     index = 0
     email_consent = False  # Initialize email consent variable
     while True:
@@ -1192,7 +1115,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
             pg.event.clear()
             running = True
             while running:
-                win.fill(backgroundColor)
+                win.fill(BACKGROUND_COLOR)
                 multiLineMessage(studyInfoText, mediumFont, win)
                 pg.display.flip()
                 for event in pg.event.get():
@@ -1208,7 +1131,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
             pg.event.clear()
             running = True
             while running:
-                win.fill(backgroundColor)
+                win.fill(BACKGROUND_COLOR)
                 multiLineMessage(risksAndBenefitsText, mediumFont, win)
                 pg.display.flip()
                 for event in pg.event.get():
@@ -1226,7 +1149,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
         elif index == 2:
             running = True
             while running:
-                win.fill(backgroundColor)
+                win.fill(BACKGROUND_COLOR)
                 multiLineMessage(confidentialityText, mediumFont, win)
                 pg.display.flip()
                 for event in pg.event.get():
@@ -1244,7 +1167,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
         elif index == 3:
             running = True
             while running:
-                win.fill(backgroundColor)
+                win.fill(BACKGROUND_COLOR)
                 multiLineMessage(contactsAndQuestionsText, mediumFont, win)
                 pg.display.flip()
                 for event in pg.event.get():
@@ -1288,7 +1211,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
                     buttons.append(Button('option', 'binary', question_option, opt_i, yPos))
 
                 while response == None and running:
-                    win.fill(backgroundColor)
+                    win.fill(BACKGROUND_COLOR)
                     for event in pg.event.get():
                         if event.type == pg.KEYDOWN:
                             if event.key == pg.K_ESCAPE: # escape will exit the study
@@ -1356,7 +1279,7 @@ def consentScreen(subjectName, subjectNumber, subjectEmail, experimenterName, wi
                     buttons.append(Button('option', 'binary', question_option, opt_i, yPos))
 
                 while response == None and running:
-                    win.fill(backgroundColor)
+                    win.fill(BACKGROUND_COLOR)
                     for event in pg.event.get():
                         if event.type == pg.KEYDOWN:
                             if event.key == pg.K_ESCAPE:
@@ -1513,7 +1436,7 @@ def drawPlayButton(win, button_rect, enabled=True, audio_played=False, can_play=
 
 def drawAudioInterface(win, play_count, max_plays, audio_played=False, can_play=True, can_respond=True, block_name=None):
     """Draw the audio interface with instructions and play button"""
-    win.fill(backgroundColor)
+    win.fill(BACKGROUND_COLOR)
 
     current_w, current_h = _current_window_size(win)
     
@@ -1595,15 +1518,15 @@ def showPreExamplesFamiliarization(win, subjectNumber, saveFolder, block_name, a
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
     
     # Create play button (larger for this screen)
-    button_width = int(0.2 * winWidth)  # 20% of screen width
-    button_height = int(0.08 * winHeight)  # 8% of screen height
+    button_width = int(0.2 * WIN_WIDTH)  # 20% of screen width
+    button_height = int(0.08 * WIN_HEIGHT)  # 8% of screen height
     
     # Create continue button
-    continue_button_width = int(0.15 * winWidth)
-    continue_button_height = int(0.06 * winHeight)
+    continue_button_width = int(0.15 * WIN_WIDTH)
+    continue_button_height = int(0.06 * WIN_HEIGHT)
     
     while True:
-        win.fill(backgroundColor)
+        win.fill(BACKGROUND_COLOR)
         
         # Check if play button can be clicked (timing system)
         current_time = pg.time.get_ticks()
@@ -1749,15 +1672,15 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
     
     # Create play button (larger for this screen)
-    button_width = int(0.2 * winWidth)  # 20% of screen width
-    button_height = int(0.08 * winHeight)  # 8% of screen height
+    button_width = int(0.2 * WIN_WIDTH)  # 20% of screen width
+    button_height = int(0.08 * WIN_HEIGHT)  # 8% of screen height
     
     # Create continue button
-    continue_button_width = int(0.15 * winWidth)
-    continue_button_height = int(0.06 * winHeight)
+    continue_button_width = int(0.15 * WIN_WIDTH)
+    continue_button_height = int(0.06 * WIN_HEIGHT)
     
     while True:
-        win.fill(backgroundColor)
+        win.fill(BACKGROUND_COLOR)
         
         # Check if play button can be clicked (timing system)
         current_time = pg.time.get_ticks()
@@ -1860,12 +1783,12 @@ def showTargetFamiliarization(win, subjectNumber, saveFolder, session_number, bl
         win.blit(continue_text, continue_text.get_rect(center=continue_button_rect.center))
 
         # Progress indicator
-        counter_font = pg.font.SysFont("times new roman", max(18, winHeight // 35))
+        counter_font = pg.font.SysFont("times new roman", max(18, WIN_HEIGHT // 35))
         counter_surface = counter_font.render(f"Plays: {play_count}/{required_plays}", True, BLACK)
-        counter_y = play_button_rect.top - int(0.03 * winHeight)
-        if counter_y < int(0.02 * winHeight):
-            counter_y = int(0.02 * winHeight)
-        win.blit(counter_surface, counter_surface.get_rect(center=(winWidth // 2, counter_y)))
+        counter_y = play_button_rect.top - int(0.03 * WIN_HEIGHT)
+        if counter_y < int(0.02 * WIN_HEIGHT):
+            counter_y = int(0.02 * WIN_HEIGHT)
+        win.blit(counter_surface, counter_surface.get_rect(center=(WIN_WIDTH // 2, counter_y)))
         
         pg.display.flip()
         
@@ -1957,15 +1880,15 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
     
     # Create play button (larger for this screen)
-    button_width = int(0.2 * winWidth)  # 20% of screen width
-    button_height = int(0.08 * winHeight)  # 8% of screen height
+    button_width = int(0.2 * WIN_WIDTH)  # 20% of screen width
+    button_height = int(0.08 * WIN_HEIGHT)  # 8% of screen height
     
     # Create continue button
-    continue_button_width = int(0.15 * winWidth)
-    continue_button_height = int(0.06 * winHeight)
+    continue_button_width = int(0.15 * WIN_WIDTH)
+    continue_button_height = int(0.06 * WIN_HEIGHT)
 
     while True:
-        win.fill(backgroundColor)
+        win.fill(BACKGROUND_COLOR)
         
         # Check if play button can be clicked (timing system)
         current_time = pg.time.get_ticks()
@@ -2036,11 +1959,11 @@ def showPeriodicReminder(win, subjectNumber, saveFolder, trial_number, block_nam
             play_button_color = [c//2 for c in BLUE]  # Dimmed blue
             play_text_color = GRAY
 
-        play_y = int(y_pos + 0.25 * (winHeight - y_pos)) - button_height // 2
-        cont_y = int(y_pos + 0.50 * (winHeight - y_pos)) - continue_button_height // 2
+        play_y = int(y_pos + 0.25 * (WIN_HEIGHT - y_pos)) - button_height // 2
+        cont_y = int(y_pos + 0.50 * (WIN_HEIGHT - y_pos)) - continue_button_height // 2
 
-        play_button_rect = pg.Rect((winWidth - button_width) // 2, play_y, button_width, button_height)
-        continue_button_rect = pg.Rect((winWidth - continue_button_width) // 2, cont_y, continue_button_width, continue_button_height)
+        play_button_rect = pg.Rect((WIN_WIDTH - button_width) // 2, play_y, button_width, button_height)
+        continue_button_rect = pg.Rect((WIN_WIDTH - continue_button_width) // 2, cont_y, continue_button_width, continue_button_height)
 
         pg.draw.rect(win, play_button_color, play_button_rect)
         pg.draw.rect(win, BLACK, play_button_rect, 3)
@@ -2161,16 +2084,10 @@ def showAudioLevelTest(win, audio_engine):
         continue_button_height = int(0.06 * current_h)
         continue_button_rect = pg.Rect((current_w - continue_button_width) // 2, int(0.8 * current_h), continue_button_width, continue_button_height)
 
-        win.fill(backgroundColor)
+        win.fill(BACKGROUND_COLOR)
         
         # Display instructions
-        instructions = [
-            "Audio Level Testing - For Experimenter",
-            "",
-            "Use this screen to normalize audio levels before starting the experiment.",
-            "Adjust system volume so both sounds are at comfortable levels.",
-            "When audio levels are properly set, click 'Continue' to proceed."
-        ]
+        instructions = audioLevelTestInstructions
         
         y_pos = current_h // 8
         font = pg.font.SysFont("times new roman", max(18, current_h // 25))

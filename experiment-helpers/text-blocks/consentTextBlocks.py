@@ -1,0 +1,16 @@
+from ..experimenterLevers import number_of_credits
+
+studyInfoText = f'Study Number: IRB24-1770\nStudy Title: Superstitious Perception\nResearcher(s): Shannon Heald\n\n\
+Description: We are researchers at the University of Chicago doing a research study about the limits of human perception. You will be asked to engage with different types of stimuli (such as images and sounds) and indicate whether or not you believe a particular target is present within them. You will also be asked to fill out a couple of questionnaires.\n\n\
+Depending on your performance, we may reach out to you for follow up studies. If we reach out to you again, your participation is entirely voluntary, and you will be compensated for any further experiments in which you are a participant.\n\n\
+Participation should take approximately 45-90 minutes.\nYour participation is voluntary.\n\n\
+Incentives: You will be compensated {number_of_credits} SONA Credits for your participation in this study. You will also be entered into a raffle for a 50 dollar Amazon gift card. Your performance on the study will influence your chances of winning the raffle. The better you do, the higher your chances are to win the giftcard.\n\n\
+Please press the right arrow key to continue.'
+
+risksAndBenefitsText = 'Risks and Benefits: Your participation in this study does not involve any risk to you beyond that of everyday life. \n\nRisks for this task are minimal and include boredom, minor fatigue, and the possibility of a breach of confidentiality. \n\nTaking part in this research study may not benefit you personally beyond learning about psychological research, but we may learn new things that could help others and contribute to the field of psychology.\n\nPress the right arrow key to continue and the left arrow key to go back.'
+
+confidentialityText = 'Confidentiality: Any identifiable data or information collected by this study will never be shared outside the research team. \n\nDe-identified information from this study may be used for future research studies or shared with other researchers for future research without your additional informed consent. \n\nWe may also upload your data (in both aggregate and individual form) to public data repositories. \n\nYour study data will be handled as confidentially as possible. If results of this study are published or presented, your individual name will not be used. \n\nIf you decide to withdraw from this study, any data already collected will be destroyed.\n\nPress the right arrow key to continue and the left arrow key to go back.'
+
+contactsAndQuestionsText = 'Contacts & Questions: If you have questions or concerns about the study, you can contact Jean Matelski Boulware at (312)860-9260 or at matelskiboulware@uchicago.edu.\n\nIf you have any questions about your rights as a participant in this research, feel you have been harmed, or wish to discuss other study-related concerns with someone who is not part of the research team, you can contact the University of Chicago Social & Behavioral Sciences Institutional Review Board (IRB) Office by phone at (773) 702-2915, or by email at sbs-irb@uchicago.edu.\n\nPress the right arrow key to continue and the left arrow key to go back.'
+
+nonConsentText = 'Thank you for considering our experiment. \n\nPlease press the spacebar to exit the experiment.'
