@@ -1,0 +1,3 @@
+To update the code, please just type the following command...
+
+git pull origin master

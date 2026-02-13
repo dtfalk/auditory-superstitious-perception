@@ -195,10 +195,10 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
     text_renderer = TextRenderer(screen)
     
     question = (
-        'By clicking "I agree" below, you confirm that you have read the consent form, '
+        'By clicking "I consent" below, you confirm that you have read the consent form, '
         'are at least 18 years old, and agree to participate in the research. We will '
         'provide you a paper copy of this consent form upon completion of the study. '
-        'By selecting "I do NOT agree" you will not be able to participate in this '
+        'By selecting "I do **not** consent" you will not be able to participate in this '
         'research and we thank you for your consideration. You may use the arrow keys '
         'to review the information in this consent form before making a decision.'
     )
@@ -209,14 +209,14 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
     submit_style = ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK)
     
     agree_btn = Button(
-        screen, "I agree",
+        screen, "I consent",
         rel_x=0.5, rel_y=0.5,
         rel_width=0.4, rel_height=0.06,
         style=agree_style,
     )
     
     disagree_btn = Button(
-        screen, "I do **not** agree",
+        screen, "I do **not** consent",
         rel_x=0.5, rel_y=0.6,
         rel_width=0.4, rel_height=0.06,
         style=disagree_style,
@@ -245,7 +245,7 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
             question,
             rel_x=0.05,
             rel_y=0.05,
-            max_width=screen.abs_x(0.95),
+            max_width=screen.abs_x(0.92),
             style=text_style,
             auto_fit=True,
             rel_max_y=0.55,
@@ -569,14 +569,16 @@ def _save_consent_data(
     
     with open(filepath, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Field', 'Value'])
-        writer.writerow(['Subject Number', subject_info['subject_number']])
-        writer.writerow(['Subject Name', subject_info['subject_name']])
-        writer.writerow(['Experimenter', subject_info['experimenter_name']])
-        writer.writerow(['Consented', consented])
-        writer.writerow(['Email Consent', email_consent])
-        writer.writerow(['Signature', signature])
-        writer.writerow(['Timestamp', datetime.now().isoformat()])
+        writer.writerow(['Subject Number', 'Subject Name', 'Experimenter', 'Consented', 'Email Consent', 'Signature', 'Timestamp'])
+        writer.writerow([
+            subject_info['subject_number'],
+            subject_info['subject_name'],
+            subject_info['experimenter_name'],
+            consented,
+            email_consent,
+            signature,
+            datetime.now().isoformat()
+        ])
 
 
 def show_non_consent(win: pg.Surface) -> None:

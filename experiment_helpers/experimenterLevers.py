@@ -4,8 +4,29 @@ from utils.screenInfo import prepareExperimentalScreen
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.screenInfo import prepareExperimentalScreen
 
+# =================================================
+# CONSENT FORM VARIABLES
+# =================================================
+
+# IRB number if you need to switch it
+IRB_NUMBER = 'IRB24-1770'
+
+# Change study title name
+STUDY_TITLE = "Superstitious Perception"
+
+# Researcher Names To include multiple names follow python list format
+# (e.g. RESEARCHERS = ["John Doe", "Mary Sue", "Jane Doe"])
+RESEARCHERS = ["Shannon Heald", "Arwen Bare", "David Falk"]
+
 # Number of experimental credits to give the subject
-number_of_credits = '1.5'
+NUMBER_OF_CREDITS = '1.5'
+
+# Name of the experimental credit currency
+CREDIT_DENOMINATION = 'SONA credits' 
+
+# =================================================
+# DISPLAY AND LOGISTICAL VARIABLES
+# =================================================
 
 # Allows you to choose which monitor you want the experiment to display on
 # Imagine you have 10 connected monitors and we order them by screen size from smallest to largest
@@ -23,6 +44,10 @@ WIN_WIDTH, WIN_HEIGHT = prepareExperimentalScreen()
 # Change this if you ever make your own stimuli based on a different sentence
 SENTENCE_TO_IMAGINE = "The picture hung on the wall."
 
+# Minimum and maximum decibles for audio leveling
+MIN_DB = 68
+MAX_DB = 70
+
 # =============================================================================
 # TRIAL CONFIGURATION
 # =============================================================================
@@ -31,7 +56,7 @@ SENTENCE_TO_IMAGINE = "The picture hung on the wall."
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 15
+REMINDER_INTERVAL = 1
 
 # Max plays allowed during target familiarization screens
 FAMILIARIZATION_PLAYS = 5
@@ -41,5 +66,5 @@ REMINDER_PLAYS = 3
 
 # Set to -1 to show all stimuli
 # Otherwise will shown the specified number of stimuli per block
-# (useful for development)
-NUM_STIMULI_TO_SHOW = 3
+# (useful for testing/development)
+NUM_STIMULI_TO_SHOW = 2

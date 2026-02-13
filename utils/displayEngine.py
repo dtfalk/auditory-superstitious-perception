@@ -135,7 +135,7 @@ class TextStyle:
     italic: bool = False
     underline: bool = False
     align: TextAlign = TextAlign.LEFT
-    line_spacing: float = 1.2  # Multiplier of font height
+    line_spacing: float = 1.15  # Multiplier of font height (can reduce to 1.0 for tight spacing)
 
 
 @dataclass
@@ -1279,14 +1279,16 @@ class Button:
             return self.style.disabled_bg_color, self.style.disabled_text_color
         
         bg = self.style.bg_color
-        # Apply selection darkening first (persistent)
+        # Apply selection darkening (persistent) - no hover when selected
         if self.selected:
             bg = bg.darken(self.style.selected_darken)
-        # Then apply hover/pressed on top
-        if self.state == ButtonState.HOVERED:
-            bg = bg.darken(self.style.hover_darken)
-        elif self.state == ButtonState.PRESSED:
-            bg = bg.darken(self.style.pressed_darken)
+            # Selected buttons don't get hover effect
+        else:
+            # Only apply hover/pressed to non-selected buttons
+            if self.state == ButtonState.HOVERED:
+                bg = bg.darken(self.style.hover_darken)
+            elif self.state == ButtonState.PRESSED:
+                bg = bg.darken(self.style.pressed_darken)
         
         return bg, self.style.text_color
     

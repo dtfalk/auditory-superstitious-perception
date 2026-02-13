@@ -296,14 +296,15 @@ def _draw_button_rect(
     font: pg.font.Font,
     border_width: int = 3,
     is_playing: bool = False,
+    hover_enabled: bool = True,
 ) -> None:
     """Draw a rectangle button.
 
     * Darkens by 0.6 while ``is_playing`` is True.
-    * Darkens by 0.85 when the mouse hovers over the button.
+    * Darkens by 0.85 when the mouse hovers over the button (if hover_enabled).
     """
     mouse = pg.mouse.get_pos()
-    hovered = rect.collidepoint(mouse)
+    hovered = hover_enabled and rect.collidepoint(mouse)
 
     if is_playing:
         color = base_color.darken(0.6)
@@ -329,6 +330,7 @@ def _draw_audio_interface(
     can_play: bool = True,
     can_respond: bool = True,
     block_name: str | None = None,
+    audio_still_playing: bool = False,
 ) -> pg.Rect:
     """Draw the audio interface with instructions and play button."""
     screen = Screen(win)
@@ -365,7 +367,7 @@ def _draw_audio_interface(
         text_color = Colors.WHITE
 
     font = pg.font.SysFont("times new roman", max(18, screen.height // 35))
-    _draw_button_rect(win, button_rect, color, "Play Audio", text_color, font)
+    _draw_button_rect(win, button_rect, color, "Play Audio", text_color, font, hover_enabled=not audio_still_playing)
 
     return button_rect
 
@@ -441,8 +443,8 @@ def _show_pre_examples_familiarization(
 
         # Button text
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
-        _draw_button_rect(win, play_rect, play_color, "Play Sentence", play_text_color, font)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
+        _draw_button_rect(win, play_rect, play_color, "Play Sentence", play_text_color, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
 
         screen.update()
 
@@ -633,7 +635,8 @@ def _show_block_examples(
         # ── draw helper (darken when playing, hover darken, gray when disabled) ──
         def _draw_btn(rect: pg.Rect, label: str, enabled: bool, is_playing: bool = False):
             mouse_pos = pg.mouse.get_pos()
-            hovered = rect.collidepoint(mouse_pos) and enabled
+            # Disable hover effect for all buttons when any audio is playing
+            hovered = rect.collidepoint(mouse_pos) and enabled and not audio_still_playing
             if enabled:
                 text_col = Colors.WHITE
                 if 'No Wall' in label:
@@ -694,14 +697,15 @@ def _show_block_examples(
         # Continue button — only active after phase 4 and nothing playing
         cont_enabled = unlocked and not audio_still_playing
         mouse_pos = pg.mouse.get_pos()
+        # Neutral blue color, no hover when audio playing
         if cont_enabled:
-            cont_col = Colors.GREEN.darken(0.85) if continue_rect.collidepoint(mouse_pos) else Colors.GREEN
+            cont_col = Colors.BLUE.darken(0.85) if (continue_rect.collidepoint(mouse_pos) and not audio_still_playing) else Colors.BLUE
         else:
             cont_col = Colors.GRAY
         pg.draw.rect(win, cont_col.to_tuple(), continue_rect)
         pg.draw.rect(win, Colors.BLACK.to_tuple(), continue_rect, 2)
         cont_font = pg.font.SysFont('times new roman', max(16, current_h // 38))
-        cont_surf = cont_font.render('Continue', True, Colors.BLACK.to_tuple())
+        cont_surf = cont_font.render('Continue', True, Colors.WHITE.to_tuple())
         win.blit(cont_surf, cont_surf.get_rect(center=continue_rect.center))
 
         screen.update()
@@ -838,8 +842,8 @@ def _show_target_familiarization(
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
 
         screen.update()
 
@@ -947,8 +951,8 @@ def _show_periodic_reminder(
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
 
         screen.update()
 
@@ -1155,7 +1159,8 @@ def run_trial_loop(
                 audio_played=audio_played,
                 can_play=can_play,
                 can_respond=can_respond,
-                block_name=block_name
+                block_name=block_name,
+                audio_still_playing=audio_still_playing,
             )
             pg.display.flip()
 

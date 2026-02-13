@@ -57,16 +57,17 @@ class QuestionnaireOption:
         self.selected = False
     
     def draw(self, win: pg.Surface) -> None:
-        """Draw the option checkbox and label.  Darkens on hover."""
+        """Draw the option checkbox and label.  Darkens on hover (only if not selected)."""
         mouse_pos = pg.mouse.get_pos()
         hovered = self.rect.collidepoint(mouse_pos)
 
         if self.selected:
-            base = Colors.RED
+            # Selected state: solid color, no hover effect
+            color = Colors.RED.to_tuple()
         else:
+            # Unselected: apply hover darkening
             base = Colors.WHITE
-
-        color = base.darken(0.85).to_tuple() if hovered else base.to_tuple()
+            color = base.darken(0.85).to_tuple() if hovered else base.to_tuple()
         pg.draw.rect(win, color, self.rect)
         pg.draw.rect(win, Colors.BLACK.to_tuple(), self.rect, 2)
         
@@ -96,6 +97,7 @@ def _questionnaire_option_style(questionnaire_name: str, current_h: int) -> tupl
         scalar = 1.4
     elif 'bais' in questionnaire_name:
         scalar = 1.3
+        font_size = int(0.75 * base_font)  # Smaller font for BAIS anchors
     elif questionnaire_name == 'flow_state_scale':
         scalar = 1.5
     else:
@@ -119,7 +121,7 @@ def _precompute_option_slots(
     current_w, current_h = screen.width, screen.height
     font_size, scalar = _questionnaire_option_style(questionnaire_name, current_h)
 
-    buffer = current_h // 20
+    buffer = current_h // 40  # Reduced from //20 (5%) to //40 (2.5%)
     button_size = max(int(0.015 * min(current_w, current_h)), font_size)
 
     y_start = int(y_pos_question_fixed + buffer)
@@ -339,6 +341,7 @@ def _run_questionnaire(
             font_size=screen.scaled_font_size(20),
             color=Colors.BLACK,
             align=TextAlign.LEFT,
+            line_spacing=1.1,  # Tighter line spacing for intro screens
         )
         
         waiting = True
@@ -350,6 +353,8 @@ def _run_questionnaire(
                 rel_y=0.05,
                 max_width=screen.abs_x(0.9),
                 style=style,
+                auto_fit=True,
+                rel_max_y=0.95,
             )
             screen.update()
             
@@ -659,9 +664,9 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
                     waiting = False
     
     # Run all questionnaires
-    _tellegen(subject_number, win)
+    # _tellegen(subject_number, win)
     _vhq(subject_number, win)
-    _flow_state_scale(subject_number, win)
+    # _flow_state_scale(subject_number, win)
     _launay_slade(subject_number, win)
     _dissociative_experiences(subject_number, win)
     _bais_v(subject_number, win)
