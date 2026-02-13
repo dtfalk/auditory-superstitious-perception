@@ -25,6 +25,7 @@ from utils.displayEngine import (
     Screen, TextRenderer, TextInput,
     Colors, TextStyle, TextAlign, InputMode,
 )
+from utils.eventLogger import get_global_logger, ScreenEventLogger
 from experiment_helpers.text_blocks.experimentTextBlocks import exitScreenText
 
 
@@ -129,10 +130,16 @@ def _write_summary_data(subject_number: str, block_names: list[str], save_folder
 # EXIT SCREEN
 # =============================================================================
 
-def _show_exit_screen(win: pg.Surface) -> None:
+def _show_exit_screen(win: pg.Surface, save_folder: str = "", subject_number: str = "") -> None:
     """Display exit screen with thank you message."""
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    
+    # Set up logging if save_folder provided
+    logger = None
+    if save_folder and subject_number:
+        logger = ScreenEventLogger("exit_screen", save_folder, subject_number)
+        logger.log_event("screen_presented", "exit_screen")
     
     style = TextStyle(
         font_size=screen.scaled_font_size(20),
@@ -159,15 +166,28 @@ def _show_exit_screen(win: pg.Surface) -> None:
         for event in pg.event.get():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
+                    if logger:
+                        logger.log_event("key_pressed", "escape")
+                        logger.save()
                     pg.quit()
                     sys.exit()
                 elif event.key == pg.K_f:
+                    if logger:
+                        logger.log_event("key_pressed", "f_continue")
+                        logger.save()
                     return
 
 
-def _get_additional_comments(win: pg.Surface) -> str:
+def _get_additional_comments(win: pg.Surface, save_folder: str = "", subject_number: str = "") -> str:
     """Collect additional comments from participant."""
     screen = Screen(win)
+    
+    # Set up logging if save_folder provided
+    logger = None
+    if save_folder and subject_number:
+        logger = ScreenEventLogger("additional_comments", save_folder, subject_number)
+        logger.log_event("screen_presented", "additional_comments")
+    
     text_input = TextInput(
         screen,
         mode=InputMode.FULL_ASCII,
@@ -183,6 +203,11 @@ def _get_additional_comments(win: pg.Surface) -> str:
     )
     
     result = text_input.run(prompt=prompt)
+    
+    if logger:
+        logger.log_event("form_submitted", "comments_entered" if result else "skipped")
+        logger.save()
+    
     return result if result else ""
 
 
@@ -200,11 +225,16 @@ def run_end(
     """
     Run the end-of-experiment flow: exit screen, summary data, cleanup.
     """
-    # Show exit screen
-    _show_exit_screen(win)
+    # Log experiment end timestamp
+    event_logger = get_global_logger()
+    if event_logger:
+        event_logger.log_experiment_end()
     
-    # Collect additional comments
-    comments = _get_additional_comments(win)
+    # Show exit screen with logging
+    _show_exit_screen(win, save_folder, subject_number)
+    
+    # Collect additional comments with logging
+    comments = _get_additional_comments(win, save_folder, subject_number)
     
     # Save comments
     comments_path = os.path.join(save_folder, f'additional_comments_{subject_number}.txt')

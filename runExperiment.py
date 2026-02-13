@@ -21,6 +21,7 @@ from experiment_timeline.intro import run_audio_level_test, preload_audio, run_i
 from experiment_timeline.blocks import run_blocks
 from experiment_timeline.questionnaires_flow import run_questionnaires, save_sleepiness_data, stanford_sleepiness_scale
 from experiment_timeline.end import run_end
+from utils.eventLogger import init_global_logger
 
 
 def main():
@@ -49,6 +50,10 @@ def main():
     subject_number, save_folder = create_save_folder(subject_info['subject_number'])
     subject_info['subject_number'] = subject_number  # Update with final number
     
+    # Initialize event logger and log experiment start
+    event_logger = init_global_logger(save_folder, subject_number)
+    event_logger.log_experiment_start()
+    
     # ==========================================================================
     # PHASE 4: CONSENT
     # ==========================================================================
@@ -60,7 +65,7 @@ def main():
     # PHASE 5: EXPERIMENT INTRODUCTION
     # ==========================================================================
     sleepiness_responses = []
-    run_intro(win)
+    run_intro(win, save_folder=save_folder, subject_number=subject_number)
     
     # ==========================================================================
     # PHASE 6: EXPERIMENTAL BLOCKS

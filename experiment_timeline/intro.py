@@ -24,6 +24,7 @@ from utils.displayEngine import (
     Colors, TextStyle, TextAlign,
 )
 from utils.audioEngine import AudioEngine
+from utils.eventLogger import ScreenEventLogger
 from experiment_helpers.text_blocks.experimentTextBlocks import (
     explanationText_1, explanationText_2, explanationText_3,
     explanationText_4, explanationText_5, audioLevelTestInstructions,
@@ -187,7 +188,7 @@ def _show_explanation_page(
                     return
 
 
-def run_intro(win: pg.Surface) -> None:
+def run_intro(win: pg.Surface, save_folder: str = "", subject_number: str = "") -> None:
     """Run the experiment introduction/explanation screens."""
     explanation_pages = [
         explanationText_1,
@@ -197,8 +198,18 @@ def run_intro(win: pg.Surface) -> None:
         explanationText_5,
     ]
     
-    for page_text in explanation_pages:
+    # Event logging (if save_folder provided)
+    screen_logger = None
+    if save_folder and subject_number:
+        screen_logger = ScreenEventLogger('experiment_intro', save_folder, subject_number)
+    
+    for i, page_text in enumerate(explanation_pages):
         _show_explanation_page(win, page_text)
+        if screen_logger:
+            screen_logger.log_event('key_press', f'space_page{i+1}')
+    
+    if screen_logger:
+        screen_logger.save()
     
     pg.event.clear()
 

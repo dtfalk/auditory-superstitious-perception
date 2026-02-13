@@ -35,6 +35,7 @@ from utils.displayEngine import (
     Colors, Color, TextStyle, TextAlign, InputMode,
 )
 from utils.audioEngine import AudioEngine
+from utils.eventLogger import ScreenEventLogger
 from experiment_helpers.experimenterLevers import MAX_PLAYS, REMINDER_INTERVAL, FAMILIARIZATION_PLAYS, REMINDER_PLAYS
 from experiment_helpers.text_blocks.experimentTextBlocks import (
     fullSentenceBlockInstructionsText, imaginedSentenceBlockInstructionsText,
@@ -220,10 +221,22 @@ def _record_response(
 # DISPLAY UTILITIES
 # =============================================================================
 
-def _show_text_page(win: pg.Surface, text: str, wait_key: int = pg.K_SPACE) -> None:
+def _show_text_page(
+    win: pg.Surface,
+    text: str,
+    wait_key: int = pg.K_SPACE,
+    save_folder: str | None = None,
+    subject_number: str | None = None,
+    screen_name: str | None = None,
+) -> None:
     """Display a page of text and wait for a key press."""
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    
+    # Event logging (optional)
+    screen_logger = None
+    if save_folder and subject_number and screen_name:
+        screen_logger = ScreenEventLogger(screen_name, save_folder, subject_number)
 
     style = TextStyle(
         font_size=screen.scaled_font_size(20),
@@ -239,7 +252,7 @@ def _show_text_page(win: pg.Surface, text: str, wait_key: int = pg.K_SPACE) -> N
             text,
             rel_x=0.05,
             rel_y=0.05,
-            max_width=screen.abs_x(0.90),
+            max_width=screen.abs_x(0.92),
             style=style,
             auto_fit=True,
             rel_max_y=0.95,
@@ -253,10 +266,14 @@ def _show_text_page(win: pg.Surface, text: str, wait_key: int = pg.K_SPACE) -> N
                     pg.quit()
                     sys.exit()
                 elif event.key == wait_key:
+                    if screen_logger:
+                        key_name = pg.key.name(wait_key)
+                        screen_logger.log_event('key_press', key_name)
+                        screen_logger.save()
                     return
 
 
-def _show_centered_instructions(win: pg.Surface, instructions: list[str], max_rel_y: float = 0.70) -> int:
+def _show_instructions_(win: pg.Surface, instructions: list[str], max_rel_y: float = 0.70, text_align: str = "LEFT") -> int:
     """Draw centered instructions and return the y position after the last line.
     
     Joins the list into a single string (empty strings become blank lines)
@@ -268,10 +285,17 @@ def _show_centered_instructions(win: pg.Surface, instructions: list[str], max_re
     # Join list into single string preserving blank-line paragraph breaks
     text = "\n".join(instructions)
     
+    if text_align == "CENTER":
+        align = TextAlign.CENTER
+    elif text_align == "RIGHT":
+        align = TextAlign.RIGHT
+    else:
+        align = TextAlign.LEFT
+
     style = TextStyle(
         font_size=screen.scaled_font_size(18),
         color=Colors.BLACK,
-        align=TextAlign.CENTER,
+        align=align,
     )
     
     y_after = text_renderer.draw_paragraph(
@@ -344,7 +368,7 @@ def _draw_audio_interface(
         instructions = list(trialInstructions_full_sentence)
 
     # Draw instructions using auto-fit so they never overlap
-    y_pos = _show_centered_instructions(win, instructions, max_rel_y=0.60)
+    y_pos = _show_instructions_(win, instructions, max_rel_y=0.60, text_align="LEFT")
 
     # Create play button in remaining space
     button_width = screen.abs_x(0.18)
@@ -367,7 +391,7 @@ def _draw_audio_interface(
         text_color = Colors.WHITE
 
     font = pg.font.SysFont("times new roman", max(18, screen.height // 35))
-    _draw_button_rect(win, button_rect, color, "Play Audio", text_color, font, hover_enabled=not audio_still_playing)
+    _draw_button_rect(win, button_rect, color, "Play Audio", text_color, font, hover_enabled=enabled and not audio_still_playing)
 
     return button_rect
 
@@ -387,13 +411,16 @@ def _show_pre_examples_familiarization(
     pg.mouse.set_visible(True)
     screen = Screen(win)
     
+    # Event logging
+    screen_logger = ScreenEventLogger(f'pre_examples_familiarization_{block_name}', save_folder, subject_number)
+    
     # Load target sound
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
     actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
     actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
 
-    required_plays = 5
+    required_plays = FAMILIARIZATION_PLAYS
     play_count = 0
     last_audio_start = 0
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
@@ -413,7 +440,7 @@ def _show_pre_examples_familiarization(
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
 
         # Draw instructions
-        y_pos = _show_centered_instructions(win, instructions)
+        y_pos = _show_instructions_(win, instructions, text_align="LEFT")
 
         # Position buttons in remaining space below text
         remaining_h = screen.height - y_pos - screen.abs_y(0.05)
@@ -443,8 +470,8 @@ def _show_pre_examples_familiarization(
 
         # Button text
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
-        _draw_button_rect(win, play_rect, play_color, "Play Sentence", play_text_color, font, hover_enabled=not audio_still_playing)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, play_rect, play_color, "Play Sentence", play_text_color, font, hover_enabled=play_enabled and not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=continue_enabled and not audio_still_playing)
 
         screen.update()
 
@@ -455,10 +482,13 @@ def _show_pre_examples_familiarization(
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
                 if play_rect.collidepoint(mouse) and can_play:
+                    screen_logger.log_event('button_click', 'play_sentence')
                     audio_duration = _play_audio_stimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
                 elif cont_rect.collidepoint(mouse) and continue_enabled:
+                    screen_logger.log_event('button_click', 'continue')
+                    screen_logger.save()
                     return
 
 
@@ -489,6 +519,9 @@ def _show_block_examples(
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
     current_w, current_h = screen.width, screen.height
+    
+    # Event logging
+    screen_logger = ScreenEventLogger(f'examples_screen_{block_name}', save_folder, subject_number)
 
     # Instruction text
     if block_name == "imagined_sentence":
@@ -550,13 +583,13 @@ def _show_block_examples(
     
     # Smaller buttons for imagined_sentence to allow more text space
     if block_name == 'imagined_sentence':
-        grid_btn_h = max(32, int(0.05 * current_h))
-        actual_btn_h = max(32, int(0.05 * current_h))
-        text_max_y = 0.45  # More room for text
+        grid_btn_h = max(30, int(0.045 * current_h))
+        actual_btn_h = max(30, int(0.045 * current_h))
+        text_max_y = 0.50  # More room for text
     else:
-        grid_btn_h = max(36, int(0.07 * current_h))
-        actual_btn_h = max(36, int(0.07 * current_h))
-        text_max_y = 0.40
+        grid_btn_h = max(32, int(0.055 * current_h))
+        actual_btn_h = max(32, int(0.055 * current_h))
+        text_max_y = 0.45
 
     def _compute_grid(count: int, top_y: int):
         if count <= 0:
@@ -591,7 +624,7 @@ def _show_block_examples(
         instr_style = TextStyle(
             font_size=screen.scaled_font_size(16),
             color=Colors.BLACK,
-            align=TextAlign.CENTER,
+            align=TextAlign.LEFT,
         )
         y_after_text = text_renderer.draw_paragraph(
             instruction_text,
@@ -603,13 +636,13 @@ def _show_block_examples(
         )
 
         # ── layout ──
-        top_y = y_after_text + int(0.04 * current_h)
-        label_font = pg.font.SysFont('times new roman', max(18, current_h // 40))
+        top_y = y_after_text + int(0.06 * current_h)
+        label_font = pg.font.SysFont('times new roman', max(20, current_h // 36), bold=True)
 
-        # "Wall" label
+        # "Wall" label (bold)
         t_lab = label_font.render('Wall', True, Colors.BLACK.to_tuple())
         win.blit(t_lab, (margin_x, top_y))
-        top_y += t_lab.get_height() + 6
+        top_y += t_lab.get_height() + 8
 
         target_rects, next_y = _compute_grid(len(target_files), top_y)
 
@@ -618,17 +651,17 @@ def _show_block_examples(
         actual_h = actual_btn_h  # Use configured height
         actual_rect = pg.Rect((current_w - actual_w) // 2, next_y + int(0.03 * current_h), actual_w, actual_h)
 
-        # "No Wall" label
-        d_label_y = actual_rect.bottom + int(0.03 * current_h)
+        # "No Wall" label (bold)
+        d_label_y = actual_rect.bottom + int(0.04 * current_h)
         d_lab = label_font.render('No Wall', True, Colors.BLACK.to_tuple())
         win.blit(d_lab, (margin_x, d_label_y))
 
-        distractor_rects, next_y = _compute_grid(len(distractor_files), d_label_y + d_lab.get_height() + 6)
+        distractor_rects, next_y = _compute_grid(len(distractor_files), d_label_y + d_lab.get_height() + 8)
 
         # Continue button
         continue_w = int(0.18 * current_w)
-        continue_h = int(0.06 * current_h)
-        continue_rect = pg.Rect((current_w - continue_w) // 2, next_y + int(0.05 * current_h), continue_w, continue_h)
+        continue_h = int(0.05 * current_h)
+        continue_rect = pg.Rect((current_w - continue_w) // 2, next_y + int(0.03 * current_h), continue_w, continue_h)
 
         btn_font = pg.font.SysFont('times new roman', max(14, current_h // 44))
 
@@ -697,15 +730,15 @@ def _show_block_examples(
         # Continue button — only active after phase 4 and nothing playing
         cont_enabled = unlocked and not audio_still_playing
         mouse_pos = pg.mouse.get_pos()
-        # Neutral blue color, no hover when audio playing
+        # White, no hover when audio playing
         if cont_enabled:
-            cont_col = Colors.BLUE.darken(0.85) if (continue_rect.collidepoint(mouse_pos) and not audio_still_playing) else Colors.BLUE
+            cont_col = Colors.LIGHT_GRAY if (continue_rect.collidepoint(mouse_pos) and not audio_still_playing) else Colors.WHITE
         else:
             cont_col = Colors.GRAY
         pg.draw.rect(win, cont_col.to_tuple(), continue_rect)
         pg.draw.rect(win, Colors.BLACK.to_tuple(), continue_rect, 2)
         cont_font = pg.font.SysFont('times new roman', max(16, current_h // 38))
-        cont_surf = cont_font.render('Continue', True, Colors.WHITE.to_tuple())
+        cont_surf = cont_font.render('Continue', True, Colors.BLACK.to_tuple())
         win.blit(cont_surf, cont_surf.get_rect(center=continue_rect.center))
 
         screen.update()
@@ -723,6 +756,8 @@ def _show_block_examples(
 
                 # Continue
                 if continue_rect.collidepoint(mouse) and cont_enabled:
+                    screen_logger.log_event('button_click', 'continue')
+                    screen_logger.save()
                     out_path = os.path.join(save_folder, f'example_play_counts_{block_name}_{subject_number}.csv')
                     with open(out_path, 'w', newline='') as f:
                         writer = csv.writer(f)
@@ -736,6 +771,7 @@ def _show_block_examples(
 
                 # Actual Audio
                 if actual_rect.collidepoint(mouse) and (unlocked or can_click_actual):
+                    screen_logger.log_event('button_click', 'actual_audio')
                     audio_duration = _play_audio_stimulus(audio_engine, actual_pcm)
                     last_audio_start = ct
                     last_played_type = 'actual'
@@ -750,6 +786,7 @@ def _show_block_examples(
                 # Targets
                 for i, rect in enumerate(target_rects):
                     if rect.collidepoint(mouse) and (unlocked or (can_click_targets and i == next_target_idx)):
+                        screen_logger.log_event('button_click', f'target_{i}')
                         audio_duration = _play_audio_stimulus(audio_engine, targets_pcm[i])
                         last_audio_start = ct
                         last_played_type = 'target'
@@ -764,6 +801,7 @@ def _show_block_examples(
                     # Distractors
                     for i, rect in enumerate(distractor_rects):
                         if rect.collidepoint(mouse) and (unlocked or (can_click_distractors and i == next_distractor_idx)):
+                            screen_logger.log_event('button_click', f'distractor_{i}')
                             audio_duration = _play_audio_stimulus(audio_engine, distractors_pcm[i])
                             last_audio_start = ct
                             last_played_type = 'distractor'
@@ -787,6 +825,9 @@ def _show_target_familiarization(
     """Show target familiarization screen before trials begin."""
     pg.mouse.set_visible(True)
     screen = Screen(win)
+    
+    # Event logging
+    screen_logger = ScreenEventLogger(f'target_familiarization_{block_name}_{session_number}', save_folder, subject_number)
 
     # Load target sound
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
@@ -812,16 +853,16 @@ def _show_target_familiarization(
         audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
 
-        y_pos = _show_centered_instructions(win, instructions)
+        y_pos = _show_instructions_(win, instructions, text_align="LEFT")
 
         # Dynamic button placement in remaining space
         remaining_h = screen.height - y_pos - screen.abs_y(0.05)
-        play_y = y_pos + int(remaining_h * 0.25)
-        btn_width = screen.abs_x(0.2)
-        btn_height = max(30, int(remaining_h * 0.18))
-        cont_y = play_y + btn_height + int(remaining_h * 0.12)
-        cont_width = screen.abs_x(0.15)
-        cont_height = max(26, int(remaining_h * 0.15))
+        play_y = y_pos + int(remaining_h * 0.20)
+        btn_width = screen.abs_x(0.22)
+        btn_height = max(40, int(remaining_h * 0.22))
+        cont_y = play_y + btn_height + int(remaining_h * 0.10)
+        cont_width = screen.abs_x(0.17)
+        cont_height = max(36, int(remaining_h * 0.18))
 
         play_rect = pg.Rect((screen.width - btn_width) // 2, play_y, btn_width, btn_height)
         cont_rect = pg.Rect((screen.width - cont_width) // 2, cont_y, cont_width, cont_height)
@@ -842,8 +883,8 @@ def _show_target_familiarization(
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=not audio_still_playing)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=can_click_play and not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=continue_enabled and not audio_still_playing)
 
         screen.update()
 
@@ -854,10 +895,13 @@ def _show_target_familiarization(
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
                 if play_rect.collidepoint(mouse) and can_click_play:
+                    screen_logger.log_event('button_click', 'play_sentence')
                     audio_duration = _play_audio_stimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
                 elif cont_rect.collidepoint(mouse) and continue_enabled:
+                    screen_logger.log_event('button_click', 'continue')
+                    screen_logger.save()
                     # Save data
                     _save_target_familiarization_data(subject_number, save_folder, session_number, play_count, block_name)
                     return
@@ -897,6 +941,9 @@ def _show_periodic_reminder(
     """Show periodic reminder screen."""
     pg.mouse.set_visible(True)
     screen = Screen(win)
+    
+    # Event logging
+    screen_logger = ScreenEventLogger(f'periodic_reminder_{block_name}_trial{trial_number}', save_folder, subject_number)
 
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
     actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
@@ -921,7 +968,7 @@ def _show_periodic_reminder(
         audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
 
-        y_pos = _show_centered_instructions(win, instructions)
+        y_pos = _show_instructions_(win, instructions, text_align="LEFT")
 
         # Dynamic button placement in remaining space
         remaining_h = screen.height - y_pos - screen.abs_y(0.05)
@@ -951,8 +998,8 @@ def _show_periodic_reminder(
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=not audio_still_playing)
-        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=not audio_still_playing)
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font, hover_enabled=can_click and not audio_still_playing)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font, hover_enabled=continue_enabled and not audio_still_playing)
 
         screen.update()
 
@@ -963,10 +1010,13 @@ def _show_periodic_reminder(
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
                 if play_rect.collidepoint(mouse) and can_click:
+                    screen_logger.log_event('button_click', 'play_sentence')
                     audio_duration = _play_audio_stimulus(audio_engine, actual_target_pcm)
                     last_audio_start = current_time
                     play_count += 1
                 elif cont_rect.collidepoint(mouse) and continue_enabled:
+                    screen_logger.log_event('button_click', 'continue')
+                    screen_logger.save()
                     # Save data
                     _save_periodic_reminder_data(subject_number, save_folder, trial_number, play_count, block_name)
                     return
@@ -999,7 +1049,7 @@ def _save_periodic_reminder_data(
 # SELF-REFLECTION
 # =============================================================================
 
-def _get_subject_input(win: pg.Surface, prompt: str) -> str:
+def _get_subject_input(win: pg.Surface, prompt: str, screen_logger: ScreenEventLogger | None = None, input_name: str = "") -> str:
     """Get free-form text input from participant."""
     screen = Screen(win)
     text_input = TextInput(
@@ -1010,6 +1060,8 @@ def _get_subject_input(win: pg.Surface, prompt: str) -> str:
         placeholder="Type your response..."
     )
     result = text_input.run(prompt=prompt)
+    if screen_logger and result and input_name:
+        screen_logger.log_event('text_submitted', input_name)
     return result if result else ""
 
 
@@ -1020,24 +1072,31 @@ def _save_self_reflection(
     block_name: str
 ) -> None:
     """Collect and save self-reflection responses after a block."""
+    # Event logging
+    screen_logger = ScreenEventLogger(f'self_reflection_{block_name}', save_folder, subject_number)
+    
     explanation = _get_subject_input(
         win,
-        'During the previous block, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n\nResponse:'
+        'During the previous block, how did you decide whether or not the word "Wall" was in each of the stimuli? What were you thinking about or considering as you made that decision?\n\n**Response**',
+        screen_logger, 'methodology_explanation'
     )
     
     changes = _get_subject_input(
         win,
-        'Did your methodology change or evolve over the course of the previous block?\n\nResponse:'
+        'Did your methodology change or evolve over the course of the previous block?\n\n**Response**',
+        screen_logger, 'methodology_changes'
     )
 
     if block_name == 'imagined_sentence':
         rule_following = _get_subject_input(
             win,
-            'During this block did you imagine the sentence before playing the stimuli and then click "Play Audio" at the moment you would have imagined the word "Wall"? Please begin your response with either "Yes." or "No." You may include additional information after typing "Yes." or "No."\n\nResponse:'
+            'During this block did you imagine the sentence before playing the stimuli and then click "Play Audio" at the moment you would have imagined the word "Wall"?\n  - Please begin your response with either "Yes." or "No."\n  - You may include additional information after typing "Yes." or "No."\n\n**Response**',
+            screen_logger, 'imagination_rule_following'
         )
     else:
         rule_following = 'N/A'
 
+    screen_logger.save()
     filepath = os.path.join(save_folder, f'self_reflection_{block_name}_{subject_number}.csv')
     with open(filepath, mode='w', newline='') as f:
         writer = csv.writer(f)
@@ -1062,25 +1121,31 @@ def _show_block_instructions(
     else:
         text = fullSentenceBlockInstructionsText
 
-    _show_text_page(win, text, wait_key=pg.K_SPACE)
+    _show_text_page(win, text, wait_key=pg.K_SPACE,
+                   save_folder=save_folder, subject_number=subject_number,
+                   screen_name=f'block_instructions_{block_name}')
     _show_pre_examples_familiarization(win, subject_number, save_folder, block_name, audio_engine)
     _show_block_examples(win, audio_engine, block_name, save_folder, subject_number)
     pg.mouse.set_visible(False)
 
 
-def _show_pre_trial_screen(win: pg.Surface, block_name: str) -> None:
+def _show_pre_trial_screen(win: pg.Surface, block_name: str, save_folder: str, subject_number: str) -> None:
     """Show pre-trial quick response screen."""
     if block_name == "full_sentence":
         text = preTrialQuickResponseTextFullSentence
     else:
         text = preTrialQuickResponseTextImaginedSentence
     
-    _show_text_page(win, text, wait_key=pg.K_SPACE)
+    _show_text_page(win, text, wait_key=pg.K_SPACE,
+                   save_folder=save_folder, subject_number=subject_number,
+                   screen_name=f'pre_trial_{block_name}')
 
 
-def _show_break_screen(win: pg.Surface, block_index: int) -> None:
+def _show_break_screen(win: pg.Surface, block_index: int, save_folder: str, subject_number: str) -> None:
     """Show break screen between blocks."""
-    _show_text_page(win, breakScreenText, wait_key=pg.K_f)
+    _show_text_page(win, breakScreenText, wait_key=pg.K_f,
+                   save_folder=save_folder, subject_number=subject_number,
+                   screen_name=f'break_screen_{block_index}')
 
 
 # =============================================================================
@@ -1251,7 +1316,7 @@ def run_blocks(
         _show_block_instructions(win, block_name, audio_engine, save_folder, subject_number)
 
         # Pre-trial screen
-        _show_pre_trial_screen(win, block_name)
+        _show_pre_trial_screen(win, block_name, save_folder, subject_number)
 
         # Sleepiness scale before block if function provided
         if stanford_sleepiness_scale_func and sleepiness_responses is not None:
@@ -1275,6 +1340,6 @@ def run_blocks(
 
         # Break screen between blocks (not after last block)
         if i < len(block_names) - 1:
-            _show_break_screen(win, i)
+            _show_break_screen(win, i, save_folder, subject_number)
 
     return block_names

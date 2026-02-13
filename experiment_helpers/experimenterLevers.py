@@ -16,7 +16,7 @@ STUDY_TITLE = "Superstitious Perception"
 
 # Researcher Names To include multiple names follow python list format
 # (e.g. RESEARCHERS = ["John Doe", "Mary Sue", "Jane Doe"])
-RESEARCHERS = ["Shannon Heald", "Arwen Bare", "David Falk"]
+RESEARCHERS = ["Shannon Heald"]
 
 # Number of experimental credits to give the subject
 NUMBER_OF_CREDITS = '1.5'
@@ -42,7 +42,7 @@ WIN_WIDTH, WIN_HEIGHT = prepareExperimentalScreen()
 
 # The sentence that the subject is listening for
 # Change this if you ever make your own stimuli based on a different sentence
-SENTENCE_TO_IMAGINE = "The picture hung on the wall."
+SENTENCE_TO_IMAGINE = "The Picture Hung on the Wall"
 
 # Minimum and maximum decibles for audio leveling
 MIN_DB = 68
@@ -56,13 +56,13 @@ MAX_DB = 70
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 1
+REMINDER_INTERVAL = 2
 
 # Max plays allowed during target familiarization screens
-FAMILIARIZATION_PLAYS = 5
+FAMILIARIZATION_PLAYS = 2
 
 # Max plays allowed during periodic reminder screens
-REMINDER_PLAYS = 3
+REMINDER_PLAYS = 2
 
 # Set to -1 to show all stimuli
 # Otherwise will shown the specified number of stimuli per block

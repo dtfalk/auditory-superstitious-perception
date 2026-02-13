@@ -23,6 +23,7 @@ from utils.displayEngine import (
     Screen, TextRenderer, TextInput, Button, ButtonStyle,
     Colors, TextStyle, TextAlign, InputMode,
 )
+from utils.eventLogger import ScreenEventLogger
 from experiment_helpers.text_blocks.consentTextBlocks import (
     studyInfoText, incentivesText, risksAndBenefitsText, 
     confidentialityText, contactsAndQuestionsText, nonConsentText
@@ -196,10 +197,10 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
     
     question = (
         'By clicking "I consent" below, you confirm that you have read the consent form, '
-        'are at least 18 years old, and agree to participate in the research. We will '
-        'provide you a paper copy of this consent form upon completion of the study. '
+        'are at least 18 years old, and agree to participate in the research.\n\nWe will '
+        'provide you a paper copy of this consent form upon completion of the study.\n\n'
         'By selecting "I do **not** consent" you will not be able to participate in this '
-        'research and we thank you for your consideration. You may use the arrow keys '
+        'research and we thank you for your consideration.\n\nYou may use the arrow keys '
         'to review the information in this consent form before making a decision.'
     )
     
@@ -339,8 +340,8 @@ def _show_email_consent(win: pg.Surface) -> tuple[str, bool]:
         'This is optional and will not affect your participation or compensation in the '
         'current study. You can withdraw this permission at any time by contacting the '
         'researchers.\n\n'
-        'By selecting "Yes", you agree to be contacted about future research opportunities. '
-        'By selecting "No", we will not contact you for future studies.'
+        'By selecting "Yes...", you agree to be contacted about future research opportunities. '
+        'By selecting "No...", we will not contact you for future studies.'
     )
     
     btn_style = ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK)
@@ -486,6 +487,12 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
     Returns:
         True if participant consented, False otherwise
     """
+    # Event logging
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    save_folder = os.path.join(base_dir, 'results', subject_info['subject_number'])
+    screen_logger = ScreenEventLogger('consent_flow', save_folder, subject_info['subject_number'])
+    
+    page_names = ['study_info', 'incentives', 'risks_benefits', 'confidentiality', 'contacts']
     pages = [
         (studyInfoText, False),       # Page 0: Study info (no back)
         (incentivesText, True),       # Page 1: Incentives
@@ -504,6 +511,7 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
             # Show text pages
             text, allow_back = pages[index]
             result = _show_text_page(win, text, allow_back=allow_back)
+            screen_logger.log_event('page_navigation', f'{page_names[index]}_{result}')
             
             if result == "next":
                 index += 1
@@ -513,11 +521,13 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
         elif index == len(pages):
             # Consent choice page
             result, consented = _show_consent_choice(win)
+            screen_logger.log_event('consent_choice', f'consented={consented}_{result}')
             
             if result == "next":
                 if consented:
                     index += 1  # Move to email consent
                 else:
+                    screen_logger.save()
                     return False  # Did not consent
             elif result == "back":
                 index -= 1
@@ -525,6 +535,7 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
         elif index == len(pages) + 1:
             # Email consent page
             result, email_consent = _show_email_consent(win)
+            screen_logger.log_event('email_consent', f'email_consent={email_consent}_{result}')
             
             if result == "next":
                 index += 1  # Move to signature
@@ -535,6 +546,8 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
             # Signature page
             signature = _get_signature(win)
             if signature:
+                screen_logger.log_event('signature', 'signed')
+                screen_logger.save()
                 # All done - save consent data and return
                 _save_consent_data(
                     subject_info,
@@ -548,6 +561,7 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
         else:
             break
     
+    screen_logger.save()
     return consented
 
 

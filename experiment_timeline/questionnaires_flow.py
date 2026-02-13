@@ -27,9 +27,10 @@ sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
 from utils.displayEngine import (
-    Screen, TextRenderer,
+    Screen, TextRenderer, TextInput, InputMode,
     Colors, TextStyle, TextAlign,
 )
+from utils.eventLogger import ScreenEventLogger
 from experiment_helpers.text_blocks.questionnairesTextBlocks import (
     telleganScaleIntro, launeyScaleIntro, dissociativeExperiencesIntro,
     flowStateIntro, vhqIntro, baisVIntro, baisCIntro, questionnairesIntro
@@ -50,10 +51,12 @@ class QuestionnaireOption:
         y: int,
         size: int,
         font_size: int,
+        max_text_width: int = 0,
     ):
         self.text = text
         self.rect = pg.Rect(x, y, size, size)
         self.font_size = font_size
+        self.max_text_width = max_text_width
         self.selected = False
     
     def draw(self, win: pg.Surface) -> None:
@@ -72,8 +75,37 @@ class QuestionnaireOption:
         pg.draw.rect(win, Colors.BLACK.to_tuple(), self.rect, 2)
         
         font = pg.font.SysFont("times new roman", self.font_size)
-        text_surface = font.render(self.text, True, Colors.BLACK.to_tuple())
-        win.blit(text_surface, (self.rect.right + 10, self.rect.top - 2))
+        text_x = self.rect.right + 10
+        text_y = self.rect.top - 2
+        
+        # Wrap text if max_text_width is set and text is too wide
+        if self.max_text_width > 0:
+            words = self.text.split()
+            lines = []
+            current_line = []
+            indent = "   "  # Indent for wrapped lines
+            
+            for word in words:
+                test_line = ' '.join(current_line + [word])
+                test_surf = font.render(test_line, True, Colors.BLACK.to_tuple())
+                if test_surf.get_width() <= self.max_text_width:
+                    current_line.append(word)
+                else:
+                    if current_line:
+                        lines.append(' '.join(current_line))
+                    current_line = [word]
+            if current_line:
+                lines.append(' '.join(current_line))
+            
+            # Draw wrapped lines
+            line_height = int(self.font_size * 1.15)
+            for i, line in enumerate(lines):
+                prefix = indent if i > 0 else ""
+                line_surf = font.render(prefix + line, True, Colors.BLACK.to_tuple())
+                win.blit(line_surf, (text_x, text_y + i * line_height))
+        else:
+            text_surface = font.render(self.text, True, Colors.BLACK.to_tuple())
+            win.blit(text_surface, (text_x, text_y))
     
     def contains_point(self, pos: tuple[int, int]) -> bool:
         return self.rect.collidepoint(pos)
@@ -97,7 +129,7 @@ def _questionnaire_option_style(questionnaire_name: str, current_h: int) -> tupl
         scalar = 1.4
     elif 'bais' in questionnaire_name:
         scalar = 1.3
-        font_size = int(0.75 * base_font)  # Smaller font for BAIS anchors
+        # Keep standard font size for checkbox sizing, anchors wrap if needed
     elif questionnaire_name == 'flow_state_scale':
         scalar = 1.5
     else:
@@ -125,10 +157,16 @@ def _precompute_option_slots(
     button_size = max(int(0.015 * min(current_w, current_h)), font_size)
 
     y_start = int(y_pos_question_fixed + buffer)
-    y_end = int(0.85 * current_h) - font_size
+    
+    # Options end at 0.82 to leave buffer above submit button (at 0.88-0.90)
+    if questionnaire_name in ('dissociative_experiences', 'bais_c'):
+        y_end = int(0.80 * current_h) - font_size  # More buffer for these
+    else:
+        y_end = int(0.82 * current_h) - font_size
+    
     if y_end <= y_start:
         y_start = int(0.30 * current_h)
-        y_end = int(0.85 * current_h) - font_size
+        y_end = int(0.82 * current_h) - font_size
 
     available_height = max(1, y_end - y_start)
 
@@ -147,7 +185,26 @@ def _precompute_option_slots(
 
     x_left = int(0.05 * current_w)
     x_right = int(0.05 * current_w + 0.45 * current_w)
+    
+    # Center columns when there are 2
+    if n_cols == 2:
+        # Each column is about 45% wide, total 90% of screen
+        # Center by adjusting left margin
+        col_width = int(0.45 * current_w)
+        total_width = 2 * col_width
+        left_margin = (current_w - total_width) // 2
+        x_left = left_margin
+        x_right = left_margin + col_width
+    
     left_count = max_options if n_cols == 1 else math.ceil(max_options / 2)
+    
+    # Calculate max text width for wrapping anchors
+    # Leave room for checkbox (button_size + 10px gap) and padding
+    if n_cols == 2:
+        col_width = int(0.45 * current_w)
+        max_text_width = col_width - button_size - 30  # padding between columns
+    else:
+        max_text_width = int(0.85 * current_w) - button_size - 20
 
     slots: list[dict] = []
     for idx in range(max_options):
@@ -163,6 +220,7 @@ def _precompute_option_slots(
             'y': y,
             'button_size': button_size,
             'font_size': font_size,
+            'max_text_width': max_text_width,
         })
     return slots
 
@@ -200,6 +258,8 @@ def _run_single_question(
     options: list[str],
     questionnaire_name: str,
     precomputed_slots: list[dict] | None = None,
+    screen_logger: ScreenEventLogger | None = None,
+    question_index: int = 0,
 ) -> str:
     """Display a single question and return the selected response.
 
@@ -230,7 +290,8 @@ def _run_single_question(
         for i, opt_text in enumerate(options):
             s = precomputed_slots[i]
             option_widgets.append(
-                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'])
+                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'], 
+                                   s.get('max_text_width', 0))
             )
     else:
         # Fallback: compute per-question (old behaviour for standalone calls)
@@ -243,7 +304,8 @@ def _run_single_question(
         for i, opt_text in enumerate(options):
             s = slots[i]
             option_widgets.append(
-                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'])
+                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'],
+                                   s.get('max_text_width', 0))
             )
     
     # Submit button (larger size)
@@ -254,9 +316,16 @@ def _run_single_question(
     padding_y = int(0.015 * current_h)
     submit_width = max(int(0.12 * current_w), submit_surf.get_width() + 2 * padding_x)
     submit_height = max(int(0.06 * current_h), submit_surf.get_height() + 2 * padding_y)
+    
+    # Determine submit button Y position - more buffer for some questionnaires
+    if questionnaire_name in ('dissociative_experiences', 'bais_c'):
+        submit_y = int(0.90 * current_h)
+    else:
+        submit_y = int(0.88 * current_h)
+    
     submit_rect = pg.Rect(
         (current_w - submit_width) // 2,
-        int(0.85 * current_h),
+        submit_y,
         submit_width,
         submit_height,
     )
@@ -309,10 +378,14 @@ def _run_single_question(
                             w.selected = False
                         widget.selected = True
                         selected_idx = i
+                        if screen_logger:
+                            screen_logger.log_event('option_selected', f'Q{question_index+1}_option{i}')
                         break
                 
                 # Check submit button
                 if submit_rect.collidepoint(pos) and selected_idx is not None:
+                    if screen_logger:
+                        screen_logger.log_event('submit_clicked', f'Q{question_index+1}')
                     return options[selected_idx]
 
 
@@ -333,6 +406,10 @@ def _run_questionnaire(
     """
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    
+    # Event logging
+    results_dir = os.path.join(_BASE_DIR, 'results', subject_number)
+    screen_logger = ScreenEventLogger(f'questionnaire_{questionnaire_name}', results_dir, subject_number)
     
     # Show intro if provided
     if intro_text:
@@ -364,6 +441,7 @@ def _run_questionnaire(
                         pg.quit()
                         sys.exit()
                     elif event.key == pg.K_SPACE:
+                        screen_logger.log_event('key_press', 'space_intro')
                         waiting = False
         
         pg.mouse.set_visible(True)
@@ -375,12 +453,17 @@ def _run_questionnaire(
     
     # Run each question with precomputed slots
     responses = []
-    for q_text, options in questions:
-        response = _run_single_question(win, q_text, options, questionnaire_name, precomputed_slots=option_slots)
+    for q_idx, (q_text, options) in enumerate(questions):
+        response = _run_single_question(win, q_text, options, questionnaire_name, 
+                                       precomputed_slots=option_slots,
+                                       screen_logger=screen_logger,
+                                       question_index=q_idx)
         responses.append(response)
     
+    # Save event log
+    screen_logger.save()
+    
     # Save results
-    results_dir = os.path.join(_BASE_DIR, 'results', subject_number)
     os.makedirs(results_dir, exist_ok=True)
     
     filename = save_filename or f'{questionnaire_name}_{subject_number}.csv'
@@ -627,6 +710,55 @@ def stanford_sleepiness_scale(subject_number: str, win: pg.Surface) -> str:
 
 
 # =============================================================================
+# RECALL QUESTIONS (Text entry)
+# =============================================================================
+
+def _run_recall_questions(subject_number: str, win: pg.Surface) -> None:
+    """Ask subject to recall the target word and sentence, save responses."""
+    screen = Screen(win)
+    
+    # Event logging
+    results_dir = os.path.join(_BASE_DIR, 'results', subject_number)
+    screen_logger = ScreenEventLogger('recall_questions', results_dir, subject_number)
+    
+    # Question 1: Target word
+    text_input_word = TextInput(
+        screen,
+        mode=InputMode.ALPHANUMERIC_SPACES,
+        placeholder="Type your answer here...",
+    )
+    word_response = text_input_word.run(
+        prompt="Please type the **word** that you were listening for during this experiment.\n\n**Response**"
+    )
+    if word_response:
+        screen_logger.log_event('text_submitted', 'target_word')
+    
+    # Question 2: Target sentence
+    text_input_sentence = TextInput(
+        screen,
+        mode=InputMode.ALPHANUMERIC_SPACES,
+        placeholder="Type your answer here...",
+    )
+    sentence_response = text_input_sentence.run(
+        prompt="Please type the **sentence** you listened to throughout this experiment.\n\n**Response**"
+    )
+    if sentence_response:
+        screen_logger.log_event('text_submitted', 'target_sentence')
+    
+    # Save event log
+    screen_logger.save()
+    
+    # Save responses
+    os.makedirs(results_dir, exist_ok=True)
+    
+    filepath = os.path.join(results_dir, f'recall_responses_{subject_number}.csv')
+    with open(filepath, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Subject Number', 'Target Word Response', 'Target Sentence Response'])
+        writer.writerow([subject_number, word_response or '', sentence_response or ''])
+
+
+# =============================================================================
 # PUBLIC API
 # =============================================================================
 
@@ -634,6 +766,10 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
     """Run all questionnaires for the subject."""
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    
+    # Event logging
+    results_dir = os.path.join(_BASE_DIR, 'results', subject_number)
+    intro_logger = ScreenEventLogger('questionnaires_intro', results_dir, subject_number)
     
     # Show intro message
     pg.mouse.set_visible(False)
@@ -649,7 +785,7 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
         text_renderer.draw_text_block(
             questionnairesIntro,
             rel_x=0.05,
-            rel_y=0.3,
+            rel_y=0.05,
             max_width=screen.abs_x(0.9),
             style=style,
         )
@@ -661,16 +797,21 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
                     pg.quit()
                     sys.exit()
                 elif event.key == pg.K_SPACE:
+                    intro_logger.log_event('key_press', 'space')
+                    intro_logger.save()
                     waiting = False
     
     # Run all questionnaires
-    # _tellegen(subject_number, win)
+    _tellegen(subject_number, win)
     _vhq(subject_number, win)
-    # _flow_state_scale(subject_number, win)
+    _flow_state_scale(subject_number, win)
     _launay_slade(subject_number, win)
     _dissociative_experiences(subject_number, win)
     _bais_v(subject_number, win)
     _bais_c(subject_number, win)
+    
+    # Text response screens for recall
+    _run_recall_questions(subject_number, win)
     
     pg.mouse.set_visible(True)
 
