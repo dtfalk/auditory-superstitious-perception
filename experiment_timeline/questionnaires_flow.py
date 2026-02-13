@@ -16,6 +16,7 @@ Uses displayEngine for all rendering - no dependency on questionnaires.py
 import os
 import sys
 import csv
+import math
 import pygame as pg
 from datetime import datetime
 
@@ -25,12 +26,13 @@ sys.path.insert(0, _BASE_DIR)
 sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
-from displayEngine import (
+from utils.displayEngine import (
     Screen, TextRenderer,
     Colors, TextStyle, TextAlign,
 )
-from text_blocks.questionnairesTextBlocks import (
-    telleganScaleText, launeyScaleText, dissociativeExperiencesText,
+from experiment_helpers.text_blocks.questionnairesTextBlocks import (
+    telleganScaleIntro, launeyScaleIntro, dissociativeExperiencesIntro,
+    flowStateIntro, vhqIntro, baisVIntro, baisCIntro, questionnairesIntro
 )
 
 
@@ -55,8 +57,16 @@ class QuestionnaireOption:
         self.selected = False
     
     def draw(self, win: pg.Surface) -> None:
-        """Draw the option checkbox and label."""
-        color = Colors.RED.to_tuple() if self.selected else Colors.WHITE.to_tuple()
+        """Draw the option checkbox and label.  Darkens on hover."""
+        mouse_pos = pg.mouse.get_pos()
+        hovered = self.rect.collidepoint(mouse_pos)
+
+        if self.selected:
+            base = Colors.RED
+        else:
+            base = Colors.WHITE
+
+        color = base.darken(0.85).to_tuple() if hovered else base.to_tuple()
         pg.draw.rect(win, color, self.rect)
         pg.draw.rect(win, Colors.BLACK.to_tuple(), self.rect, 2)
         
@@ -68,75 +78,185 @@ class QuestionnaireOption:
         return self.rect.collidepoint(pos)
 
 
-def _run_single_question(
-    win: pg.Surface,
-    question_text: str,
-    options: list[str],
+def _questionnaire_option_style(questionnaire_name: str, current_h: int) -> tuple[int, float]:
+    """Return (font_size, row_spacing_scalar) matching the old code's proportions."""
+    base_font = max(14, current_h // 20)
+    font_size = base_font
+
+    if questionnaire_name == 'tellegen':
+        scalar = 1.75
+    elif questionnaire_name == 'launay_slade':
+        scalar = 1.4
+    elif questionnaire_name == 'dissociative_experiences':
+        scalar = 1.5
+    elif questionnaire_name == 'sleepiness':
+        scalar = 1.3
+        font_size = int(0.85 * base_font)
+    elif questionnaire_name == 'vhq':
+        scalar = 1.4
+    elif 'bais' in questionnaire_name:
+        scalar = 1.3
+    elif questionnaire_name == 'flow_state_scale':
+        scalar = 1.5
+    else:
+        scalar = 1.5
+
+    return font_size, scalar
+
+
+def _precompute_option_slots(
     questionnaire_name: str,
-) -> str:
-    """Display a single question and return the selected response."""
+    win: pg.Surface,
+    y_pos_question_fixed: int,
+    max_options: int,
+) -> list[dict]:
+    """Create stable checkbox positions based on worst-case option count.
+
+    The slots are reused for every question so options never shift.
+    Matches the old code's ``_precompute_option_slots`` logic exactly.
+    """
+    screen = Screen(win)
+    current_w, current_h = screen.width, screen.height
+    font_size, scalar = _questionnaire_option_style(questionnaire_name, current_h)
+
+    buffer = current_h // 20
+    button_size = max(int(0.015 * min(current_w, current_h)), font_size)
+
+    y_start = int(y_pos_question_fixed + buffer)
+    y_end = int(0.85 * current_h) - font_size
+    if y_end <= y_start:
+        y_start = int(0.30 * current_h)
+        y_end = int(0.85 * current_h) - font_size
+
+    available_height = max(1, y_end - y_start)
+
+    desired_row_step = max(1, int(scalar * font_size))
+    min_row_step = max(1, int(1.05 * font_size))
+
+    max_rows_one_col = max(1, 1 + (available_height // max(1, desired_row_step)))
+    n_cols = 1 if max_options <= max_rows_one_col else 2
+
+    rows_per_col = max(1, math.ceil(max_options / n_cols))
+    if rows_per_col > 1:
+        row_step_fit = max(1, available_height // (rows_per_col - 1))
+    else:
+        row_step_fit = desired_row_step
+    row_step = max(min_row_step, min(desired_row_step, row_step_fit))
+
+    x_left = int(0.05 * current_w)
+    x_right = int(0.05 * current_w + 0.45 * current_w)
+    left_count = max_options if n_cols == 1 else math.ceil(max_options / 2)
+
+    slots: list[dict] = []
+    for idx in range(max_options):
+        if n_cols == 1 or idx < left_count:
+            x = x_left
+            row = idx
+        else:
+            x = x_right
+            row = idx - left_count
+        y = int(y_start + row * row_step)
+        slots.append({
+            'x': x,
+            'y': y,
+            'button_size': button_size,
+            'font_size': font_size,
+        })
+    return slots
+
+
+def _worst_case_question_bottom_y(
+    questions: list[tuple[str, list[str]]],
+    win: pg.Surface,
+) -> int:
+    """Render every question text off-screen and return the maximum bottom y."""
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
-    
-    pg.mouse.set_visible(True)
-    
-    # Calculate layout
     question_style = TextStyle(
         font_size=screen.scaled_font_size(20),
         color=Colors.BLACK,
         align=TextAlign.LEFT,
     )
-    
-    # Calculate question height first
-    screen.fill()
-    y_after_question = text_renderer.draw_text_block(
-        question_text,
-        rel_x=0.05,
-        rel_y=0.05,
-        max_width=screen.abs_x(0.9),
-        style=question_style,
+    max_y = 0
+    for q_text, _opts in questions:
+        screen.fill()
+        y = text_renderer.draw_text_block(
+            q_text,
+            rel_x=0.05,
+            rel_y=0.05,
+            max_width=screen.abs_x(0.9),
+            style=question_style,
+        )
+        if y > max_y:
+            max_y = y
+    return max_y
+
+
+def _run_single_question(
+    win: pg.Surface,
+    question_text: str,
+    options: list[str],
+    questionnaire_name: str,
+    precomputed_slots: list[dict] | None = None,
+) -> str:
+    """Display a single question and return the selected response.
+
+    If *precomputed_slots* is provided, the option buttons use those
+    fixed positions (so they never move between questions).
+    """
+    screen = Screen(win)
+    text_renderer = TextRenderer(screen)
+    current_w, current_h = screen.width, screen.height
+
+    pg.mouse.set_visible(True)
+
+    # Sizing
+    font_size, scalar = _questionnaire_option_style(questionnaire_name, current_h)
+    button_size = max(int(0.015 * min(current_w, current_h)), font_size)
+
+    question_style = TextStyle(
+        font_size=screen.scaled_font_size(20),
+        color=Colors.BLACK,
+        align=TextAlign.LEFT,
     )
-    
-    # Calculate option positions
-    option_start_y = y_after_question + screen.abs_y(0.03)
-    option_size = max(20, screen.height // 40)
-    font_size = max(14, screen.height // 45)
-    line_height = max(option_size + 5, font_size * 2)
-    
-    # Create option objects
-    option_widgets: list[QuestionnaireOption] = []
+
+    # Build option widgets from precomputed slots (stable) or compute them
     n_options = len(options)
-    
-    # Determine if we need multiple columns
-    available_height = screen.abs_y(0.80) - option_start_y
-    max_rows = int(available_height / line_height)
-    
-    if n_options <= max_rows:
-        # Single column
+    option_widgets: list[QuestionnaireOption] = []
+
+    if precomputed_slots:
         for i, opt_text in enumerate(options):
-            x = screen.abs_x(0.05)
-            y = int(option_start_y + i * line_height)
-            option_widgets.append(QuestionnaireOption(opt_text, x, y, option_size, font_size))
+            s = precomputed_slots[i]
+            option_widgets.append(
+                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'])
+            )
     else:
-        # Two columns
-        left_count = (n_options + 1) // 2
+        # Fallback: compute per-question (old behaviour for standalone calls)
+        screen.fill()
+        y_after_question = text_renderer.draw_text_block(
+            question_text, rel_x=0.05, rel_y=0.05,
+            max_width=screen.abs_x(0.9), style=question_style,
+        )
+        slots = _precompute_option_slots(questionnaire_name, win, y_after_question, n_options)
         for i, opt_text in enumerate(options):
-            if i < left_count:
-                x = screen.abs_x(0.05)
-                y = int(option_start_y + i * line_height)
-            else:
-                x = screen.abs_x(0.5)
-                y = int(option_start_y + (i - left_count) * line_height)
-            option_widgets.append(QuestionnaireOption(opt_text, x, y, option_size, font_size))
+            s = slots[i]
+            option_widgets.append(
+                QuestionnaireOption(opt_text, s['x'], s['y'], s['button_size'], s['font_size'])
+            )
     
-    # Submit button
-    submit_width = screen.abs_x(0.1)
-    submit_height = screen.abs_y(0.05)
+    # Submit button (larger size)
+    submit_font_size = int(0.85 * max(18, current_h // 18))
+    submit_font = pg.font.SysFont("times new roman", submit_font_size)
+    submit_surf = submit_font.render("Submit", True, Colors.BLACK.to_tuple())
+    padding_x = int(0.03 * current_w)
+    padding_y = int(0.015 * current_h)
+    submit_width = max(int(0.12 * current_w), submit_surf.get_width() + 2 * padding_x)
+    submit_height = max(int(0.06 * current_h), submit_surf.get_height() + 2 * padding_y)
     submit_rect = pg.Rect(
-        (screen.width - submit_width) // 2,
-        screen.abs_y(0.85),
+        (current_w - submit_width) // 2,
+        int(0.85 * current_h),
         submit_width,
-        submit_height
+        submit_height,
     )
     
     selected_idx = None
@@ -158,11 +278,15 @@ def _run_single_question(
             widget.draw(win)
         
         # Draw submit button
-        pg.draw.rect(win, Colors.WHITE.to_tuple(), submit_rect)
+        mouse_pos = pg.mouse.get_pos()
+        if submit_rect.collidepoint(mouse_pos):
+            btn_col = Colors.LIGHT_GRAY.to_tuple()
+        else:
+            btn_col = Colors.WHITE.to_tuple()
+        pg.draw.rect(win, btn_col, submit_rect)
         pg.draw.rect(win, Colors.BLACK.to_tuple(), submit_rect, 3)
-        font = pg.font.SysFont("times new roman", max(14, screen.height // 45))
-        submit_text = font.render("Submit", True, Colors.BLACK.to_tuple())
-        win.blit(submit_text, submit_text.get_rect(center=submit_rect.center))
+        submit_surf = submit_font.render("Submit", True, Colors.BLACK.to_tuple())
+        win.blit(submit_surf, submit_surf.get_rect(center=submit_rect.center))
         
         screen.update()
         
@@ -201,18 +325,9 @@ def _run_questionnaire(
 ) -> list[str]:
     """
     Run a complete questionnaire and save results.
-    
-    Args:
-        win: pygame surface
-        subject_number: participant ID
-        questionnaire_name: Name for display/saving
-        questions: List of (question_text, [options]) tuples
-        intro_text: Optional introduction text
-        save_filename: Name for CSV file (auto-generated if None)
-        extract_numeric: If True, extract only digits from responses
-    
-    Returns:
-        List of responses
+
+    Option button positions are precomputed using the worst-case question
+    height so that buttons never move between questions.
     """
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
@@ -248,10 +363,15 @@ def _run_questionnaire(
         
         pg.mouse.set_visible(True)
     
-    # Run each question
+    # --- precompute stable option positions (worst-case) ---
+    max_options = max(len(opts) for _, opts in questions)
+    y_pos_fixed = _worst_case_question_bottom_y(questions, win)
+    option_slots = _precompute_option_slots(questionnaire_name, win, y_pos_fixed, max_options)
+    
+    # Run each question with precomputed slots
     responses = []
     for q_text, options in questions:
-        response = _run_single_question(win, q_text, options, questionnaire_name)
+        response = _run_single_question(win, q_text, options, questionnaire_name, precomputed_slots=option_slots)
         responses.append(response)
     
     # Save results
@@ -319,7 +439,7 @@ def _tellegen(subject_number: str, win: pg.Surface) -> list[str]:
         ('I can be deeply moved by a sunset.', ['True', 'False']),
     ]
     
-    intro = telleganScaleText + "\n\nPress the spacebar to begin."
+    intro = telleganScaleIntro
     return _run_questionnaire(win, subject_number, 'tellegen', questions, intro_text=intro)
 
 
@@ -342,7 +462,7 @@ def _vhq(subject_number: str, win: pg.Surface) -> list[str]:
         ('When I\'m driving in my car — particularly when I\'m tired or worried — I hear my own voice from the backseat. It sounds soothing, like "It\'ll be all right" or "Just calm down."', ['True', 'False']),
     ]
     
-    intro = "The following questions describe experiences that some people have had involving hearing voices or sounds. Please answer each with 'True' or 'False' depending on whether or not you have experienced the situation, OR if you have experienced a situation that is analogous to the situation described.\n\nPress the spacebar to begin."
+    intro = vhqIntro
     return _run_questionnaire(win, subject_number, 'vhq', questions, intro_text=intro)
 
 
@@ -365,7 +485,7 @@ def _launay_slade(subject_number: str, win: pg.Surface) -> list[str]:
         ("In the past I have heard the voice of God speaking to me.", scale),
     ]
     
-    intro = launeyScaleText + "\n\nPress the spacebar to begin."
+    intro = launeyScaleIntro
     return _run_questionnaire(win, subject_number, 'launay_slade', questions, intro_text=intro, extract_numeric=True)
 
 
@@ -404,7 +524,7 @@ def _dissociative_experiences(subject_number: str, win: pg.Surface) -> list[str]
         ('Some people sometimes feel as if they are looking at the world through a fog so that people and objects appear far away or unclear. Select a box to show what percentage of the time this happens to you.', scale),
     ]
     
-    intro = dissociativeExperiencesText + "\n\nPress the spacebar to begin."
+    intro = dissociativeExperiencesIntro
     return _run_questionnaire(win, subject_number, 'dissociative_experiences', questions, intro_text=intro, extract_numeric=True)
 
 
@@ -423,8 +543,7 @@ def _flow_state_scale(subject_number: str, win: pg.Surface) -> list[str]:
         ('The way time passes seems to be different from normal', scale),
         ('The experience is extremely rewarding', scale),
     ]
-    
-    intro = 'Please answer the following questions in relation to your experience on general tasks. These questions relate to the thoughts and feelings you may experience while completing various tasks in your life. You may experience these characteristics some of the time, all of the time, or none of the time. There are no right or wrong answers. Think about how often you experience each characteristic and then select the number that best matches your experience.\n\nPress the spacebar to begin.'
+    intro = flowStateIntro
     return _run_questionnaire(win, subject_number, 'flow_state_scale', questions, intro_text=intro, extract_numeric=True)
 
 
@@ -449,7 +568,7 @@ def _bais_v(subject_number: str, win: pg.Surface) -> list[str]:
         ('For this item, consider being at the beach. Imagine the sound of the waves crashing against nearby rocks.', scale),
     ]
     
-    intro = 'The following scale is designed to measure auditory imagery, or the way in which you "think about sounds in your head".\n\nFor each item you are asked to do the following:\n\nConsider the scenario described in each item and imagine that you are actually there.\n\nThen use your auditory imagery (i.e., make the sound play in your head) to imagine hearing the sound described.\n\nRate how vivid/clear the image is using the provided scale.\n\nIf no image is present, give a rating of 1.\n\nPress the spacebar to begin.'
+    intro = baisVIntro
     return _run_questionnaire(win, subject_number, 'bais_v', questions, intro_text=intro, extract_numeric=True)
 
 
@@ -474,7 +593,7 @@ def _bais_c(subject_number: str, win: pg.Surface) -> list[str]:
         ('For the next pair, consider being at the beach.\n\na. The sound of the waves crashing against nearby rocks.\nb. The waves are now drowned out by the loud sound of a boat\'s horn out at sea.', scale),
     ]
     
-    intro = 'The following scale is designed to measure auditory imagery, or the way in which you "think about sounds in your head".\n\nFor the following pairs of items you are asked to do the following:\n\nRead the first item (marked "a") and consider whether you think of an image of the described sound in your head.\n\nThen read the second item (marked "b") and consider how easily you could change your image of the first sound to that of the second sound and hold this image.\n\nRate how easily you could make this change using the provided scale.\n\nIf no mental images are generated, give a rating of 1. Please read "a" first and "b" second for each pair.\n\nPress the spacebar to begin.'
+    intro = baisCIntro
     return _run_questionnaire(win, subject_number, 'bais_c', questions, intro_text=intro, extract_numeric=True)
 
 
@@ -523,7 +642,7 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
     while waiting:
         screen.fill()
         text_renderer.draw_text_block(
-            "You will now respond to some questionnaires.\n\nPlease press the spacebar to continue.",
+            questionnairesIntro,
             rel_x=0.05,
             rel_y=0.3,
             max_width=screen.abs_x(0.9),

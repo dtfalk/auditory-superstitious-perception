@@ -1,10 +1,7 @@
-
 import sys
 import os
-
-# Add parent directory to path for imports
+from utils.screenInfo import prepareExperimentalScreen
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from utils.screenInfo import prepareExperimentalScreen
 
 # Number of experimental credits to give the subject
@@ -34,10 +31,15 @@ SENTENCE_TO_IMAGINE = "The picture hung on the wall."
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 25
+REMINDER_INTERVAL = 15
 
 # Max plays allowed during target familiarization screens
-FAMILIARIZATION_MAX_PLAYS = 5
+FAMILIARIZATION_PLAYS = 5
 
 # Max plays allowed during periodic reminder screens
-REMINDER_MAX_PLAYS = 3
+REMINDER_PLAYS = 3
+
+# Set to -1 to show all stimuli
+# Otherwise will shown the specified number of stimuli per block
+# (useful for development)
+NUM_STIMULI_TO_SHOW = 3

@@ -19,13 +19,13 @@ sys.path.insert(0, _BASE_DIR)
 sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
-from displayEngine import (
+from utils.displayEngine import (
     Screen, TextRenderer, TextInput, Button, ButtonStyle,
     Colors, TextStyle, TextAlign, InputMode,
 )
-from text_blocks.consentTextBlocks import (
-    studyInfoText, risksAndBenefitsText, confidentialityText,
-    contactsAndQuestionsText, nonConsentText
+from experiment_helpers.text_blocks.consentTextBlocks import (
+    studyInfoText, incentivesText, risksAndBenefitsText, 
+    confidentialityText, contactsAndQuestionsText, nonConsentText
 )
 
 
@@ -75,28 +75,28 @@ def collect_subject_info(win: pg.Surface) -> dict:
     
     experimenter_name = _get_subject_input(
         win,
-        prompt=base_prompt + "Experimenter Name:",
+        prompt=base_prompt + "**Experimenter Name**",
         mode=InputMode.ALPHANUMERIC_SPACES,
         placeholder="Enter experimenter name..."
     )
     
     subject_number = _get_subject_input(
         win,
-        prompt=base_prompt + "Subject Number:",
+        prompt=base_prompt + "**Subject Number**",
         mode=InputMode.NUMBERS_ONLY,
         placeholder="Enter subject number..."
     )
     
     subject_name = _get_subject_input(
         win,
-        prompt=base_prompt + "Subject Name:",
+        prompt=base_prompt + "**Subject Name**",
         mode=InputMode.ALPHANUMERIC_SPACES,
         placeholder="Enter subject name..."
     )
     
     subject_email = _get_subject_input(
         win,
-        prompt=base_prompt + "Subject Email:",
+        prompt=base_prompt + "**Subject Email**",
         mode=InputMode.EMAIL,
         placeholder="Enter email address..."
     )
@@ -167,6 +167,8 @@ def _show_text_page(
             rel_y=0.05,
             max_width=screen.abs_x(0.90),
             style=style,
+            auto_fit=True,
+            rel_max_y=0.95,
         )
         
         screen.update()
@@ -201,28 +203,28 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
         'to review the information in this consent form before making a decision.'
     )
     
-    # Create buttons
+    # Create buttons (positions will be updated dynamically based on text height)
     agree_style = ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK)
     disagree_style = ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK)
     submit_style = ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK)
     
     agree_btn = Button(
-        screen, "I agree to participate in the research",
-        rel_x=0.5, rel_y=0.55,
-        rel_width=0.6, rel_height=0.06,
+        screen, "I agree",
+        rel_x=0.5, rel_y=0.5,
+        rel_width=0.4, rel_height=0.06,
         style=agree_style,
     )
     
     disagree_btn = Button(
-        screen, "I do NOT agree to participate",
-        rel_x=0.5, rel_y=0.65,
-        rel_width=0.6, rel_height=0.06,
+        screen, "I do **not** agree",
+        rel_x=0.5, rel_y=0.6,
+        rel_width=0.4, rel_height=0.06,
         style=disagree_style,
     )
     
     submit_btn = Button(
         screen, "Submit",
-        rel_x=0.5, rel_y=0.85,
+        rel_x=0.5, rel_y=0.8,
         rel_width=0.15, rel_height=0.06,
         style=submit_style,
     )
@@ -239,21 +241,56 @@ def _show_consent_choice(win: pg.Surface) -> tuple[str, bool]:
             color=Colors.BLACK,
             align=TextAlign.LEFT,
         )
-        text_renderer.draw_text_block(
+        text_end_y = text_renderer.draw_text_block(
             question,
             rel_x=0.05,
-            rel_y=0.1,
-            max_width=screen.abs_x(0.9),
+            rel_y=0.05,
+            max_width=screen.abs_x(0.95),
             style=text_style,
+            auto_fit=True,
+            rel_max_y=0.55,
         )
         
-        # Update button colors based on selection
+        # Position buttons dynamically below the text, scaling to fit
+        screen_bottom = screen.abs_y(0.95)
+        available = screen_bottom - text_end_y
+        # 3 buttons + 4 gaps (gap, btn, gap, btn, 2*gap, btn)
+        desired_gap = screen.abs_y(0.03)
+        desired_btn_h = screen.abs_y(0.06)
+        total_needed = 3 * desired_btn_h + 4 * desired_gap
+        scale = min(1.0, available / total_needed) if total_needed > 0 else 1.0
+        btn_gap = int(desired_gap * scale)
+        btn_height = int(desired_btn_h * scale)
+        
+        agree_y = text_end_y + btn_gap + btn_height // 2
+        disagree_y = agree_y + btn_height + btn_gap
+        submit_y = disagree_y + btn_height + int(btn_gap * 2)
+        
+        agree_btn.update_position(x=screen.abs_x(0.5), y=agree_y)
+        disagree_btn.update_position(x=screen.abs_x(0.5), y=disagree_y)
+        submit_btn.update_position(x=screen.abs_x(0.5), y=submit_y)
+        agree_btn.rect.height = btn_height
+        disagree_btn.rect.height = btn_height
+        submit_btn.rect.height = btn_height
+        
+        # Update button borders and selection based on selection
         if selected == "agree":
-            agree_btn.style.bg_color = Colors.RED
-            disagree_btn.style.bg_color = Colors.WHITE
+            agree_btn.selected = True
+            disagree_btn.selected = False
+            agree_btn.style.border_color = Colors.BLUE
+            agree_btn.style.border_width = 4
+            disagree_btn.style.border_color = Colors.BLACK
+            disagree_btn.style.border_width = 2
         elif selected == "disagree":
-            agree_btn.style.bg_color = Colors.WHITE
-            disagree_btn.style.bg_color = Colors.RED
+            agree_btn.selected = False
+            disagree_btn.selected = True
+            agree_btn.style.border_color = Colors.BLACK
+            agree_btn.style.border_width = 2
+            disagree_btn.style.border_color = Colors.BLUE
+            disagree_btn.style.border_width = 4
+        else:
+            agree_btn.selected = False
+            disagree_btn.selected = False
         
         # Get mouse state
         mouse_pos = pg.mouse.get_pos()
@@ -310,21 +347,21 @@ def _show_email_consent(win: pg.Surface) -> tuple[str, bool]:
     
     yes_btn = Button(
         screen, "Yes, you may contact me about future studies",
-        rel_x=0.5, rel_y=0.55,
-        rel_width=0.6, rel_height=0.06,
+        rel_x=0.5, rel_y=0.5,
+        rel_width=0.4, rel_height=0.06,
         style=ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK),
     )
     
     no_btn = Button(
         screen, "No, please do not contact me",
-        rel_x=0.5, rel_y=0.65,
-        rel_width=0.6, rel_height=0.06,
+        rel_x=0.5, rel_y=0.6,
+        rel_width=0.4, rel_height=0.06,
         style=ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK),
     )
     
     submit_btn = Button(
         screen, "Submit",
-        rel_x=0.5, rel_y=0.85,
+        rel_x=0.5, rel_y=0.8,
         rel_width=0.15, rel_height=0.06,
         style=ButtonStyle(bg_color=Colors.WHITE, text_color=Colors.BLACK),
     )
@@ -340,21 +377,55 @@ def _show_email_consent(win: pg.Surface) -> tuple[str, bool]:
             color=Colors.BLACK,
             align=TextAlign.LEFT,
         )
-        text_renderer.draw_text_block(
+        text_end_y = text_renderer.draw_text_block(
             question,
             rel_x=0.05,
-            rel_y=0.1,
+            rel_y=0.05,
             max_width=screen.abs_x(0.9),
             style=text_style,
+            auto_fit=True,
+            rel_max_y=0.55,
         )
         
-        # Update button colors based on selection
+        # Position buttons dynamically below the text, scaling to fit
+        screen_bottom = screen.abs_y(0.95)
+        available = screen_bottom - text_end_y
+        desired_gap = screen.abs_y(0.03)
+        desired_btn_h = screen.abs_y(0.06)
+        total_needed = 3 * desired_btn_h + 4 * desired_gap
+        scale = min(1.0, available / total_needed) if total_needed > 0 else 1.0
+        btn_gap = int(desired_gap * scale)
+        btn_height = int(desired_btn_h * scale)
+        
+        yes_y = text_end_y + btn_gap + btn_height // 2
+        no_y = yes_y + btn_height + btn_gap
+        submit_y = no_y + btn_height + int(btn_gap * 2)
+        
+        yes_btn.update_position(x=screen.abs_x(0.5), y=yes_y)
+        no_btn.update_position(x=screen.abs_x(0.5), y=no_y)
+        submit_btn.update_position(x=screen.abs_x(0.5), y=submit_y)
+        yes_btn.rect.height = btn_height
+        no_btn.rect.height = btn_height
+        submit_btn.rect.height = btn_height
+        
+        # Update button borders and selection based on selection
         if selected == "yes":
-            yes_btn.style.bg_color = Colors.RED
-            no_btn.style.bg_color = Colors.WHITE
+            yes_btn.selected = True
+            no_btn.selected = False
+            yes_btn.style.border_color = Colors.ORANGE
+            yes_btn.style.border_width = 4
+            no_btn.style.border_color = Colors.BLACK
+            no_btn.style.border_width = 2
         elif selected == "no":
-            yes_btn.style.bg_color = Colors.WHITE
-            no_btn.style.bg_color = Colors.RED
+            yes_btn.selected = False
+            no_btn.selected = True
+            yes_btn.style.border_color = Colors.BLACK
+            yes_btn.style.border_width = 2
+            no_btn.style.border_color = Colors.ORANGE
+            no_btn.style.border_width = 4
+        else:
+            yes_btn.selected = False
+            no_btn.selected = False
         
         mouse_pos = pg.mouse.get_pos()
         
@@ -389,8 +460,8 @@ def _get_signature(win: pg.Surface) -> str:
     """Get participant signature to confirm consent."""
     prompt = (
         "Please type your name to confirm that you consent to participate in this study. "
-        "Press Enter or Return to submit.\n\n"
-        "Signature:"
+        "Press **Enter** or **Return** to submit.\n\n"
+        "**Signature**"
     )
     return _get_subject_input(
         win,
@@ -416,10 +487,11 @@ def run_consent(win: pg.Surface, subject_info: dict) -> bool:
         True if participant consented, False otherwise
     """
     pages = [
-        (studyInfoText, False),      # Page 0: Study info (no back)
-        (risksAndBenefitsText, True), # Page 1: Risks & benefits
-        (confidentialityText, True),  # Page 2: Confidentiality
-        (contactsAndQuestionsText, True),  # Page 3: Contacts
+        (studyInfoText, False),       # Page 0: Study info (no back)
+        (incentivesText, True),       # Page 1: Incentives
+        (risksAndBenefitsText, True), # Page 2: Risks & benefits
+        (confidentialityText, True),  # Page 3: Confidentiality
+        (contactsAndQuestionsText, True),  # Page 4: Contacts
     ]
     
     index = 0
@@ -528,6 +600,8 @@ def show_non_consent(win: pg.Surface) -> None:
             rel_y=0.05,
             max_width=screen.abs_x(0.90),
             style=style,
+            auto_fit=True,
+            rel_max_y=0.95,
         )
         
         screen.update()

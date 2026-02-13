@@ -1,0 +1,8 @@
+1. Add timestamps everywhere
+2. Add trial confirmation checks (each stim showed, played responded to exactly once and every stim in the correct block, add N second delay for screens where there are consecutive identical continue keys)
+3. Make audio engine work for Mac
+4. Add target db in prep screen
+5. Bold headers and whatever Arwen/Shannon said to do
+6. Make questionnaire confirmation checks
+7. Verify portability
+8. Reduce to 3 examples and recalculate the statistics

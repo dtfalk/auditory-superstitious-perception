@@ -65,7 +65,7 @@ fullSentenceBlockInstructionsText = (
     "A few important points:\n"
     "   - The audio samples themselves are not clearly spoken words. They are noisy clips that may or may not contain traces of the speaker’s \"Wall\".\n"
     "   - If the speaker’s \"Wall\" is present, it spans the entire audio sample from beginning to end.\n"
-    "   - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample, NOT your own imagined version.\n\n"
+    "   - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample, **not** your own imagined version.\n\n"
     "Next, you will listen to the speaker say the full sentence as many times as you like.\n\n"
     "Press the spacebar to continue."
 )
@@ -80,7 +80,7 @@ imaginedSentenceBlockInstructionsText = (
     "A few important points:\n"
     "   - The audio samples themselves are not clearly spoken words. They are noisy clips that may or may not contain traces of the speaker’s \"Wall\".\n"
     "   - If the speaker’s \"Wall\" is present, it spans the entire audio sample from beginning to end.\n"
-    "   - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample, NOT your own imagined version.\n"
+    "   - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample, **not** your own imagined version.\n"
     "   - You may only IMAGINE the sentence. Do not say the sentence out loud, move your lips or otherwise subvocalize. \n\n"
     "Next, you will hear the speaker say the full sentence as many times as you like.\n\n"
     "Press the spacebar to continue."
@@ -124,7 +124,7 @@ trialInstructions_full_sentence = [
     "",
     "After listening, respond as quickly as you feel comfortable.",
     "Press 'Y' if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
-    "Press 'N' if you believe the speaker's \"Wall\" is NOT hidden in the noisy audio sample.",
+    "Press 'N' if you believe the speaker's \"Wall\" is **not** hidden in the noisy audio sample.",
 ]
 
 trialInstructions_imagined_sentence = [
@@ -133,7 +133,7 @@ trialInstructions_imagined_sentence = [
     "Imagine the speaker saying the beginning of the sentence and click 'Play Audio' when your imagined sentence reaches the word \"Wall\".",
     "After listening, respond as quickly as you feel comfortable.",
     "Press 'Y' if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
-    "Press 'N' if you believe the speaker's \"Wall\" is NOT hidden in the noisy audio sample.",
+    "Press 'N' if you believe the speaker's \"Wall\" is **not** hidden in the noisy audio sample.",
 ]
 # =======================================================================
 # =======================================================================
@@ -189,7 +189,7 @@ targetFamiliarizationInstructions_full_sentence = [
     "Once these plays are complete, you will begin this portion of the experiment.",
     "",
     "Click \"Play Sentence\" to listen.",
-    "Click \"Continue\" when the listens are complete."
+    "Click \"Continue\" when the listens are complete to begin the task."
 ]
 
 targetFamiliarizationInstructions_imagined_sentence = [
@@ -206,7 +206,7 @@ targetFamiliarizationInstructions_imagined_sentence = [
     "Once these plays are complete, you will begin this portion of the experiment.",
     "",
     "Click \"Play Sentence\" to listen.",
-    "Click \"Continue\" when the listens are complete."
+    "Click \"Continue\" when the listens are complete to begin the task."
 ]
 # =======================================================================
 
@@ -223,7 +223,7 @@ periodicReminderInstructions_full_sentence = [
     "Use this as a brief reminder of how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
     "",
     "Click \"Play Sentence\" to listen.",
-    "Click \"Continue\" when the required plays are complete."
+    "Click \"Continue\" when the required plays are complete to return to the task."
 ]
 
 periodicReminderInstructions_imagined_sentence = [
@@ -236,7 +236,7 @@ periodicReminderInstructions_imagined_sentence = [
     "Use this as a reminder of how the sentence sounds in the speaker's voice, so you can continue imagining it clearly before each audio sample.",
     "",
     "Click \"Play Sentence\" to listen.",
-    "Click \"Continue\" when the required plays are complete."
+    "Click \"Continue\" when the required plays are complete to return to the task."
 ]
 # =======================================================================
 
@@ -264,8 +264,6 @@ blockExamplesInstructions_full_sentence = (
 # Audio level test instructions (for experimenter)
 # =======================================================================
 audioLevelTestInstructions = [
-    "Audio Level Testing - For Experimenter",
-    "",
     "Use this screen to normalize audio levels before starting the experiment.",
     "Adjust system volume so both sounds are at comfortable levels.",
     "When audio levels are properly set, click 'Continue' to proceed."

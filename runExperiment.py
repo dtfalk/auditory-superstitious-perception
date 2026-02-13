@@ -29,7 +29,11 @@ def main():
     # ==========================================================================
     # PHASE 1: SETUP
     # ==========================================================================
+    
+    # Parse command line args
     args = parse_args()
+
+    # Starts pygame, initializes audio engine, and creates the experiment window
     win, audio_engine = run_setup(args)
     
     # ==========================================================================
@@ -51,7 +55,6 @@ def main():
     consented = run_consent(win, subject_info)
     if not consented:
         show_non_consent(win)
-        # show_non_consent exits the program
     
     # ==========================================================================
     # PHASE 5: EXPERIMENT INTRODUCTION
@@ -74,7 +77,7 @@ def main():
     # ==========================================================================
     # PHASE 7: QUESTIONNAIRES
     # ==========================================================================
-    run_questionnaires(win, subject_number)
+    run_questionnaires(subject_number, win)
     save_sleepiness_data(subject_number, save_folder, sleepiness_responses)
     
     # ==========================================================================

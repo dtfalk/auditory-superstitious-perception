@@ -20,7 +20,9 @@ import wave
 import numpy as np
 from random import shuffle, choice
 from scipy.signal import resample_poly
+from experiment_helpers.experimenterLevers import NUM_STIMULI_TO_SHOW
 import pygame as pg
+
 
 # Add parent directory for imports
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,13 +30,13 @@ sys.path.insert(0, _BASE_DIR)
 sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
-from displayEngine import (
+from utils.displayEngine import (
     Screen, TextRenderer, TextInput, Button, ButtonStyle,
-    Colors, TextStyle, TextAlign, InputMode,
+    Colors, Color, TextStyle, TextAlign, InputMode,
 )
-from audioEngine import AudioEngine
-from experimenterLevers import MAX_PLAYS, REMINDER_INTERVAL, FAMILIARIZATION_MAX_PLAYS, REMINDER_MAX_PLAYS
-from text_blocks.experimentTextBlocks import (
+from utils.audioEngine import AudioEngine
+from experiment_helpers.experimenterLevers import MAX_PLAYS, REMINDER_INTERVAL, FAMILIARIZATION_PLAYS, REMINDER_PLAYS
+from experiment_helpers.text_blocks.experimentTextBlocks import (
     fullSentenceBlockInstructionsText, imaginedSentenceBlockInstructionsText,
     preTrialQuickResponseTextFullSentence, preTrialQuickResponseTextImaginedSentence,
     trialInstructions_full_sentence, trialInstructions_imagined_sentence,
@@ -188,17 +190,23 @@ def _record_response(
     stimulus_number: str,
     stimulus_type: str,
     response: str,
-    response_time: float,
+    timestamps: dict,
     save_folder: str,
-    play_count: int = 1
+    play_count: int = 1,
 ) -> None:
     """Record a trial response."""
     filepath = os.path.join(save_folder, f'{block}_{subject_number}.csv')
 
     header = ['Subject Number', 'Block Scheme', 'Stimulus Number', 'Stimulus Type', 
-              'Subject Response', 'Response Time', 'Play Count']
-    data = [subject_number, block, stimulus_number, stimulus_type, response, 
-            f'{response_time / 1000:.5f}', play_count]
+              'Subject Response','Play Count', 'Trial Start Timestamp', 'Play Button Clicked Timestamp',
+              'Audio Start Timestamp', 'Audio End Timestamp', 'Subject Response Timestamp']
+    data = [subject_number, block, stimulus_number, stimulus_type, response, play_count, 
+            f'{timestamps["Trial Start Timestamp"]}', 
+            f'{timestamps["Play Button Clicked Timestamp"]}',
+            f'{timestamps["Audio Start Timestamp"]}', 
+            f'{timestamps["Audio End Timestamp"]}', 
+            f'{timestamps["Subject Response Timestamp"]}'
+            ]
 
     file_exists = os.path.exists(filepath)
     with open(filepath, mode='a', newline='') as f:
@@ -233,6 +241,8 @@ def _show_text_page(win: pg.Surface, text: str, wait_key: int = pg.K_SPACE) -> N
             rel_y=0.05,
             max_width=screen.abs_x(0.90),
             style=style,
+            auto_fit=True,
+            rel_max_y=0.95,
         )
 
         screen.update()
@@ -246,10 +256,17 @@ def _show_text_page(win: pg.Surface, text: str, wait_key: int = pg.K_SPACE) -> N
                     return
 
 
-def _show_centered_instructions(win: pg.Surface, instructions: list[str]) -> int:
-    """Draw centered instructions and return the y position after the last line."""
+def _show_centered_instructions(win: pg.Surface, instructions: list[str], max_rel_y: float = 0.70) -> int:
+    """Draw centered instructions and return the y position after the last line.
+    
+    Joins the list into a single string (empty strings become blank lines)
+    and uses draw_paragraph with auto_fit so the text shrinks to fit.
+    """
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    
+    # Join list into single string preserving blank-line paragraph breaks
+    text = "\n".join(instructions)
     
     style = TextStyle(
         font_size=screen.scaled_font_size(18),
@@ -257,13 +274,47 @@ def _show_centered_instructions(win: pg.Surface, instructions: list[str]) -> int
         align=TextAlign.CENTER,
     )
     
-    y = 0.05
-    for line in instructions:
-        if line:
-            text_renderer.draw_centered_text(line, rel_y=y, style=style)
-        y += 0.04
+    y_after = text_renderer.draw_paragraph(
+        text,
+        rel_x=0.03,
+        rel_y=0.03,
+        rel_max_width=0.94,
+        style=style,
+        auto_fit=True,
+        rel_max_y=max_rel_y,
+    )
     
-    return screen.abs_y(y)
+    return y_after
+
+
+def _draw_button_rect(
+    win: pg.Surface,
+    rect: pg.Rect,
+    base_color: Color,
+    text_str: str,
+    text_color: Color,
+    font: pg.font.Font,
+    border_width: int = 3,
+    is_playing: bool = False,
+) -> None:
+    """Draw a rectangle button.
+
+    * Darkens by 0.6 while ``is_playing`` is True.
+    * Darkens by 0.85 when the mouse hovers over the button.
+    """
+    mouse = pg.mouse.get_pos()
+    hovered = rect.collidepoint(mouse)
+
+    if is_playing:
+        color = base_color.darken(0.6)
+    elif hovered:
+        color = base_color.darken(0.85)
+    else:
+        color = base_color
+    pg.draw.rect(win, color.to_tuple(), rect)
+    pg.draw.rect(win, Colors.BLACK.to_tuple(), rect, border_width)
+    text_surface = font.render(text_str, True, text_color.to_tuple())
+    win.blit(text_surface, text_surface.get_rect(center=rect.center))
 
 
 # =============================================================================
@@ -281,7 +332,6 @@ def _draw_audio_interface(
 ) -> pg.Rect:
     """Draw the audio interface with instructions and play button."""
     screen = Screen(win)
-    text_renderer = TextRenderer(screen)
     
     screen.fill()
 
@@ -291,31 +341,18 @@ def _draw_audio_interface(
     else:
         instructions = list(trialInstructions_full_sentence)
 
-    # Draw instructions
-    instruction_style = TextStyle(
-        font_size=screen.scaled_font_size(22),
-        color=Colors.BLACK,
-        align=TextAlign.CENTER,
-    )
-    
-    y = 0.08
-    max_y = 0.45  # Don't let instructions overlap with button
-    
-    for line in instructions:
-        if y >= max_y:
-            break
-        if line:
-            text_renderer.draw_centered_text(line, rel_y=y, style=instruction_style)
-        y += 0.05
+    # Draw instructions using auto-fit so they never overlap
+    y_pos = _show_centered_instructions(win, instructions, max_rel_y=0.60)
 
-    # Create play button
+    # Create play button in remaining space
     button_width = screen.abs_x(0.18)
     button_height = screen.abs_y(0.08)
     button_x = (screen.width - button_width) // 2
-    button_y = screen.abs_y(0.55)
+    remaining_h = screen.height - y_pos - screen.abs_y(0.05)
+    button_y = y_pos + int(remaining_h * 0.3)
     button_rect = pg.Rect(button_x, button_y, button_width, button_height)
 
-    # Draw play button
+    # Determine button state
     enabled = play_count < max_plays and can_play
     if not can_play:
         color = Colors.BLUE.darken(0.5)
@@ -327,13 +364,8 @@ def _draw_audio_interface(
         color = Colors.BLUE
         text_color = Colors.WHITE
 
-    pg.draw.rect(win, color.to_tuple(), button_rect)
-    pg.draw.rect(win, Colors.BLACK.to_tuple(), button_rect, 3)
-
     font = pg.font.SysFont("times new roman", max(18, screen.height // 35))
-    text_surface = font.render("Play Audio", True, text_color.to_tuple())
-    text_rect = text_surface.get_rect(center=button_rect.center)
-    win.blit(text_surface, text_rect)
+    _draw_button_rect(win, button_rect, color, "Play Audio", text_color, font)
 
     return button_rect
 
@@ -366,9 +398,9 @@ def _show_pre_examples_familiarization(
 
     # Get instructions based on block
     if block_name == "full_sentence":
-        instructions = preExamplesFamiliarizationInstructions_full_sentence
+        instructions = [s.format(required_plays=required_plays) for s in preExamplesFamiliarizationInstructions_full_sentence]
     else:
-        instructions = preExamplesFamiliarizationInstructions_imagined_sentence
+        instructions = [s.format(required_plays=required_plays) for s in preExamplesFamiliarizationInstructions_imagined_sentence]
 
     while True:
         screen.fill()
@@ -381,38 +413,36 @@ def _show_pre_examples_familiarization(
         # Draw instructions
         y_pos = _show_centered_instructions(win, instructions)
 
-        # Create buttons
-        btn_y = y_pos + screen.abs_y(0.1)
+        # Position buttons in remaining space below text
+        remaining_h = screen.height - y_pos - screen.abs_y(0.05)
         btn_width = screen.abs_x(0.2)
-        btn_height = screen.abs_y(0.08)
+        btn_height = min(screen.abs_y(0.08), int(remaining_h * 0.3))
         cont_width = screen.abs_x(0.15)
-        cont_height = screen.abs_y(0.06)
+        cont_height = min(screen.abs_y(0.06), int(remaining_h * 0.25))
+        gap = min(20, int(remaining_h * 0.1))
 
-        play_rect = pg.Rect((screen.width - btn_width) // 2, btn_y, btn_width, btn_height)
-        cont_rect = pg.Rect((screen.width - cont_width) // 2, btn_y + btn_height + 20, cont_width, cont_height)
+        play_y = y_pos + int(remaining_h * 0.25) - btn_height // 2
+        cont_y = play_y + btn_height + gap
+
+        play_rect = pg.Rect((screen.width - btn_width) // 2, play_y, btn_width, btn_height)
+        cont_rect = pg.Rect((screen.width - cont_width) // 2, cont_y, cont_width, cont_height)
 
         # Draw play button
-        if can_play and play_count < required_plays * 10:  # Allow many plays
+        play_enabled = can_play and play_count < required_plays * 10
+        if play_enabled:
             play_color = Colors.BLUE
             play_text_color = Colors.WHITE
         else:
             play_color = Colors.GRAY
             play_text_color = Colors.BLACK
 
-        pg.draw.rect(win, play_color.to_tuple(), play_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), play_rect, 3)
-
         # Draw continue button
         cont_color = Colors.GREEN if continue_enabled else Colors.GRAY
-        pg.draw.rect(win, cont_color.to_tuple(), cont_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), cont_rect, 3)
 
         # Button text
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
-        play_text = font.render("Play Sentence", True, play_text_color.to_tuple())
-        cont_text = font.render("Continue", True, Colors.BLACK.to_tuple())
-        win.blit(play_text, play_text.get_rect(center=play_rect.center))
-        win.blit(cont_text, cont_text.get_rect(center=cont_rect.center))
+        _draw_button_rect(win, play_rect, play_color, "Play Sentence", play_text_color, font)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
 
         screen.update()
 
@@ -437,10 +467,32 @@ def _show_block_examples(
     save_folder: str,
     subject_number: str,
 ) -> None:
-    """Show the block examples screen with target and distractor samples."""
+    """Show the block examples screen with target and distractor samples.
+
+    Matches the original showBlockExamples layout:
+    - Instruction text at top (auto-fit)
+    - Horizontal row: target ("Wall") buttons
+    - Centre: "Actual Audio" button
+    - Horizontal row: distractor ("No Wall") buttons
+    - "Continue" button (active after sequential guided listening)
+
+    Phases:
+        0 → user must click Actual Audio
+        1 → user steps through each target in order
+        2 → user clicks Actual Audio again
+        3 → user steps through each distractor in order
+        4 → all buttons unlocked, user can replay freely
+    """
     pg.mouse.set_visible(True)
     screen = Screen(win)
     text_renderer = TextRenderer(screen)
+    current_w, current_h = screen.width, screen.height
+
+    # Instruction text
+    if block_name == "imagined_sentence":
+        instruction_text = blockExamplesInstructions_imagined_sentence
+    else:
+        instruction_text = blockExamplesInstructions_full_sentence
 
     # Load example files
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
@@ -451,21 +503,81 @@ def _show_block_examples(
     distractor_files = sorted([f for f in os.listdir(examples_distractors_dir) if f.lower().endswith('.wav')])
 
     fs_out = int(audio_engine.fs)
-    
-    # Load audio
-    targets_pcm = [_get_pcm16_mono(os.path.join(examples_targets_dir, f), fs_out) for f in target_files]
-    distractors_pcm = [_get_pcm16_mono(os.path.join(examples_distractors_dir, f), fs_out) for f in distractor_files]
-    
-    # Load actual target (full sentence)
-    actual_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-    actual_pcm = _get_pcm16_mono(actual_path, fs_out)
 
-    # Tracking
+    # Load actual audio — differs by block
+    if block_name == 'imagined_sentence':
+        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
+    else:
+        actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
+    actual_pcm = _get_pcm16_mono(actual_target_path, fs_out)
+
+    # Load example audio — full_sentence block concatenates prefix
+    if block_name == 'full_sentence':
+        prefix_path = os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav')
+        targets_pcm = [
+            _concatenate_wavs(prefix_path, os.path.join(examples_targets_dir, f), add_gap=False, fs_out=fs_out)
+            for f in target_files
+        ]
+        distractors_pcm = [
+            _concatenate_wavs(prefix_path, os.path.join(examples_distractors_dir, f), add_gap=False, fs_out=fs_out)
+            for f in distractor_files
+        ]
+    else:
+        targets_pcm = [_get_pcm16_mono(os.path.join(examples_targets_dir, f), fs_out) for f in target_files]
+        distractors_pcm = [_get_pcm16_mono(os.path.join(examples_distractors_dir, f), fs_out) for f in distractor_files]
+
+    # Play-count tracking
     target_counts = [0] * len(target_files)
     distractor_counts = [0] * len(distractor_files)
     actual_count = 0
     last_audio_start = 0
     audio_duration = 0
+
+    # Phase system for guided sequential listening
+    phase = 0
+    next_target_idx = 0
+    next_distractor_idx = 0
+    last_played_type: str | None = None   # 'actual' | 'target' | 'distractor'
+    last_played_index: int | None = None
+
+    # ── grid helper (computed once, doesn't change) ──
+    margin_x = int(0.06 * current_w)
+    min_spacing = int(0.02 * current_w)
+    min_btn_w = int(0.10 * current_w)
+    row_gap = int(0.02 * current_h)
+    
+    # Smaller buttons for imagined_sentence to allow more text space
+    if block_name == 'imagined_sentence':
+        grid_btn_h = max(32, int(0.05 * current_h))
+        actual_btn_h = max(32, int(0.05 * current_h))
+        text_max_y = 0.45  # More room for text
+    else:
+        grid_btn_h = max(36, int(0.07 * current_h))
+        actual_btn_h = max(36, int(0.07 * current_h))
+        text_max_y = 0.40
+
+    def _compute_grid(count: int, top_y: int):
+        if count <= 0:
+            return [], top_y
+        cols = min(6, count)
+        while cols > 1:
+            avail = current_w - 2 * margin_x - (cols - 1) * min_spacing
+            if avail / cols >= min_btn_w:
+                break
+            cols -= 1
+        avail = current_w - 2 * margin_x - (cols - 1) * min_spacing
+        btn_w = max(min_btn_w, int(avail // cols))
+        spacing = 0 if cols == 1 else int((current_w - 2 * margin_x - cols * btn_w) / (cols - 1))
+        btn_h = grid_btn_h  # Use configured button height
+        rows = -((-count) // cols)
+        rects: list[pg.Rect] = []
+        for idx in range(count):
+            r, c = divmod(idx, cols)
+            x = margin_x + c * (btn_w + spacing)
+            yy = top_y + r * (btn_h + row_gap)
+            rects.append(pg.Rect(int(x), int(yy), btn_w, btn_h))
+        total_h = rows * btn_h + (rows - 1) * row_gap
+        return rects, top_y + total_h
 
     while True:
         screen.fill()
@@ -473,124 +585,191 @@ def _show_block_examples(
         time_since_last = current_time - last_audio_start
         audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
 
-        # Title
-        title_style = TextStyle(font_size=screen.scaled_font_size(22), color=Colors.BLACK, align=TextAlign.CENTER)
-        text_renderer.draw_centered_text("Example Audio Samples", rel_y=0.03, style=title_style)
-        
-        if block_name == "imagined_sentence":
-            subtitle = "Imagine the sentence, then click each button to hear examples"
-        else:
-            subtitle = "Click each button to hear examples"
-        
-        sub_style = TextStyle(font_size=screen.scaled_font_size(16), color=Colors.BLACK, align=TextAlign.CENTER)
-        text_renderer.draw_centered_text(subtitle, rel_y=0.08, style=sub_style)
+        # ── instruction text (auto-fit into top area) ──
+        instr_style = TextStyle(
+            font_size=screen.scaled_font_size(16),
+            color=Colors.BLACK,
+            align=TextAlign.CENTER,
+        )
+        y_after_text = text_renderer.draw_paragraph(
+            instruction_text,
+            rel_x=0.03, rel_y=0.02,
+            rel_max_width=0.94,
+            style=instr_style,
+            auto_fit=True,
+            rel_max_y=text_max_y,
+        )
 
-        # Create button layout
-        btn_w = screen.abs_x(0.12)
-        btn_h = screen.abs_y(0.06)
-        
-        # Actual audio button (top center)
-        actual_rect = pg.Rect((screen.width - btn_w) // 2, screen.abs_y(0.15), btn_w, btn_h)
-        
-        # Target buttons (left column)
-        target_rects = []
-        for i in range(len(target_files)):
-            rect = pg.Rect(screen.abs_x(0.15), screen.abs_y(0.28 + i * 0.08), btn_w, btn_h)
-            target_rects.append(rect)
-        
-        # Distractor buttons (right column)
-        distractor_rects = []
-        for i in range(len(distractor_files)):
-            rect = pg.Rect(screen.abs_x(0.55), screen.abs_y(0.28 + i * 0.08), btn_w, btn_h)
-            distractor_rects.append(rect)
-        
+        # ── layout ──
+        top_y = y_after_text + int(0.04 * current_h)
+        label_font = pg.font.SysFont('times new roman', max(18, current_h // 40))
+
+        # "Wall" label
+        t_lab = label_font.render('Wall', True, Colors.BLACK.to_tuple())
+        win.blit(t_lab, (margin_x, top_y))
+        top_y += t_lab.get_height() + 6
+
+        target_rects, next_y = _compute_grid(len(target_files), top_y)
+
+        # Actual Audio button (centred)
+        actual_w = int(0.28 * current_w)
+        actual_h = actual_btn_h  # Use configured height
+        actual_rect = pg.Rect((current_w - actual_w) // 2, next_y + int(0.03 * current_h), actual_w, actual_h)
+
+        # "No Wall" label
+        d_label_y = actual_rect.bottom + int(0.03 * current_h)
+        d_lab = label_font.render('No Wall', True, Colors.BLACK.to_tuple())
+        win.blit(d_lab, (margin_x, d_label_y))
+
+        distractor_rects, next_y = _compute_grid(len(distractor_files), d_label_y + d_lab.get_height() + 6)
+
         # Continue button
-        cont_w = screen.abs_x(0.12)
-        cont_h = screen.abs_y(0.06)
-        cont_rect = pg.Rect((screen.width - cont_w) // 2, screen.abs_y(0.85), cont_w, cont_h)
+        continue_w = int(0.18 * current_w)
+        continue_h = int(0.06 * current_h)
+        continue_rect = pg.Rect((current_w - continue_w) // 2, next_y + int(0.05 * current_h), continue_w, continue_h)
 
-        # Draw buttons
-        font = pg.font.SysFont("times new roman", max(14, screen.height // 50))
-        
-        # Actual audio
-        color = Colors.BLUE if not audio_still_playing else Colors.GRAY
-        pg.draw.rect(win, color.to_tuple(), actual_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), actual_rect, 2)
-        text = font.render("Full Sentence", True, Colors.WHITE.to_tuple())
-        win.blit(text, text.get_rect(center=actual_rect.center))
+        btn_font = pg.font.SysFont('times new roman', max(14, current_h // 44))
 
-        # Labels
-        label_font = pg.font.SysFont("times new roman", max(14, screen.height // 45))
-        target_label = label_font.render("Contains 'Wall':", True, Colors.BLACK.to_tuple())
-        win.blit(target_label, (screen.abs_x(0.15), screen.abs_y(0.22)))
-        distractor_label = label_font.render("No 'Wall':", True, Colors.BLACK.to_tuple())
-        win.blit(distractor_label, (screen.abs_x(0.55), screen.abs_y(0.22)))
+        # ── draw helper (darken when playing, hover darken, gray when disabled) ──
+        def _draw_btn(rect: pg.Rect, label: str, enabled: bool, is_playing: bool = False):
+            mouse_pos = pg.mouse.get_pos()
+            hovered = rect.collidepoint(mouse_pos) and enabled
+            if enabled:
+                text_col = Colors.WHITE
+                if 'No Wall' in label:
+                    base = Colors.RED
+                elif 'Actual' in label:
+                    base = Colors.BLUE
+                else:
+                    base = Colors.GREEN
+                    text_col = Colors.BLACK
+                if is_playing:
+                    col = base.darken(0.6)
+                elif hovered:
+                    col = base.darken(0.85)
+                else:
+                    col = base
+            else:
+                col = Colors.GRAY
+                text_col = Colors.BLACK
+            pg.draw.rect(win, col.to_tuple(), rect)
+            pg.draw.rect(win, Colors.BLACK.to_tuple(), rect, 2)
+            s = btn_font.render(label, True, text_col.to_tuple())
+            win.blit(s, s.get_rect(center=rect.center))
 
-        # Target buttons
+        unlocked = phase >= 4
+        can_click_actual = phase in (0, 2)
+        can_click_targets = phase == 1
+        can_click_distractors = phase == 3
+
+        # Draw target buttons
         for i, rect in enumerate(target_rects):
-            enabled = not audio_still_playing
-            color = Colors.GREEN if enabled else Colors.GRAY
-            pg.draw.rect(win, color.to_tuple(), rect)
-            pg.draw.rect(win, Colors.BLACK.to_tuple(), rect, 2)
-            text = font.render(f"Target {i+1}", True, Colors.BLACK.to_tuple())
-            win.blit(text, text.get_rect(center=rect.center))
+            if unlocked:
+                en = True
+                playing = last_played_type == 'target' and last_played_index == i and audio_still_playing
+            else:
+                en = can_click_targets and i == next_target_idx and not audio_still_playing
+                playing = last_played_type == 'target' and last_played_index == i and audio_still_playing
+            _draw_btn(rect, f'Wall {i+1}', en, playing)
 
-        # Distractor buttons
+        # Draw actual button
+        if unlocked:
+            act_en = True
+            act_playing = last_played_type == 'actual' and audio_still_playing
+        else:
+            act_en = can_click_actual and not audio_still_playing
+            act_playing = last_played_type == 'actual' and audio_still_playing
+        _draw_btn(actual_rect, 'Actual Audio', act_en, act_playing)
+
+        # Draw distractor buttons
         for i, rect in enumerate(distractor_rects):
-            enabled = not audio_still_playing
-            color = Colors.RED if enabled else Colors.GRAY
-            pg.draw.rect(win, color.to_tuple(), rect)
-            pg.draw.rect(win, Colors.BLACK.to_tuple(), rect, 2)
-            text = font.render(f"Example {i+1}", True, Colors.WHITE.to_tuple())
-            win.blit(text, text.get_rect(center=rect.center))
+            if unlocked:
+                en = True
+                playing = last_played_type == 'distractor' and last_played_index == i and audio_still_playing
+            else:
+                en = can_click_distractors and i == next_distractor_idx and not audio_still_playing
+                playing = last_played_type == 'distractor' and last_played_index == i and audio_still_playing
+            _draw_btn(rect, f'No Wall {i+1}', en, playing)
 
-        # Continue button
-        cont_color = Colors.GREEN if not audio_still_playing else Colors.GRAY
-        pg.draw.rect(win, cont_color.to_tuple(), cont_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), cont_rect, 2)
-        cont_text = font.render("Continue", True, Colors.BLACK.to_tuple())
-        win.blit(cont_text, cont_text.get_rect(center=cont_rect.center))
+        # Continue button — only active after phase 4 and nothing playing
+        cont_enabled = unlocked and not audio_still_playing
+        mouse_pos = pg.mouse.get_pos()
+        if cont_enabled:
+            cont_col = Colors.GREEN.darken(0.85) if continue_rect.collidepoint(mouse_pos) else Colors.GREEN
+        else:
+            cont_col = Colors.GRAY
+        pg.draw.rect(win, cont_col.to_tuple(), continue_rect)
+        pg.draw.rect(win, Colors.BLACK.to_tuple(), continue_rect, 2)
+        cont_font = pg.font.SysFont('times new roman', max(16, current_h // 38))
+        cont_surf = cont_font.render('Continue', True, Colors.BLACK.to_tuple())
+        win.blit(cont_surf, cont_surf.get_rect(center=continue_rect.center))
 
         screen.update()
 
+        # ── event handling ──
         for event in pg.event.get():
             if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 pg.quit()
                 sys.exit()
             elif event.type == pg.MOUSEBUTTONDOWN:
                 mouse = pg.mouse.get_pos()
-                
-                if cont_rect.collidepoint(mouse) and not audio_still_playing:
-                    # Save example play counts
+                ct = pg.time.get_ticks()
+                ts = ct - last_audio_start
+                still_playing = (last_audio_start != 0) and (ts < audio_duration)
+
+                # Continue
+                if continue_rect.collidepoint(mouse) and cont_enabled:
                     out_path = os.path.join(save_folder, f'example_play_counts_{block_name}_{subject_number}.csv')
                     with open(out_path, 'w', newline='') as f:
                         writer = csv.writer(f)
-                        writer.writerow(['actual_audio'] + [f'target_{i}' for i in range(len(target_files))] + 
+                        writer.writerow(['actual_audio'] + [f'target_{i}' for i in range(len(target_files))] +
                                        [f'distractor_{i}' for i in range(len(distractor_files))])
                         writer.writerow([actual_count] + target_counts + distractor_counts)
                     return
-                
-                if audio_still_playing:
+
+                if still_playing:
                     continue
-                
-                if actual_rect.collidepoint(mouse):
+
+                # Actual Audio
+                if actual_rect.collidepoint(mouse) and (unlocked or can_click_actual):
                     audio_duration = _play_audio_stimulus(audio_engine, actual_pcm)
-                    last_audio_start = current_time
+                    last_audio_start = ct
+                    last_played_type = 'actual'
+                    last_played_index = None
                     actual_count += 1
-                
+                    if phase == 0:
+                        phase = 1
+                    elif phase == 2:
+                        phase = 3
+                    continue
+
+                # Targets
                 for i, rect in enumerate(target_rects):
-                    if rect.collidepoint(mouse):
+                    if rect.collidepoint(mouse) and (unlocked or (can_click_targets and i == next_target_idx)):
                         audio_duration = _play_audio_stimulus(audio_engine, targets_pcm[i])
-                        last_audio_start = current_time
+                        last_audio_start = ct
+                        last_played_type = 'target'
+                        last_played_index = i
                         target_counts[i] += 1
+                        if phase == 1 and i == next_target_idx:
+                            next_target_idx += 1
+                            if next_target_idx >= len(target_files):
+                                phase = 2
                         break
-                
-                for i, rect in enumerate(distractor_rects):
-                    if rect.collidepoint(mouse):
-                        audio_duration = _play_audio_stimulus(audio_engine, distractors_pcm[i])
-                        last_audio_start = current_time
-                        distractor_counts[i] += 1
-                        break
+                else:
+                    # Distractors
+                    for i, rect in enumerate(distractor_rects):
+                        if rect.collidepoint(mouse) and (unlocked or (can_click_distractors and i == next_distractor_idx)):
+                            audio_duration = _play_audio_stimulus(audio_engine, distractors_pcm[i])
+                            last_audio_start = ct
+                            last_played_type = 'distractor'
+                            last_played_index = i
+                            distractor_counts[i] += 1
+                            if phase == 3 and i == next_distractor_idx:
+                                next_distractor_idx += 1
+                                if next_distractor_idx >= len(distractor_files):
+                                    phase = 4
+                            break
 
 
 def _show_target_familiarization(
@@ -611,15 +790,15 @@ def _show_target_familiarization(
     fs_out = int(audio_engine.fs)
     actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
 
-    required_plays = FAMILIARIZATION_MAX_PLAYS
+    required_plays = FAMILIARIZATION_PLAYS
     play_count = 0
     last_audio_start = 0
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
 
     if block_name == "full_sentence":
-        instructions = targetFamiliarizationInstructions_full_sentence
+        instructions = [s.format(required_plays=required_plays) for s in targetFamiliarizationInstructions_full_sentence]
     else:
-        instructions = targetFamiliarizationInstructions_imagined_sentence
+        instructions = [s.format(required_plays=required_plays) for s in targetFamiliarizationInstructions_imagined_sentence]
 
     while True:
         screen.fill()
@@ -631,14 +810,17 @@ def _show_target_familiarization(
 
         y_pos = _show_centered_instructions(win, instructions)
 
-        btn_y = y_pos + screen.abs_y(0.08)
+        # Dynamic button placement in remaining space
+        remaining_h = screen.height - y_pos - screen.abs_y(0.05)
+        play_y = y_pos + int(remaining_h * 0.25)
         btn_width = screen.abs_x(0.2)
-        btn_height = screen.abs_y(0.08)
+        btn_height = max(30, int(remaining_h * 0.18))
+        cont_y = play_y + btn_height + int(remaining_h * 0.12)
         cont_width = screen.abs_x(0.15)
-        cont_height = screen.abs_y(0.06)
+        cont_height = max(26, int(remaining_h * 0.15))
 
-        play_rect = pg.Rect((screen.width - btn_width) // 2, btn_y, btn_width, btn_height)
-        cont_rect = pg.Rect((screen.width - cont_width) // 2, btn_y + btn_height + 20, cont_width, cont_height)
+        play_rect = pg.Rect((screen.width - btn_width) // 2, play_y, btn_width, btn_height)
+        cont_rect = pg.Rect((screen.width - cont_width) // 2, cont_y, cont_width, cont_height)
 
         can_click_play = can_play and (play_count < required_plays)
         
@@ -652,19 +834,12 @@ def _show_target_familiarization(
             play_color = Colors.BLUE.darken(0.5)
             play_text_color = Colors.GRAY
 
-        pg.draw.rect(win, play_color.to_tuple(), play_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), play_rect, 3)
-
         cont_color = Colors.GREEN if continue_enabled else Colors.GRAY
-        pg.draw.rect(win, cont_color.to_tuple(), cont_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), cont_rect, 3)
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        play_text = font.render(play_text_str, True, play_text_color.to_tuple())
-        cont_text = font.render("Continue", True, Colors.BLACK.to_tuple())
-        win.blit(play_text, play_text.get_rect(center=play_rect.center))
-        win.blit(cont_text, cont_text.get_rect(center=cont_rect.center))
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
 
         screen.update()
 
@@ -724,15 +899,15 @@ def _show_periodic_reminder(
     fs_out = int(audio_engine.fs)
     actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
 
-    required_plays = REMINDER_MAX_PLAYS
+    required_plays = REMINDER_PLAYS
     play_count = 0
     last_audio_start = 0
     audio_duration = int(round(1000.0 * (actual_target_pcm.shape[0] / fs_out)))
 
     if block_name == "full_sentence":
-        instructions = periodicReminderInstructions_full_sentence
+        instructions = [s.format(required_plays=required_plays) for s in periodicReminderInstructions_full_sentence]
     else:
-        instructions = periodicReminderInstructions_imagined_sentence
+        instructions = [s.format(required_plays=required_plays) for s in periodicReminderInstructions_imagined_sentence]
 
     while True:
         screen.fill()
@@ -744,14 +919,17 @@ def _show_periodic_reminder(
 
         y_pos = _show_centered_instructions(win, instructions)
 
-        btn_y = y_pos + screen.abs_y(0.08)
+        # Dynamic button placement in remaining space
+        remaining_h = screen.height - y_pos - screen.abs_y(0.05)
+        play_y = y_pos + int(remaining_h * 0.25)
         btn_width = screen.abs_x(0.2)
-        btn_height = screen.abs_y(0.08)
+        btn_height = max(30, int(remaining_h * 0.18))
+        cont_y = play_y + btn_height + int(remaining_h * 0.12)
         cont_width = screen.abs_x(0.15)
-        cont_height = screen.abs_y(0.06)
+        cont_height = max(26, int(remaining_h * 0.15))
 
-        play_rect = pg.Rect((screen.width - btn_width) // 2, btn_y, btn_width, btn_height)
-        cont_rect = pg.Rect((screen.width - cont_width) // 2, btn_y + btn_height + 20, cont_width, cont_height)
+        play_rect = pg.Rect((screen.width - btn_width) // 2, play_y, btn_width, btn_height)
+        cont_rect = pg.Rect((screen.width - cont_width) // 2, cont_y, cont_width, cont_height)
 
         can_click = can_play and (play_count < required_plays)
 
@@ -765,19 +943,12 @@ def _show_periodic_reminder(
             play_color = Colors.BLUE.darken(0.5)
             play_text_color = Colors.GRAY
 
-        pg.draw.rect(win, play_color.to_tuple(), play_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), play_rect, 3)
-
         cont_color = Colors.GREEN if continue_enabled else Colors.GRAY
-        pg.draw.rect(win, cont_color.to_tuple(), cont_rect)
-        pg.draw.rect(win, Colors.BLACK.to_tuple(), cont_rect, 3)
 
         font = pg.font.SysFont("times new roman", max(16, screen.height // 40))
         play_text_str = "Max Plays Reached" if play_count >= required_plays else "Play Sentence"
-        play_text = font.render(play_text_str, True, play_text_color.to_tuple())
-        cont_text = font.render("Continue", True, Colors.BLACK.to_tuple())
-        win.blit(play_text, play_text.get_rect(center=play_rect.center))
-        win.blit(cont_text, cont_text.get_rect(center=cont_rect.center))
+        _draw_button_rect(win, play_rect, play_color, play_text_str, play_text_color, font)
+        _draw_button_rect(win, cont_rect, cont_color, "Continue", Colors.BLACK, font)
 
         screen.update()
 
@@ -934,12 +1105,13 @@ def run_trial_loop(
     block_name: str,
     targets: list[str],
     distractors: list[str],
+    num_stimuli: int,
     save_folder: str,
     audio_engine: AudioEngine,
 ) -> None:
     """Run the main trial loop for a single block."""
     pg.event.clear()
-    trial_number = 0
+    trial_number = 1
     max_plays = MAX_PLAYS
     reminder_interval = REMINDER_INTERVAL
 
@@ -953,22 +1125,27 @@ def run_trial_loop(
     fs_out = int(audio_engine.fs)
     sound, stimulus_number, stimulus_type = _select_stimulus(targets, distractors, prefix_wav, fs_out)
 
-    while targets or distractors:
+    while (targets or distractors) and (trial_number <= NUM_STIMULI_TO_SHOW or NUM_STIMULI_TO_SHOW == -1):
+        
+        # Per-trial timestamps dictionary
+        timestamps = {}
+        timestamps['Trial Start Timestamp'] = time.perf_counter_ns()
+
         play_count = 0
         audio_played = False
         last_audio_start = 0
         audio_duration = 0
         start_ns = None
 
-        # Show periodic reminder if needed (but not on first trial)
-        if trial_number > 0 and trial_number % reminder_interval == 0:
+        # Show periodic reminder if needed (but not on first or last trial)
+        if  (trial_number % reminder_interval == 0) and (trial_number != num_stimuli):
             _show_periodic_reminder(win, subject_number, save_folder, trial_number, block_name, audio_engine)
 
         while True:
             current_time = pg.time.get_ticks()
             time_since_last = current_time - last_audio_start
             audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
-            can_play = (last_audio_start == 0) or (time_since_last >= audio_duration + 250)
+            can_play = (last_audio_start == 0) or (time_since_last >= audio_duration + 150)
             can_respond = audio_played and not audio_still_playing
 
             button_rect = _draw_audio_interface(
@@ -993,8 +1170,9 @@ def run_trial_loop(
                             start_ns = time.perf_counter_ns()
 
                         if event.key == pg.K_y:
-                            response_time = (time.perf_counter_ns() - start_ns) / 1_000_000
-                            _record_response(subject_number, block_name, stimulus_number, stimulus_type, 'target', response_time, save_folder, play_count)
+                            # record subject response timestamp (perf ns)
+                            timestamps['Subject Response Timestamp'] = time.perf_counter_ns()
+                            _record_response(subject_number, block_name, stimulus_number, stimulus_type, 'target', timestamps, save_folder, play_count)
                             trial_number += 1
 
                             if targets or distractors:
@@ -1002,8 +1180,8 @@ def run_trial_loop(
                             break
 
                         elif event.key == pg.K_n:
-                            response_time = (time.perf_counter_ns() - start_ns) / 1_000_000
-                            _record_response(subject_number, block_name, stimulus_number, stimulus_type, 'distractor', response_time, save_folder, play_count)
+                            timestamps['Subject Response Timestamp'] = time.perf_counter_ns()
+                            _record_response(subject_number, block_name, stimulus_number, stimulus_type, 'distractor', timestamps, save_folder, play_count)
                             trial_number += 1
 
                             if targets or distractors:
@@ -1013,7 +1191,22 @@ def run_trial_loop(
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     mouse_pos = pg.mouse.get_pos()
                     if button_rect.collidepoint(mouse_pos) and play_count < max_plays and can_play:
+                        # Record first time play button clicked for this trial (perf ns)
+                        if 'Play Button Clicked Timestamp' not in timestamps:
+                            timestamps['Play Button Clicked Timestamp'] = time.perf_counter_ns()
+
+                        # Start audio and record audio start/end timestamps (perf ns)
+                        audio_start_perf = time.perf_counter_ns()
                         audio_duration = _play_audio_stimulus(audio_engine, sound)
+                        timestamps['Audio Start Timestamp'] = int(audio_start_perf)
+                        try:
+                            # audio_duration is expected in milliseconds
+                            audio_end_perf = audio_start_perf + int(audio_duration) * 1_000_000
+                            timestamps['Audio End Timestamp'] = int(audio_end_perf)
+                        except Exception:
+                            # fallback to current perf time if audio_duration is not numeric
+                            timestamps['Audio End Timestamp'] = time.perf_counter_ns()
+
                         last_audio_start = pg.time.get_ticks()
                         play_count += 1
                         audio_played = True
@@ -1022,6 +1215,13 @@ def run_trial_loop(
             else:
                 continue
             break
+
+        # 2-second blank screen pause between trials
+        screen = Screen(win)
+        screen.fill()
+        screen.update()
+        pg.time.wait(2000)
+        pg.event.clear()
 
 
 def run_blocks(
@@ -1040,6 +1240,7 @@ def run_blocks(
         targets, distractors = block_dictionary[block_name]
         targets = list(targets)
         distractors = list(distractors)
+        num_stimuli = len(targets) + len(distractors)
 
         # Show block instructions and examples
         _show_block_instructions(win, block_name, audio_engine, save_folder, subject_number)
@@ -1057,7 +1258,7 @@ def run_blocks(
         _show_target_familiarization(win, subject_number, save_folder, familiarization_session_count, block_name, audio_engine)
 
         # Run trials
-        run_trial_loop(win, subject_number, block_name, targets, distractors, save_folder, audio_engine)
+        run_trial_loop(win, subject_number, block_name, targets, distractors, num_stimuli, save_folder, audio_engine)
 
         # Self-reflection after block
         _save_self_reflection(win, subject_number, save_folder, block_name)

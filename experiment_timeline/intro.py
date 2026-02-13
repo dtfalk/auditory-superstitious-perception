@@ -19,12 +19,12 @@ sys.path.insert(0, _BASE_DIR)
 sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
-from displayEngine import (
+from utils.displayEngine import (
     Screen, TextRenderer, Button, ButtonStyle,
     Colors, TextStyle, TextAlign,
 )
-from audioEngine import AudioEngine
-from text_blocks.experimentTextBlocks import (
+from utils.audioEngine import AudioEngine
+from experiment_helpers.text_blocks.experimentTextBlocks import (
     explanationText_1, explanationText_2, explanationText_3,
     explanationText_4, explanationText_5, audioLevelTestInstructions,
 )
@@ -172,6 +172,8 @@ def _show_explanation_page(
             rel_y=0.05,
             max_width=screen.abs_x(0.90),
             style=style,
+            auto_fit=True,
+            rel_max_y=0.95,
         )
         
         screen.update()
@@ -238,32 +240,32 @@ def run_audio_level_test(win: pg.Surface, audio_engine: AudioEngine) -> None:
         
         # Draw instructions
         title_style = TextStyle(
-            font_size=screen.scaled_font_size(25),
+            font_size=screen.scaled_font_size(20),
             color=Colors.BLACK,
             align=TextAlign.CENTER,
         )
         text_renderer.draw_centered_text(
-            "Audio Level Test",
-            rel_y=0.1,
+            "**Audio Level Test**",
+            rel_y=0.05,
             style=title_style,
         )
         
         instruction_style = TextStyle(
-            font_size=screen.scaled_font_size(18),
+            font_size=screen.scaled_font_size(25),
             color=Colors.BLACK,
             align=TextAlign.CENTER,
         )
         
-        instructions = [
-            "Use the buttons below to play audio and adjust system volume.",
-            "Adjust until the audio is at a comfortable listening level.",
-            "Click Continue when ready.",
-        ]
+        instructions = audioLevelTestInstructions
         
-        y = 0.18
+        y_abs = screen.abs_y(0.18)
         for line in instructions:
-            text_renderer.draw_centered_text(line, rel_y=y, style=instruction_style)
-            y += 0.05
+            y_abs = text_renderer.draw_centered_text(line, rel_y=y_abs / screen.height, style=instruction_style)
+            y_abs += screen.abs_y(0.02)  # Small gap between instructions
+        
+        # Position buttons below text with some padding
+        btn_top_y = max(y_abs + screen.abs_y(0.10), screen.abs_y(0.40))  # At least 40% down
+        btn_rel_y = btn_top_y / screen.height
         
         # Create buttons with current states
         bg_text = "Stop Background" if background_playing else "Start Background"
@@ -274,22 +276,24 @@ def run_audio_level_test(win: pg.Surface, audio_engine: AudioEngine) -> None:
         
         background_btn = Button(
             screen, bg_text,
-            rel_x=0.25, rel_y=0.5,
+            rel_x=0.25, rel_y=btn_rel_y,
             rel_width=0.2, rel_height=0.08,
             style=bg_style,
         )
         
         target_btn = Button(
             screen, target_text,
-            rel_x=0.75, rel_y=0.5,
+            rel_x=0.75, rel_y=btn_rel_y,
             rel_width=0.2, rel_height=0.08,
             style=target_style,
         )
         
+        # Continue button positioned below the audio buttons
+        continue_rel_y = btn_rel_y + 0.18  # 15% below the audio buttons
         continue_btn = Button(
             screen, "Continue",
-            rel_x=0.5, rel_y=0.8,
-            rel_width=0.15, rel_height=0.06,
+            rel_x=0.5, rel_y=continue_rel_y,
+            rel_width=0.2, rel_height=0.08,
             style=continue_style,
         )
         

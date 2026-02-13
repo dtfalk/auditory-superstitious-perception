@@ -124,7 +124,7 @@ def run_setup(
     if win_width is None or win_height is None:
         # Use relative import path
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'experiment_helpers'))
-        from experimenterLevers import WIN_WIDTH, WIN_HEIGHT
+        from experiment_helpers.experimenterLevers import WIN_WIDTH, WIN_HEIGHT
         win_width = win_width or WIN_WIDTH
         win_height = win_height or WIN_HEIGHT
     

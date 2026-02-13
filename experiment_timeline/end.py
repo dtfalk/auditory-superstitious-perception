@@ -21,11 +21,11 @@ sys.path.insert(0, _BASE_DIR)
 sys.path.insert(0, os.path.join(_BASE_DIR, 'experiment_helpers'))
 sys.path.insert(0, os.path.join(_BASE_DIR, 'utils'))
 
-from displayEngine import (
+from utils.displayEngine import (
     Screen, TextRenderer, TextInput,
     Colors, TextStyle, TextAlign, InputMode,
 )
-from text_blocks.experimentTextBlocks import exitScreenText
+from experiment_helpers.text_blocks.experimentTextBlocks import exitScreenText
 
 
 # =============================================================================
@@ -150,6 +150,8 @@ def _show_exit_screen(win: pg.Surface) -> None:
             rel_y=0.05,
             max_width=screen.abs_x(0.90),
             style=style,
+            auto_fit=True,
+            rel_max_y=0.95,
         )
         
         screen.update()

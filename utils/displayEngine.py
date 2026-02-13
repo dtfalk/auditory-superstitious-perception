@@ -18,10 +18,11 @@ Usage:
 """
 
 from __future__ import annotations
+import re
 import pygame as pg
 import sys
 from typing import Callable, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as _dc_replace
 from enum import Enum, auto
 
 # =============================================================================
@@ -76,6 +77,7 @@ class ButtonState(Enum):
     HOVERED = auto()
     PRESSED = auto()
     DISABLED = auto()
+    SELECTED = auto()  # Persistent selection (e.g., radio button)
 
 
 # =============================================================================
@@ -119,6 +121,7 @@ class Colors:
     GREEN = Color(0, 128, 0)
     BLUE = Color(50, 50, 255)
     YELLOW = Color(255, 255, 0)
+    ORANGE = Color(255, 165, 0)
     BACKGROUND = Color(128, 128, 128)
 
 
@@ -146,6 +149,7 @@ class ButtonStyle:
     disabled_text_color: Color = field(default_factory=lambda: Colors.DARK_GRAY)
     hover_darken: float = 0.85
     pressed_darken: float = 0.7
+    selected_darken: float = 0.8  # Darken factor when selected
     font_family: str = DEFAULT_FONT_FAMILY
     font_size: int | None = None  # None = auto-scale
     padding_x: float = 0.02  # As fraction of screen width
@@ -349,6 +353,88 @@ class TextRenderer:
         if current:
             chunks.append(current)
         return chunks
+
+    # ------------------------------------------------------------------
+    # Rich-text helpers:  **bold**  inline markup
+    # ------------------------------------------------------------------
+    _BOLD_RE = re.compile(r'\*\*(.+?)\*\*')
+
+    @staticmethod
+    def _parse_rich_segments(text: str) -> list[tuple[str, bool]]:
+        """Parse a string into (text, is_bold) segments.
+
+        ``**word**`` is rendered bold; everything else is normal.
+        """
+        segments: list[tuple[str, bool]] = []
+        last = 0
+        for m in TextRenderer._BOLD_RE.finditer(text):
+            if m.start() > last:
+                segments.append((text[last:m.start()], False))
+            segments.append((m.group(1), True))
+            last = m.end()
+        if last < len(text):
+            segments.append((text[last:], False))
+        return segments if segments else [(text, False)]
+
+    @staticmethod
+    def _strip_bold_markers(text: str) -> str:
+        """Remove ``**`` markers so width measurement uses plain text."""
+        return TextRenderer._BOLD_RE.sub(r'\1', text)
+
+    def _measure_rich_line_width(
+        self, text: str, family: str, size: int, italic: bool = False,
+    ) -> int:
+        """Measure the rendered pixel width of *text* that may contain ``**bold**``."""
+        total = 0
+        for seg, bold in self._parse_rich_segments(text):
+            font = self._get_font(family, size, bold=bold, italic=italic)
+            total += font.size(seg)[0]
+        return total
+
+    def _render_rich_line(
+        self,
+        text: str,
+        x: int,
+        y: int,
+        style: TextStyle,
+        render: bool = True,
+    ) -> int:
+        """Render (or measure) a single line that may contain ``**bold**`` markup.
+
+        Returns the total rendered width.
+        """
+        cursor = x
+        for seg, bold in self._parse_rich_segments(text):
+            font = self._get_font(style.font_family, style.font_size, bold=bold, italic=style.italic)
+            if render:
+                surf = font.render(seg, True, style.color.to_tuple())
+                self.screen.win.blit(surf, (cursor, y))
+            cursor += font.size(seg)[0]
+        return cursor - x
+
+    # ------------------------------------------------------------------
+    # Line-metadata: leading indentation  +  >>> centre directive
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _parse_line_meta(line: str) -> tuple[str, bool, str]:
+        """Return ``(content, force_center, indentation_prefix)``.
+
+        * Leading whitespace is preserved and measured for indentation.
+        * A ``>>>`` prefix (optionally followed by a space) forces that line
+          to be centred regardless of the style's ``align``.
+        """
+        # Detect leading whitespace
+        stripped = line.lstrip()
+        indent_prefix = line[:len(line) - len(stripped)]
+
+        # Detect >>> centering directive (after stripping indent)
+        force_center = False
+        content = stripped
+        if content.startswith('>>>'):
+            force_center = True
+            content = content[3:].lstrip()  # strip the >>> and optional space
+
+        return content, force_center, indent_prefix
     
     def get_text_size(self, text: str, style: TextStyle | None = None) -> tuple[int, int]:
         """Get the pixel dimensions of rendered text."""
@@ -400,6 +486,103 @@ class TextRenderer:
         
         return rect
     
+    def _measure_paragraph_height(
+        self,
+        text: str,
+        font: pg.font.Font,
+        max_width: int,
+        start_y: int,
+        line_spacing: float = 1.0,
+    ) -> int:
+        """
+        Simulate text layout and return the y position after the last line.
+        Does NOT render anything — used for measuring whether text fits.
+
+        Handles leading-whitespace indentation, ``>>>`` centre markers, and
+        ``**bold**`` inline markup (stripped for sizing).
+        """
+        line_height = int(font.get_linesize() * line_spacing)
+        paragraphs = text.split('\n')
+        current_y = start_y
+
+        for paragraph in paragraphs:
+            if not paragraph.strip():
+                current_y += line_height
+                continue
+
+            content, _fc, indent_prefix = self._parse_line_meta(paragraph)
+            plain = self._strip_bold_markers(content)
+            indent_w = font.size(indent_prefix)[0] if indent_prefix else 0
+            wrap_w = max(1, max_width - indent_w)
+
+            lines = self._wrap_text(plain, font, wrap_w)
+            for _line in lines:
+                current_y += line_height
+
+        return current_y
+
+    def auto_fit_font_size(
+        self,
+        text: str,
+        style: TextStyle,
+        max_width: int | None = None,
+        rel_max_width: float | None = None,
+        start_y: int | None = None,
+        rel_start_y: float | None = None,
+        max_y: int | None = None,
+        rel_max_y: float | None = None,
+        min_font_size: int = 1,
+    ) -> TextStyle:
+        """
+        Return a copy of *style* whose font_size has been reduced (if needed)
+        until the given text fits within the vertical bounds.
+
+        The caller passes the same positional / sizing parameters that would
+        later be given to ``draw_paragraph``.  The method simulates word-wrap
+        layout at progressively smaller font sizes until everything fits
+        between *start_y* and *max_y*.
+
+        Args:
+            text: The full text (may include ``\\n``)
+            style: Starting TextStyle (its font_size is the maximum tried)
+            max_width / rel_max_width: Horizontal constraint
+            start_y / rel_start_y: Vertical start
+            max_y / rel_max_y: Vertical limit (default 95 % of screen height)
+            min_font_size: Smallest font size to try before giving up
+
+        Returns:
+            A new TextStyle with ``font_size`` adjusted to fit.
+        """
+        # Resolve vertical bounds
+        y0 = (start_y if start_y is not None
+               else self.screen.abs_y(rel_start_y) if rel_start_y is not None
+               else self.screen.abs_y(0.05))
+        y_max = (max_y if max_y is not None
+                 else self.screen.abs_y(rel_max_y) if rel_max_y is not None
+                 else self.screen.abs_y(0.95))
+
+        # Resolve horizontal bound
+        if max_width is None:
+            if rel_max_width is not None:
+                max_width = self.screen.abs_x(rel_max_width)
+            else:
+                max_width = self.screen.abs_x(0.9)
+
+        font_size = style.font_size
+        font = self._get_font(style.font_family, font_size, style.bold, style.italic)
+
+        while font_size > min_font_size:
+            end_y = self._measure_paragraph_height(
+                text, font, max_width, y0, style.line_spacing
+            )
+            if end_y <= y_max:
+                break
+            font_size -= 1
+            font = self._get_font(style.font_family, font_size, style.bold, style.italic)
+
+        # Return a copy with the (possibly reduced) font size
+        return _dc_replace(style, font_size=font_size)
+
     def draw_paragraph(
         self,
         text: str,
@@ -410,99 +593,212 @@ class TextRenderer:
         rel_x: float | None = None,
         rel_y: float | None = None,
         style: TextStyle | None = None,
-        max_y: int | None = None
+        max_y: int | None = None,
+        auto_fit: bool = False,
+        rel_max_y: float | None = None,
     ) -> int:
         """
-        Draw wrapped, multi-line text.
-        
+        Draw wrapped, multi-line text with rich formatting support.
+
+        Formatting features:
+        * ``**bold**``  – wraps a word or phrase in bold inline.
+        * ``>>>``       – prefix a line with ``>>>`` to centre it (even in LEFT mode).
+        * Leading whitespace is preserved as visual indentation.
+
         Args:
-            text: Text to render (can include \\n for line breaks)
-            max_width: Maximum width in pixels for wrapping
-            rel_max_width: Maximum width as fraction of screen (0.0-1.0)
-            x, y: Absolute pixel position
-            rel_x, rel_y: Relative position (0.0-1.0)
+            text: Text to render (can include ``\\n`` for explicit line breaks)
+            max_width / rel_max_width: Wrapping constraint
+            x, y / rel_x, rel_y: Position (absolute or relative)
             style: TextStyle configuration
-            max_y: Stop rendering if y exceeds this value
-        
+            max_y: Stop rendering past this y value
+            auto_fit: Shrink font until text fits within *max_y*
+            rel_max_y: *max_y* expressed as a screen-height fraction
+
         Returns:
-            The y position after the last line
+            The y position after the last rendered line.
         """
         style = style or TextStyle()
+
+        # --- auto-fit: shrink font until the text fits vertically ----------
+        if auto_fit:
+            style = self.auto_fit_font_size(
+                text, style,
+                max_width=max_width, rel_max_width=rel_max_width,
+                start_y=y, rel_start_y=rel_y,
+                max_y=max_y, rel_max_y=rel_max_y,
+            )
+
         font = self._get_font(style.font_family, style.font_size, style.bold, style.italic)
-        
+        bold_font = self._get_font(style.font_family, style.font_size, bold=True, italic=style.italic)
+
         # Resolve positions
         pos_x = x if x is not None else (self.screen.abs_x(rel_x) if rel_x is not None else self.screen.abs_x(0.05))
         pos_y = y if y is not None else (self.screen.abs_y(rel_y) if rel_y is not None else self.screen.abs_y(0.05))
-        
+
         # Resolve max_width
         if max_width is None:
             if rel_max_width is not None:
                 max_width = self.screen.abs_x(rel_max_width)
             else:
-                max_width = self.screen.abs_x(0.9)  # Default 90% of screen
-        
+                max_width = self.screen.abs_x(0.9)
+
         line_height = int(font.get_linesize() * style.line_spacing)
-        
+
         # Split text by explicit newlines
         paragraphs = text.split('\n')
-        
         current_y = pos_y
-        
+        has_bold = '**' in text  # fast path: skip rich parsing when not needed
+
         for paragraph in paragraphs:
             if not paragraph.strip():
                 current_y += line_height
                 continue
-            
-            # Wrap this paragraph
-            lines = self._wrap_text(paragraph, font, max_width)
-            
-            for line in lines:
+
+            # ---- per-paragraph metadata -----------
+            content, force_center, indent_prefix = self._parse_line_meta(paragraph)
+            indent_w = font.size(indent_prefix)[0] if indent_prefix else 0
+            wrap_w = max(1, max_width - indent_w)
+
+            # For wrapping, use the plain (no **) version of the text so
+            # word boundaries are computed correctly.
+            plain = self._strip_bold_markers(content)
+            wrapped = self._wrap_text(plain, font, wrap_w)
+
+            # If there is bold markup, we also need wrapped lines of the
+            # *raw* content (with ** markers) so we can render segments.
+            # Map plain-wrapped lines back to rich lines by re-splitting
+            # the original content at the same word boundaries.
+            if has_bold and '**' in content:
+                rich_wrapped = self._wrap_text_preserving_markup(content, font, bold_font, wrap_w)
+            else:
+                rich_wrapped = wrapped
+
+            for idx, plain_line in enumerate(wrapped):
                 if max_y is not None and current_y > max_y:
                     return current_y
-                
-                if line.strip():
-                    surface = font.render(line, True, style.color.to_tuple())
-                    
-                    # Handle alignment
-                    if style.align == TextAlign.CENTER:
-                        line_x = pos_x + (max_width - surface.get_width()) // 2
-                    elif style.align == TextAlign.RIGHT:
-                        line_x = pos_x + max_width - surface.get_width()
-                    else:
-                        line_x = pos_x
-                    
-                    self.screen.win.blit(surface, (line_x, current_y))
-                
+
+                if not plain_line.strip():
+                    current_y += line_height
+                    continue
+
+                rich_line = rich_wrapped[idx] if idx < len(rich_wrapped) else plain_line
+
+                # Determine alignment for this line
+                if force_center:
+                    align = TextAlign.CENTER
+                else:
+                    align = style.align
+
+                # Measure the rendered width for alignment
+                if has_bold and '**' in rich_line:
+                    line_w = self._measure_rich_line_width(
+                        rich_line, style.font_family, style.font_size, style.italic,
+                    )
+                else:
+                    line_w = font.size(plain_line)[0]
+
+                # Compute x
+                if align == TextAlign.CENTER:
+                    line_x = pos_x + (max_width - line_w) // 2
+                elif align == TextAlign.RIGHT:
+                    line_x = pos_x + max_width - line_w
+                else:
+                    line_x = pos_x + indent_w
+
+                # Render
+                if has_bold and '**' in rich_line:
+                    self._render_rich_line(rich_line, line_x, current_y, style)
+                else:
+                    surf = font.render(plain_line, True, style.color.to_tuple())
+                    self.screen.win.blit(surf, (line_x, current_y))
+
                 current_y += line_height
-        
+
         return current_y
+
+    # ------------------------------------------------------------------
+    def _wrap_text_preserving_markup(
+        self,
+        content: str,
+        font: pg.font.Font,
+        bold_font: pg.font.Font,
+        max_width: int,
+    ) -> list[str]:
+        """Word-wrap *content* (which may contain ``**bold**`` markers)
+        while keeping the markers intact in the output lines.
+
+        Width measurement uses the appropriate font (bold vs normal)
+        for each segment.
+        """
+        # Tokenise into words while keeping ** markers attached
+        words = content.split()
+        if not words:
+            return ['']
+
+        lines: list[str] = []
+        current = words[0]
+
+        def _seg_width(s: str) -> int:
+            total = 0
+            for seg, is_b in self._parse_rich_segments(s):
+                f = bold_font if is_b else font
+                total += f.size(seg)[0]
+            return total
+
+        for word in words[1:]:
+            trial = f'{current} {word}'
+            if _seg_width(trial) <= max_width:
+                current = trial
+            else:
+                lines.append(current)
+                current = word
+
+        lines.append(current)
+        return lines
     
     def draw_text_block(
         self,
-        lines: list[str],
+        lines: list[str] | str,
         x: int | None = None,
         y: int | None = None,
         rel_x: float | None = None,
         rel_y: float | None = None,
         style: TextStyle | None = None,
         line_spacing: int | None = None,
-        max_width: int | None = None
+        max_width: int | None = None,
+        auto_fit: bool = False,
+        rel_max_y: float | None = None,
     ) -> int:
         """
         Draw multiple lines of text as a block.
         Empty strings create paragraph breaks.
+        Accepts either a list of strings or a single string
+        (which will be rendered via draw_paragraph).
         
         Args:
-            lines: List of text lines (empty string = paragraph break)
+            lines: List of text lines (empty string = paragraph break), or a single string
             x, y: Absolute position
             rel_x, rel_y: Relative position
             style: TextStyle configuration
             line_spacing: Override style's line spacing
             max_width: Wrap lines to this width
+            auto_fit: If True, reduce font size until text fits vertically
+            rel_max_y: Maximum y as fraction of screen height (used with auto_fit)
         
         Returns:
             The y position after the last line
         """
+        # If a plain string is passed, delegate to draw_paragraph
+        if isinstance(lines, str):
+            return self.draw_paragraph(
+                lines,
+                max_width=max_width,
+                x=x, y=y,
+                rel_x=rel_x, rel_y=rel_y,
+                style=style,
+                auto_fit=auto_fit,
+                rel_max_y=rel_max_y,
+            )
         style = style or TextStyle()
         font = self._get_font(style.font_family, style.font_size, style.bold, style.italic)
         
@@ -631,6 +927,9 @@ class TextInput:
         self.style = style or InputStyle()
         self.text_renderer = TextRenderer(screen)
         self.value = ""
+        self.cursor_pos = 0  # cursor position within self.value
+        self._cursor_blink_time = pg.time.get_ticks()  # reset on each keystroke
+        self._cursor_blink_interval = 530  # ms per phase (visible / hidden)
     
     def is_valid_key(self, key: int, mods: int) -> tuple[bool, str]:
         """
@@ -658,10 +957,16 @@ class TextInput:
                 return True, " "
             return False, ""
         
-        # Shift + number for symbols
-        if shift_held and key in SHIFT_KEY_MAP and self.allow_shift_symbols:
+        # Shift + number/symbol for special characters
+        if shift_held and key in SHIFT_KEY_MAP:
+            mapped = SHIFT_KEY_MAP[key]
             if self.mode == InputMode.FULL_ASCII:
-                return True, SHIFT_KEY_MAP[key]
+                return True, mapped
+            if self.allow_shift_symbols:
+                return True, mapped
+            # For EMAIL mode, allow shift-produced chars that are valid email chars
+            if self.mode == InputMode.EMAIL and mapped in ('@', '.', '-', '_', '+'):
+                return True, mapped
             return False, ""
         
         # Letters (a-z)
@@ -679,9 +984,9 @@ class TextInput:
                 return True, chr(key)
             return False, ""
         
-        # Email special chars
+        # Email special chars (direct key press, no shift)
         if self.mode == InputMode.EMAIL:
-            if key in (ord('@'), ord('.'), ord('-'), ord('_')):
+            if key in (ord('@'), ord('.'), ord('-'), ord('_'), ord('+')):
                 return True, chr(key)
         
         # Full ASCII printable
@@ -707,6 +1012,9 @@ class TextInput:
         if event.type != pg.KEYDOWN:
             return None
         
+        # Reset cursor blink so it's visible immediately after any keypress
+        self._cursor_blink_time = pg.time.get_ticks()
+        
         if event.key == pg.K_ESCAPE:
             return "escape"
         
@@ -716,7 +1024,29 @@ class TextInput:
             return None
         
         if event.key in (pg.K_BACKSPACE, pg.K_DELETE):
-            self.value = self.value[:-1]
+            if self.cursor_pos > 0:
+                self.value = self.value[:self.cursor_pos - 1] + self.value[self.cursor_pos:]
+                self.cursor_pos -= 1
+            return None
+        
+        # Left/right arrow key navigation
+        if event.key == pg.K_LEFT:
+            if self.cursor_pos > 0:
+                self.cursor_pos -= 1
+            return None
+        
+        if event.key == pg.K_RIGHT:
+            if self.cursor_pos < len(self.value):
+                self.cursor_pos += 1
+            return None
+        
+        # Home/End keys
+        if event.key == pg.K_HOME:
+            self.cursor_pos = 0
+            return None
+        
+        if event.key == pg.K_END:
+            self.cursor_pos = len(self.value)
             return None
         
         # Check length limit
@@ -727,7 +1057,8 @@ class TextInput:
         mods = pg.key.get_mods()
         is_valid, char = self.is_valid_key(event.key, mods)
         if is_valid and char:
-            self.value += char
+            self.value = self.value[:self.cursor_pos] + char + self.value[self.cursor_pos:]
+            self.cursor_pos += 1
         
         return None
     
@@ -765,13 +1096,48 @@ class TextInput:
             color=Colors.BLACK if self.value else Colors.GRAY
         )
         
-        display_text = self.value if self.value else self.placeholder
-        self.text_renderer.draw_text(
-            f"{display_text}_",  # Cursor
-            x=pos_x,
-            y=y_after + 10,
-            style=input_style
+        font = self.text_renderer._get_font(
+            input_style.font_family, input_style.font_size,
+            input_style.bold, input_style.italic
         )
+        
+        input_y = y_after + 10
+        
+        if self.value:
+            # Draw text before cursor
+            before_cursor = self.value[:self.cursor_pos]
+            after_cursor = self.value[self.cursor_pos:]
+            
+            self.text_renderer.draw_text(before_cursor + after_cursor, x=pos_x, y=input_y, style=input_style)
+            
+            # Blinking vertical bar cursor
+            elapsed = (pg.time.get_ticks() - self._cursor_blink_time) % (self._cursor_blink_interval * 2)
+            if elapsed < self._cursor_blink_interval:
+                cursor_x = pos_x + font.size(before_cursor)[0]
+                cursor_top = input_y + 2
+                cursor_bottom = input_y + font.get_height() - 2
+                pg.draw.line(
+                    self.screen.win,
+                    input_style.color.to_tuple(),
+                    (cursor_x, cursor_top),
+                    (cursor_x, cursor_bottom),
+                    2
+                )
+        else:
+            # Draw placeholder
+            self.text_renderer.draw_text(self.placeholder, x=pos_x, y=input_y, style=input_style)
+            # Blinking vertical bar cursor at start
+            elapsed = (pg.time.get_ticks() - self._cursor_blink_time) % (self._cursor_blink_interval * 2)
+            if elapsed < self._cursor_blink_interval:
+                cursor_top = input_y + 2
+                cursor_bottom = input_y + font.get_height() - 2
+                pg.draw.line(
+                    self.screen.win,
+                    Colors.BLACK.to_tuple(),
+                    (pos_x, cursor_top),
+                    (pos_x, cursor_bottom),
+                    2
+                )
     
     def run(
         self,
@@ -791,6 +1157,8 @@ class TextInput:
             The entered text, or None if cancelled
         """
         self.value = ""
+        self.cursor_pos = 0
+        self._cursor_blink_time = pg.time.get_ticks()
         
         while True:
             for event in pg.event.get():
@@ -809,7 +1177,7 @@ class TextInput:
             pg.mouse.set_visible(False)
             
             full_prompt = f"{additional_text}\n\n{prompt}" if additional_text else prompt
-            self.draw(prompt=full_prompt, rel_y=0.1)
+            self.draw(prompt=full_prompt, rel_y=0.05)
             
             self.screen.update()
 
@@ -857,6 +1225,7 @@ class Button:
         self.center_anchor = center_anchor
         self.on_click = on_click
         self.state = ButtonState.NORMAL
+        self.selected = False  # Persistent selection state
         
         # Calculate dimensions
         w = width if width is not None else (
@@ -910,6 +1279,10 @@ class Button:
             return self.style.disabled_bg_color, self.style.disabled_text_color
         
         bg = self.style.bg_color
+        # Apply selection darkening first (persistent)
+        if self.selected:
+            bg = bg.darken(self.style.selected_darken)
+        # Then apply hover/pressed on top
         if self.state == ButtonState.HOVERED:
             bg = bg.darken(self.style.hover_darken)
         elif self.state == ButtonState.PRESSED:
@@ -933,12 +1306,53 @@ class Button:
                 self.style.border_width
             )
         
-        # Draw text
+        # Draw text (with bold support)
         font_size = self.style.font_size or max(14, self.screen.height // 44)
-        font = pg.font.SysFont(self.style.font_family, font_size)
-        text_surface = font.render(self.text, True, text_color.to_tuple())
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        self.screen.win.blit(text_surface, text_rect)
+        
+        if '**' in self.text:
+            # Rich text with bold support
+            self._draw_rich_text(font_size, text_color)
+        else:
+            # Simple text rendering
+            font = pg.font.SysFont(self.style.font_family, font_size)
+            text_surface = font.render(self.text, True, text_color.to_tuple())
+            text_rect = text_surface.get_rect(center=self.rect.center)
+            self.screen.win.blit(text_surface, text_rect)
+    
+    def _draw_rich_text(self, font_size: int, text_color: Color) -> None:
+        """Draw button text with **bold** markup support."""
+        import re
+        BOLD_RE = re.compile(r'\*\*(.+?)\*\*')
+        
+        # Parse segments
+        segments: list[tuple[str, bool]] = []
+        last = 0
+        for m in BOLD_RE.finditer(self.text):
+            if m.start() > last:
+                segments.append((self.text[last:m.start()], False))
+            segments.append((m.group(1), True))
+            last = m.end()
+        if last < len(self.text):
+            segments.append((self.text[last:], False))
+        if not segments:
+            segments = [(self.text, False)]
+        
+        # Measure total width
+        total_width = 0
+        surfaces: list[tuple[pg.Surface, bool]] = []
+        for text, is_bold in segments:
+            font = pg.font.SysFont(self.style.font_family, font_size, bold=is_bold)
+            surf = font.render(text, True, text_color.to_tuple())
+            surfaces.append((surf, is_bold))
+            total_width += surf.get_width()
+        
+        # Center and draw
+        x = self.rect.centerx - total_width // 2
+        y = self.rect.centery
+        for surf, _ in surfaces:
+            rect = surf.get_rect(midleft=(x, y))
+            self.screen.win.blit(surf, rect)
+            x += surf.get_width()
     
     def contains_point(self, pos: tuple[int, int]) -> bool:
         """Check if a point is within the button."""
