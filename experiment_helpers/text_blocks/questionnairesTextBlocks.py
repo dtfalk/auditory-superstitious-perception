@@ -1,6 +1,7 @@
 # Questionnaire Instructions
 questionnairesIntro = '>>>**Questionnaires**\n\nYou will now respond to some questionnaires.\n\nPlease read each question carefully and respond truthfully.\n\nPress the **spacebar** to begin.'
-telleganScaleIntro = 'Please respond True or False to the following questions.\n\nPress the **spacebar** to begin.'
+
+telleganScaleIntro = 'This questionnaire consists of twenty-eight questions about experiences that you may have in your daily life. We are interested in how often you have these experiences. It is important, however, that your answers show how often these experiences happen to you when you are not under the influence of alcohol or drugs.\n\nPress the **spacebar** to begin.'
 launeyScaleIntro= 'Please indicate the degree to which the following statements describe you on a scale from 1 (not at all like me) to 8 (extremely like me).\n\nPress the **spacebar** to begin.'
 dissociativeExperiencesIntro = 'This questionnaire consists of twenty-eight questions about experiences that you may have in your daily life. We are interested in how often you have these experiences. It is important, however, that your answers show how often these experiences happen to you when you are not under the influence of alcohol or drugs.\n\nTo answer the questions, please determine to what degree the type of experience described in the question applies to you and click the box corresponding to what percentage of the time you have the experience.\n\nPress the **spacebar** to begin.'
 flowStateIntro = 'Please respond to this questionnaire about your experience so far. \n\nPress the **spacebar** to begin.'

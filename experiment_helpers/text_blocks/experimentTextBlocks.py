@@ -74,7 +74,7 @@ fullSentenceBlockInstructionsText = (
 imaginedSentenceBlockInstructionsText = (
     "In this part of the experiment, you will imagine the speaker saying this sentence before you make your judgment:\n\n"
     f">>>**{SENTENCE_TO_IMAGINE}**\n\n"
-    "- On each trial, you will imagine the speaker saying the beginning of this sentence in their voice.\n"
+    "- On each trial, you will **imagine** the speaker saying the beginning of this sentence in their voice.\n"
     "- As your imagined sentence reaches the word \"Wall\", you will click \"Play Audio\" to hear a short, static-like audio sample.\n"
     "- Your task is to decide whether the speaker’s \"Wall\", as it would naturally complete the sentence, seems to be present in that noisy audio sample.\n"
     "- Next, you will listen to the speaker say the full sentence as many times as you like.\n\n"
@@ -106,7 +106,7 @@ preTrialQuickResponseTextFullSentence = (
 
 preTrialQuickResponseTextImaginedSentence = (
     ">>>**Before you begin**\n\n"
-    "- On each trial, you will imagine the speaker saying the sentence, then listen to a noisy audio sample.\n"
+    "- On **every** trial, you will **imagine** the speaker saying the sentence, then listen to a noisy audio sample.\n"
     "- Each audio sample can only be heard one time. There are no replays.\n"
     "- On every trial, imagine the sentence in the speaker’s voice and click \"Play Audio\" at the moment you would be imagining the word \"Wall\".\n"
     "- The sentence must be imagined silently. Do not say it out loud, under your breath, or move your mouth.\n"
@@ -125,7 +125,6 @@ preTrialQuickResponseTextImaginedSentence = (
 trialInstructions_full_sentence = [
     ">>>**Main Task**\n",
     "- Click 'Play Audio' to listen to the speaker saying the sentence.",
-    "- After listening, respond as quickly as you feel comfortable.",
     "- Press **Y** if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
     "- Press **N** if you believe the speaker's \"Wall\" is **not** hidden in the noisy audio sample.",
 ]
@@ -134,7 +133,6 @@ trialInstructions_imagined_sentence = [
     ">>>**Main Task**\n",
     "- Silently **imagine** the speaker saying the sentence in **their** voice.", 
     "- Click 'Play Audio' when your **imagined** sentence reaches the word \"Wall\".",
-    "- After listening, respond as quickly as you feel comfortable.",
     "- Press **Y** if you believe the speaker's \"Wall\" is hidden in the noisy audio sample.",
     "- Press **N** if you believe the speaker's \"Wall\" is **not** hidden in the noisy audio sample.",
 ]
@@ -151,7 +149,8 @@ preExamplesFamiliarizationInstructions_full_sentence = [
     "- In the next screen, you will hear examples where this sentence is played, with the final word replaced by a noisy audio sample.",
     f"- You must listen to the sentence at least {FAMILIARIZATION_PLAYS} times before continuing.",
     "- You may listen to it as many additional times as you like.",
-    "- Use this time to become very familiar with how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence. You should continue listening until you feel confident you recognize the sentence and the speaker's voice.",
+    "- Use this time to become very familiar with how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
+    "- You should continue listening until you feel confident you recognize the sentence and the speaker's voice.",
     "",
     ">>>Click \"Play Sentence\" to listen to the full sentence.",
     ">>>Click \"Continue\" when you are ready to hear the examples."
@@ -164,7 +163,8 @@ preExamplesFamiliarizationInstructions_imagined_sentence = [
     "- On the very next screen, you will hear examples where you must imagine the speaker saying this sentence before listening to each audio sample. This means you will need to actively use your memory of this sentence right away, without hearing it spoken aloud.",
     f"- You must listen to the sentence at least {FAMILIARIZATION_PLAYS} times before continuing.",
     "- You may listen to it as many additional times as you like.",
-    "- Use this time to get the sentence clearly and reliably into your head in the speaker's voice. You should continue listening until you feel confident you can imagine the speaker saying the sentence accurately, without needing to hear the audio, as you will need to imagine this sentence on the very next screen.",
+    "- Use this time to get the sentence clearly and reliably into your head in the speaker's voice.",
+    "- You should continue listening until you feel confident you can imagine the speaker saying the sentence accurately, without needing to hear the audio, as you will need to imagine this sentence on the very next screen.",
     "",
     ">>>Click \"Play Sentence\" to listen to the full sentence.",
     ">>>Click \"Continue\" **only** once you feel ready to use the sentence in the next screen."
@@ -178,15 +178,10 @@ targetFamiliarizationInstructions_full_sentence = [
     ">>>**Sentence Preparation**",
     "",
     "- You will now hear the speaker say the full sentence a limited number of times.",
-    # "",
     "- This sentence will be played on each trial in the next block, with the final word replaced by a noisy audio sample.",
-    # "",
     "- You will hear the sentence exactly {required_plays} times before continuing.",
-    # "",
     "- Use these listens to firmly anchor how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
-    # "",
     "- Once these plays are complete, you will begin this portion of the experiment.",
-    # "",
     "- If you have **any** questions please ask the experimenter now\n"
     "",
     ">>>Click \"Play Sentence\" to listen to the full sentence.",
@@ -197,15 +192,10 @@ targetFamiliarizationInstructions_imagined_sentence = [
     ">>>**Sentence Preparation**",
     "",
     "- You will now hear the speaker say the full sentence a limited number of times.",
-    # "",
     "- In the next screen, you will immediately begin the task, where you must imagine the speaker saying this sentence before listening to each audio sample.",
-    # "",
     "- You will hear the sentence exactly {required_plays} times before continuing.",
-    # "",
     "- Use these listens to firmly establish the sentence in the speaker's voice so that you can reliably imagine it without hearing the audio.",
-    # "",
     "- Once these plays are complete, you will begin this portion of the experiment.",
-    # "",
     "- If you have **any** questions please ask the experimenter now\n"
     "",
     ">>>Click \"Play Sentence\" to listen to the full sentence.",
@@ -220,9 +210,7 @@ periodicReminderInstructions_full_sentence = [
     ">>>**Sentence Reminder**",
     "",
     "- You will now hear the speaker say the full sentence again.",
-    # "",
     "- Please listen to the sentence {required_plays} times before continuing.",
-    # "",
     "- Use this as a brief reminder of how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
     "",
     ">>>Click \"Play Sentence\" to listen to the full sentence.",
@@ -251,7 +239,7 @@ blockExamplesInstructions_imagined_sentence = (
     "- For each example, imagine the speaker saying the sentence in their voice.\n"
     "- Click the active button when your imagined sentence reaches the word \"Wall\".\n"
     "- Initially, only one example button will be active at a time. After you have listened to all examples once, all buttons will become active and you may replay any example as many times as you like.\n"
-    "- Examples labeled \"Wall\" contain the speaker's \"Wall\" hidden in the noise. Examples labeled \"No Wall\" do not.\n"
+    "- Examples labeled **Wall** contain the speaker's \"Wall\" hidden in the noise. Examples labeled **No Wall** do not. The \"Actual Audio\" button plays the speaker's \"Wall\".\n"
     "- Use these examples to get a sense of how the audio samples that contain speaker's \"Wall\" differ from audio samples that do not contain the speaker's \"Wall\".\n"
     "- When you are ready, click \"Continue\" to proceed."
 )
@@ -261,7 +249,7 @@ blockExamplesInstructions_full_sentence = (
     "- These are examples of the audio samples that you will hear in the task.\n"
     "- In each example, you will hear the speaker say the sentence, with the final word replaced by a noisy audio sample.\n"
     "- Initially, only one example button will be active at a time. After you have listened to all examples once, all buttons will become active and you may replay any example as many times as you like.\n"
-    "- Examples labeled \"Wall\" contain the speaker's \"Wall\" hidden in the noise. Examples labeled \"No Wall\" do not. The \"Actual Audio\" button plays the full, original sentence spoken by the speaker.\n"
+    "- Examples labeled **Wall** contain the speaker's \"Wall\" hidden in the noise. Examples labeled **No Wall** do not. The \"Actual Audio\" button plays the full, original sentence spoken by the speaker.\n"
     "- Use these examples to get a sense of how the audio samples that contain speaker's \"Wall\" differ from audio samples that do not contain the speaker's \"Wall\".\n"
     "- When you are ready, click \"Continue\" to proceed."
 )

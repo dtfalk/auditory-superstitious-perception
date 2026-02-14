@@ -273,7 +273,7 @@ def _show_text_page(
                     return
 
 
-def _show_instructions_(win: pg.Surface, instructions: list[str], max_rel_y: float = 0.70, text_align: str = "LEFT") -> int:
+def _show_instructions_(win: pg.Surface, instructions: list[str], max_rel_y: float = 0.70, text_align: str = "LEFT", font_divisor: float = 18) -> int:
     """Draw centered instructions and return the y position after the last line.
     
     Joins the list into a single string (empty strings become blank lines)
@@ -293,7 +293,7 @@ def _show_instructions_(win: pg.Surface, instructions: list[str], max_rel_y: flo
         align = TextAlign.LEFT
 
     style = TextStyle(
-        font_size=screen.scaled_font_size(18),
+        font_size=screen.scaled_font_size(font_divisor),
         color=Colors.BLACK,
         align=align,
     )
@@ -368,11 +368,11 @@ def _draw_audio_interface(
         instructions = list(trialInstructions_full_sentence)
 
     # Draw instructions using auto-fit so they never overlap
-    y_pos = _show_instructions_(win, instructions, max_rel_y=0.60, text_align="LEFT")
+    y_pos = _show_instructions_(win, instructions, max_rel_y=0.50, text_align="LEFT", font_divisor=22)
 
     # Create play button in remaining space
     button_width = screen.abs_x(0.18)
-    button_height = screen.abs_y(0.08)
+    button_height = screen.abs_y(0.10)
     button_x = (screen.width - button_width) // 2
     remaining_h = screen.height - y_pos - screen.abs_y(0.05)
     button_y = y_pos + int(remaining_h * 0.3)

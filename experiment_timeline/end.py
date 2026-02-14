@@ -202,6 +202,7 @@ def _get_additional_comments(win: pg.Surface, save_folder: str = "", subject_num
         "Additional Comments:"
     )
     
+    
     result = text_input.run(prompt=prompt)
     
     if logger:

@@ -489,7 +489,7 @@ def _run_questionnaire(
 # =============================================================================
 
 def _tellegen(subject_number: str, win: pg.Surface) -> list[str]:
-    """Run the Tellegen Absorption Scale (34 True/False questions)."""
+    """Run the Tellegen Absorption Scale."""
     questions = [
         ('Sometimes I feel and experience things as I did when I was a child.', ['True', 'False']),
         ('I can be greatly moved by eloquent or poetic language.', ['True', 'False']),
