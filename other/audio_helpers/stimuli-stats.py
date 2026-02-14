@@ -40,7 +40,7 @@ def main():
 
     # Get paths
     curDir = os.path.dirname(__file__)
-    stimuliFolderPath = os.path.join(curDir, "..", "audio_stimuli")
+    stimuliFolderPath = os.path.join(curDir, "..", "..", "audio_stimuli")
     targetFolders = ["full_sentence", "imagined_sentence", "examples"]
     csvFolderPath = os.path.join(stimuliFolderPath, "correlation_csvs")
 
