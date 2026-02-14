@@ -36,7 +36,7 @@ explanationText_4 = '**What to keep in mind**\n\
     - We know this task is challenging and truly appreciate your effort and participation.\n\
     - Please try your best. Better performance increases your chances of winning the raffle.\n\
     - If you are actively trying, it is okay to trust your intuition.\n\n\
->>>If you have **any** questions, please ask the experimenter now.'
+>>>If you have **any** questions, please ask the experimenter now'
 
 explanationText_5 = '>>>**A final note before beginning**\n\n\
 Even with the sentence context and the speaker in mind, the audio samples you will hear will remain extremely noisy. You will never clearly hear the word \"Wall\" spoken in the samples.\n\n\
@@ -65,9 +65,9 @@ fullSentenceBlockInstructionsText = (
     "**A few important points**\n"
     "     - The audio samples themselves are not clearly spoken words. They are noisy clips that may or may not contain traces of the speaker’s \"Wall\".\n"
     "     - If the speaker’s \"Wall\" is present, it spans the entire audio sample from beginning to end.\n"
-    "     - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample, **not** your own imagined version.\n\n"
+    "     - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample. You must **always** imagine the speaker's voice.\n\n"
     ">>>If you have **any** questions please ask the experimenter now\n"
-    ">>>Press the **spacebar** to continue."
+    ">>>Press the **spacebar** to continue"
 )
 
 
@@ -99,8 +99,8 @@ preTrialQuickResponseTextFullSentence = (
     "- On the next screen, you will be asked to respond to a single question.\n"
     "- After that, you will hear the sentence again to prepare, and the real trials will begin immediately.\n"
     "- Trust your gut feelings. It is okay to be uncertain.\n\n"
-    ">>>If you have **any** questions please ask the experimenter now.\n\n"
-    ">>>Press the **spacebar** to continue."
+    ">>>If you have **any** questions please ask the experimenter now\n"
+    ">>>Press the **spacebar** to continue"
 )
 
 
@@ -115,8 +115,8 @@ preTrialQuickResponseTextImaginedSentence = (
     "- On the next screen, you will be asked to respond to a single question.\n"
     "- After that, you will hear the sentence again to prepare, and the real trials will begin immediately.\n"
     "- Trust your gut feelings. It is okay to be uncertain.\n\n"
-    ">>>If you have **any** questions please ask the experimenter now\n\n"
-    ">>>Press the **spacebar** to continue."
+    ">>>If you have **any** questions please ask the experimenter now\n"
+    ">>>Press the **spacebar** to continue"
 )
 # =======================================================================
 
@@ -152,8 +152,8 @@ preExamplesFamiliarizationInstructions_full_sentence = [
     "- Use this time to become very familiar with how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
     "- You should continue listening until you feel confident you recognize the sentence and the speaker's voice.",
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" when you are ready to hear the examples."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" when you are ready to hear the examples"
 ]
 
 preExamplesFamiliarizationInstructions_imagined_sentence = [
@@ -166,8 +166,8 @@ preExamplesFamiliarizationInstructions_imagined_sentence = [
     "- Use this time to get the sentence clearly and reliably into your head in the speaker's voice.",
     "- You should continue listening until you feel confident you can imagine the speaker saying the sentence accurately, without needing to hear the audio, as you will need to imagine this sentence on the very next screen.",
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" **only** once you feel ready to use the sentence in the next screen."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" **only** once you feel ready to use the sentence in the next screen"
 ]
 # =======================================================================
 
@@ -182,10 +182,10 @@ targetFamiliarizationInstructions_full_sentence = [
     "- You will hear the sentence exactly {required_plays} times before continuing.",
     "- Use these listens to firmly anchor how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
     "- Once these plays are complete, you will begin this portion of the experiment.",
-    "- If you have **any** questions please ask the experimenter now\n"
+    "- If you have **any** questions please ask the experimenter now.\n"
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" to begin the main task."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" to begin the main task"
 ]
 
 targetFamiliarizationInstructions_imagined_sentence = [
@@ -196,10 +196,10 @@ targetFamiliarizationInstructions_imagined_sentence = [
     "- You will hear the sentence exactly {required_plays} times before continuing.",
     "- Use these listens to firmly establish the sentence in the speaker's voice so that you can reliably imagine it without hearing the audio.",
     "- Once these plays are complete, you will begin this portion of the experiment.",
-    "- If you have **any** questions please ask the experimenter now\n"
+    "- If you have **any** questions please ask the experimenter now.\n"
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" to begin the main task."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" to begin the main task"
 ]
 # =======================================================================
 
@@ -210,24 +210,22 @@ periodicReminderInstructions_full_sentence = [
     ">>>**Sentence Reminder**",
     "",
     "- You will now hear the speaker say the full sentence again.",
-    "- Please listen to the sentence {required_plays} times before continuing.",
+    "- You will listen to the sentence {required_plays} times before continuing.",
     "- Use this as a brief reminder of how the speaker sounds and how the word \"Wall\" is spoken in the context of the sentence.",
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" to return to the task."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" to return to the task"
 ]
 
 periodicReminderInstructions_imagined_sentence = [
     ">>>**Sentence Reminder**",
     "",
     "- You will now hear the speaker say the full sentence again.",
-    # "",
-    "- Please listen to the sentence {required_plays} times before continuing.",
-    # "",
+    "- You will listen to the sentence {required_plays} times before continuing.",
     "- Use this as a reminder of how the sentence sounds in the speaker's voice, so you can continue imagining it clearly before each audio sample.",
     "",
-    ">>>Click \"Play Sentence\" to listen to the full sentence.",
-    ">>>Click \"Continue\" to return to the task."
+    ">>>Click \"Play Sentence\" to listen to the full sentence",
+    ">>>Click \"Continue\" to return to the task"
 ]
 # =======================================================================
 

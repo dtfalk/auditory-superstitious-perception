@@ -1183,6 +1183,7 @@ def run_trial_loop(
     trial_number = 1
     max_plays = MAX_PLAYS
     reminder_interval = REMINDER_INTERVAL
+    total_trials = num_stimuli if NUM_STIMULI_TO_SHOW == -1 else min(num_stimuli, NUM_STIMULI_TO_SHOW)
 
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
 
@@ -1206,9 +1207,6 @@ def run_trial_loop(
         audio_duration = 0
         start_ns = None
 
-        # Show periodic reminder if needed (but not on first or last trial)
-        if  (trial_number % reminder_interval == 0) and (trial_number != num_stimuli):
-            _show_periodic_reminder(win, subject_number, save_folder, trial_number, block_name, audio_engine)
 
         while True:
             current_time = pg.time.get_ticks()
@@ -1284,6 +1282,12 @@ def run_trial_loop(
                             start_ns = time.perf_counter_ns()
             else:
                 continue
+            
+            # Show periodic reminder if needed (but not before first or after last trial)
+            completed_trial = trial_number - 1
+            if (completed_trial % reminder_interval == 0) and (0 < completed_trial < total_trials):
+                _show_periodic_reminder(win, subject_number, save_folder, completed_trial, block_name, audio_engine)
+            
             break
 
         # 2-second blank screen pause between trials
