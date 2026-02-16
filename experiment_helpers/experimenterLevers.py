@@ -68,3 +68,5 @@ REMINDER_PLAYS = 3
 # Otherwise will shown the specified number of stimuli per block
 # (useful for testing/development)
 NUM_STIMULI_TO_SHOW = -1
+
+FORCE_WASAPI_OR_ASIO_EXCLUSIVE = True

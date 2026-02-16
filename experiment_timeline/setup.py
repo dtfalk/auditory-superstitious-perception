@@ -17,6 +17,7 @@ from utils.audioEngine import AudioEngine
 from utils.displayEngine import (
     Screen, TextRenderer, Colors, Color, TextStyle, TextAlign,
 )
+from experiment_helpers.experimenterLevers import FORCE_WASAPI_OR_ASIO_EXCLUSIVE
 
 
 # =============================================================================
@@ -25,13 +26,26 @@ from utils.displayEngine import (
 
 def _get_output_devices() -> list[tuple[int, str]]:
     """
-    Return a list of (device_index, device_name) for every output-capable device.
+    Return a list of (device_index, display_label) for every output-capable device.
+
+    When FORCE_WASAPI_OR_ASIO_EXCLUSIVE is True, only WASAPI and ASIO devices
+    are included.  The host-API name is always appended to the label so the
+    experimenter can see which audio path each device uses.
     """
     devs = sd.query_devices()
     output_devices: list[tuple[int, str]] = []
     for i, d in enumerate(devs):
-        if d["max_output_channels"] > 0:
-            output_devices.append((i, d["name"]))
+        if d["max_output_channels"] <= 0:
+            continue
+        hostapi_name = sd.query_hostapis(d["hostapi"])["name"]
+        host_upper = hostapi_name.upper()
+
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+            if not ("ASIO" in host_upper or "WASAPI" in host_upper):
+                continue
+
+        label = f"{d['name']}  [{hostapi_name}]"
+        output_devices.append((i, label))
     return output_devices
 
 
@@ -504,6 +518,46 @@ def run_setup(
     else:
         # ── Interactive GUI selection ──
         devices = _get_output_devices()
+
+        # If force-exclusive is on and no valid devices exist, show error and exit
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and not devices:
+            screen = Screen(win)
+            text_renderer = TextRenderer(screen)
+            err_style = TextStyle(
+                font_size=screen.scaled_font_size(12),
+                color=Colors.RED,
+                align=TextAlign.CENTER,
+                bold=True,
+            )
+            sub_style = TextStyle(
+                font_size=screen.scaled_font_size(24),
+                color=Colors.DARK_GRAY,
+                align=TextAlign.CENTER,
+            )
+            while True:
+                screen.fill()
+                text_renderer.draw_centered_text(
+                    "NO ASIO OR WASAPI DEVICE FOUND",
+                    rel_y=0.35,
+                    style=err_style,
+                )
+                text_renderer.draw_centered_text(
+                    "This experiment requires exclusive audio mode (ASIO or WASAPI).\n"
+                    "Please connect a compatible audio device and restart.",
+                    rel_y=0.50,
+                    style=sub_style,
+                )
+                text_renderer.draw_centered_text(
+                    "Press ESC to exit.",
+                    rel_y=0.70,
+                    style=sub_style,
+                )
+                screen.update()
+                for event in pg.event.get():
+                    if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                        pg.quit()
+                        sys.exit(1)
+
         if not devices:
             raise RuntimeError("No audio output devices found")
         best_pos = _get_best_preselect(devices)
@@ -512,10 +566,27 @@ def run_setup(
 
     print("Using output:", audio_device, dev_name)
 
+    # Validate host API when force-exclusive is enabled
+    if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+        dev_info = sd.query_devices(audio_device)
+        hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
+        host_upper = hostapi_name.upper()
+        if not ("ASIO" in host_upper or "WASAPI" in host_upper):
+            raise RuntimeError(
+                f"Invalid host API: {hostapi_name}. "
+                "Experiment requires ASIO or WASAPI exclusive."
+            )
+
     # Persist chosen device for next session
     _save_last_device(dev_name)
 
-    # Create audio engine with the chosen device
-    audio_engine = AudioEngine(device_index=audio_device, samplerate=44100, blocksize=256)
+    # Use the device's native sample rate for maximum compatibility
+    # (avoids OS-level resampling, critical for WASAPI exclusive mode)
+    dev_info = sd.query_devices(audio_device)
+    native_fs = int(dev_info["default_samplerate"])
+    print(f"Device native sample rate: {native_fs} Hz")
+
+    # Create audio engine with the chosen device at its native sample rate
+    audio_engine = AudioEngine(device_index=audio_device, samplerate=native_fs, blocksize=256)
 
     return win, audio_engine

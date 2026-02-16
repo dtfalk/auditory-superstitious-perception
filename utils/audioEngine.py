@@ -7,11 +7,19 @@ Contains audio playback engine and audio processing utilities.
 """
 
 import os
+import sys
 import wave
 import threading
 import numpy as np
 from scipy.signal import resample_poly
 from sounddevice import query_devices, query_hostapis, WasapiSettings, OutputStream
+
+# Ensure project root is on sys.path for experiment_helpers import
+_AE_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _AE_BASE_DIR not in sys.path:
+    sys.path.insert(0, _AE_BASE_DIR)
+
+from experiment_helpers.experimenterLevers import FORCE_WASAPI_OR_ASIO_EXCLUSIVE
 
 # =============================================================================
 # AUDIO PROCESSING UTILITIES
@@ -235,21 +243,48 @@ class AudioEngine:
 
         dev_info = query_devices(self.device)
         hostapi_name = query_hostapis(dev_info["hostapi"])["name"]
-        use_wasapi = "WASAPI" in hostapi_name.upper()
+        host_upper = hostapi_name.upper()
+        is_asio = "ASIO" in host_upper
+        is_wasapi = "WASAPI" in host_upper
 
-        extra = WasapiSettings(exclusive=True) if use_wasapi else None
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+            if not (is_asio or is_wasapi):
+                raise RuntimeError(
+                    f"Host API '{hostapi_name}' not allowed. "
+                    "Experiment requires ASIO or WASAPI exclusive mode."
+                )
 
-        self.stream = OutputStream(
-            device=self.device,
-            samplerate=self.fs,
-            channels=1,
-            dtype="int16",
-            callback=callback,
-            blocksize=self.blocksize,
-            latency="low",
-            extra_settings=extra,
-        )
-        self.stream.start()
+        if is_wasapi:
+            extra = WasapiSettings(exclusive=True)
+            exclusive_active = True
+        else:
+            extra = None
+            exclusive_active = False
+
+        try:
+            self.stream = OutputStream(
+                device=self.device,
+                samplerate=self.fs,
+                channels=1,
+                dtype="int16",
+                callback=callback,
+                blocksize=self.blocksize,
+                latency="low",
+                extra_settings=extra,
+            )
+            self.stream.start()
+        except Exception as e:
+            if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+                raise RuntimeError(
+                    f"Failed to open exclusive audio stream on '{dev_info['name']}' "
+                    f"({hostapi_name}): {e}"
+                ) from e
+            raise
+
+        print(f"Audio device: {dev_info['name']}")
+        print(f"Host API: {hostapi_name}")
+        print(f"Sample rate: {self.fs}")
+        print(f"Exclusive mode: {exclusive_active}")
 
     def play(self, pcm16_mono: np.ndarray) -> int:
         """

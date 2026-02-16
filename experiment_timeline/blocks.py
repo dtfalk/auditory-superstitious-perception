@@ -16,10 +16,8 @@ import os
 import sys
 import csv
 import time
-import wave
 import numpy as np
 from random import shuffle, choice
-from scipy.signal import resample_poly
 from experiment_helpers.experimenterLevers import NUM_STIMULI_TO_SHOW
 import pygame as pg
 
@@ -34,7 +32,7 @@ from utils.displayEngine import (
     Screen, TextRenderer, TextInput, Button, ButtonStyle,
     Colors, Color, TextStyle, TextAlign, InputMode,
 )
-from utils.audioEngine import AudioEngine
+from utils.audioEngine import AudioEngine, get_pcm16_mono, concatenate_wavs
 from utils.eventLogger import ScreenEventLogger
 from experiment_helpers.experimenterLevers import MAX_PLAYS, REMINDER_INTERVAL, FAMILIARIZATION_PLAYS, REMINDER_PLAYS
 from experiment_helpers.text_blocks.experimentTextBlocks import (
@@ -52,76 +50,9 @@ from experiment_helpers.text_blocks.experimentTextBlocks import (
 # =============================================================================
 # AUDIO UTILITIES
 # =============================================================================
-
-_PCM_CACHE: dict[tuple[str, int], np.ndarray] = {}
-_CONCAT_CACHE: dict[tuple, np.ndarray] = {}
-
-
-def _load_wav_mono_int16(path: str) -> tuple[np.ndarray, int]:
-    """Load a WAV file as mono int16."""
-    with wave.open(path, "rb") as wf:
-        ch = wf.getnchannels()
-        fs = wf.getframerate()
-        sw = wf.getsampwidth()
-        n = wf.getnframes()
-        raw = wf.readframes(n)
-
-    if sw != 2:
-        raise ValueError(f"{path}: expected 16-bit PCM WAV, got sampwidth={sw}")
-
-    x = np.frombuffer(raw, dtype=np.int16)
-    if ch == 2:
-        x = x.reshape(-1, 2).mean(axis=1).astype(np.int16)
-    elif ch != 1:
-        raise ValueError(f"{path}: expected mono or stereo, got {ch} channels")
-
-    return x, fs
-
-
-def _resample_int16(x16: np.ndarray, fs_in: int, fs_out: int) -> np.ndarray:
-    """Resample int16 audio."""
-    if fs_in == fs_out:
-        return x16
-
-    x = x16.astype(np.float32) / 32768.0
-    g = np.gcd(fs_in, fs_out)
-    y = resample_poly(x, fs_out // g, fs_in // g)
-    y = np.clip(y, -1.0, 1.0)
-    return (y * 32767.0).astype(np.int16)
-
-
-def _get_pcm16_mono(path: str, fs_out: int) -> np.ndarray:
-    """Load a WAV once, convert to mono int16, resample to fs_out, and cache."""
-    key = (os.path.abspath(path), int(fs_out))
-    pcm = _PCM_CACHE.get(key)
-    if pcm is not None:
-        return pcm
-
-    x16, fs_in = _load_wav_mono_int16(path)
-    y16 = _resample_int16(x16, fs_in, fs_out)
-    _PCM_CACHE[key] = y16
-    return y16
-
-
-def _concatenate_wavs(prefix_wav: str, stim_wav: str, add_gap: bool, fs_out: int, gap_ms: int = 0) -> np.ndarray:
-    """Concatenate two WAV files."""
-    key = (os.path.abspath(prefix_wav), os.path.abspath(stim_wav), add_gap, gap_ms, fs_out)
-    cached = _CONCAT_CACHE.get(key)
-    if cached is not None:
-        return cached
-
-    prefix_pcm = _get_pcm16_mono(prefix_wav, fs_out)
-    stim_pcm = _get_pcm16_mono(stim_wav, fs_out)
-
-    if add_gap and gap_ms > 0:
-        gap_samples = int(fs_out * gap_ms / 1000.0)
-        gap = np.zeros(gap_samples, dtype=np.int16)
-        out = np.concatenate([prefix_pcm, gap, stim_pcm])
-    else:
-        out = np.concatenate([prefix_pcm, stim_pcm])
-
-    _CONCAT_CACHE[key] = out
-    return out
+# Audio loading, resampling, caching, and concatenation are provided by
+# utils.audioEngine (get_pcm16_mono, concatenate_wavs).  Only the thin
+# play helper remains here for convenience.
 
 
 def _play_audio_stimulus(audio_engine: AudioEngine, pcm16: np.ndarray) -> int:
@@ -177,9 +108,9 @@ def _select_stimulus(
 
     # If prefix_wav is provided, concatenate; otherwise use stimulus as-is
     if prefix_wav:
-        sound = _concatenate_wavs(prefix_wav, stimulus, add_gap=False, fs_out=fs_out)
+        sound = concatenate_wavs(prefix_wav, stimulus, add_gap=False, fs_out=fs_out)
     else:
-        sound = _get_pcm16_mono(stimulus, fs_out)
+        sound = get_pcm16_mono(stimulus, fs_out)
 
     filename = os.path.splitext(os.path.basename(stimulus))[0]
     return sound, filename, stimulus_type
@@ -418,7 +349,7 @@ def _show_pre_examples_familiarization(
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
     actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
-    actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
+    actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
 
     required_plays = FAMILIARIZATION_PLAYS
     play_count = 0
@@ -544,22 +475,22 @@ def _show_block_examples(
         actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
-    actual_pcm = _get_pcm16_mono(actual_target_path, fs_out)
+    actual_pcm = get_pcm16_mono(actual_target_path, fs_out)
 
     # Load example audio — full_sentence block concatenates prefix
     if block_name == 'full_sentence':
         prefix_path = os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav')
         targets_pcm = [
-            _concatenate_wavs(prefix_path, os.path.join(examples_targets_dir, f), add_gap=False, fs_out=fs_out)
+            concatenate_wavs(prefix_path, os.path.join(examples_targets_dir, f), add_gap=False, fs_out=fs_out)
             for f in target_files
         ]
         distractors_pcm = [
-            _concatenate_wavs(prefix_path, os.path.join(examples_distractors_dir, f), add_gap=False, fs_out=fs_out)
+            concatenate_wavs(prefix_path, os.path.join(examples_distractors_dir, f), add_gap=False, fs_out=fs_out)
             for f in distractor_files
         ]
     else:
-        targets_pcm = [_get_pcm16_mono(os.path.join(examples_targets_dir, f), fs_out) for f in target_files]
-        distractors_pcm = [_get_pcm16_mono(os.path.join(examples_distractors_dir, f), fs_out) for f in distractor_files]
+        targets_pcm = [get_pcm16_mono(os.path.join(examples_targets_dir, f), fs_out) for f in target_files]
+        distractors_pcm = [get_pcm16_mono(os.path.join(examples_distractors_dir, f), fs_out) for f in distractor_files]
 
     # Play-count tracking
     target_counts = [0] * len(target_files)
@@ -833,7 +764,7 @@ def _show_target_familiarization(
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
     actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
-    actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
+    actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
 
     required_plays = FAMILIARIZATION_PLAYS
     play_count = 0
@@ -948,7 +879,7 @@ def _show_periodic_reminder(
     audio_stimuli_dir = os.path.join(_BASE_DIR, 'audio_stimuli')
     actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     fs_out = int(audio_engine.fs)
-    actual_target_pcm = _get_pcm16_mono(actual_target_path, fs_out)
+    actual_target_pcm = get_pcm16_mono(actual_target_path, fs_out)
 
     required_plays = REMINDER_PLAYS
     play_count = 0
