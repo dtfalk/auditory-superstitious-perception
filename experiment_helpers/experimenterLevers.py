@@ -69,4 +69,6 @@ REMINDER_PLAYS = 3
 # (useful for testing/development)
 NUM_STIMULI_TO_SHOW = -1
 
+# Needs to be set for live experiments, but can be set to False for testing/development
+# Ensures a direct path between headphones and the audio engine, which is necessary for accurate audio level testing and playback
 FORCE_WASAPI_OR_ASIO_EXCLUSIVE = True

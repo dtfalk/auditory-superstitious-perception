@@ -254,7 +254,8 @@ class AudioEngine:
                     "Experiment requires ASIO or WASAPI exclusive mode."
                 )
 
-        if is_wasapi:
+        # Use exclusive WASAPI only when the experiment is configured to require it.
+        if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
             extra = WasapiSettings(exclusive=True)
             exclusive_active = True
         else:

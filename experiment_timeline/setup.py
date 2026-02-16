@@ -118,17 +118,36 @@ def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.
     Non-blocking — the tone plays in the background and stops automatically.
     Any previous test tone is stopped before the new one starts.
     """
+    dev_name = f"device {device_index}"
     try:
         sd.stop()  # stop any previous test tone
-        t = np.linspace(0, duration, int(fs * duration), endpoint=False, dtype=np.float32)
+        try:
+            dev_info = sd.query_devices(device_index)
+            dev_name = dev_info.get("name", dev_name)
+            hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
+            is_wasapi = "WASAPI" in hostapi_name.upper()
+            use_fs = int(dev_info.get("default_samplerate", fs))
+        except Exception:
+            use_fs = fs
+            is_wasapi = False
+
+        t = np.linspace(0, duration, int(use_fs * duration), endpoint=False, dtype=np.float32)
         # Apply a short fade-in / fade-out to avoid clicks
-        fade_samples = int(fs * 0.02)
+        fade_samples = max(1, int(use_fs * 0.02))
         tone = 0.35 * np.sin(2.0 * np.pi * freq * t)
         tone[:fade_samples] *= np.linspace(0, 1, fade_samples, dtype=np.float32)
         tone[-fade_samples:] *= np.linspace(1, 0, fade_samples, dtype=np.float32)
-        sd.play(tone, samplerate=fs, device=device_index)
+
+        # Use WASAPI exclusive only when required, mirroring AudioEngine behavior
+        prev_extra = sd.default.extra_settings
+        try:
+            if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+                sd.default.extra_settings = sd.WasapiSettings(exclusive=True)
+            sd.play(tone, samplerate=use_fs, device=device_index)
+        finally:
+            sd.default.extra_settings = prev_extra
     except Exception as e:
-        print(f"Test tone failed on device {device_index}: {e}")
+        print(f"Test tone failed on {dev_name} (Device Index: {device_index}): {e}")
 
 
 # =============================================================================
@@ -580,13 +599,15 @@ def run_setup(
     # Persist chosen device for next session
     _save_last_device(dev_name)
 
-    # Use the device's native sample rate for maximum compatibility
-    # (avoids OS-level resampling, critical for WASAPI exclusive mode)
+    # Use the device's default sample rate for maximum compatibility
     dev_info = sd.query_devices(audio_device)
-    native_fs = int(dev_info["default_samplerate"])
+    try:
+        native_fs = int(dev_info.get("default_samplerate", 44100))
+    except Exception:
+        native_fs = 44100
     print(f"Device native sample rate: {native_fs} Hz")
 
-    # Create audio engine with the chosen device at its native sample rate
+    # Create audio engine with the chosen samplerate
     audio_engine = AudioEngine(device_index=audio_device, samplerate=native_fs, blocksize=256)
 
     return win, audio_engine
