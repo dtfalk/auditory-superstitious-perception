@@ -20,7 +20,7 @@ def list_wdmks_outputs():
             out.append((i, d["name"], hname))
     return out
 
-def try_play(idx):
+def try_play(idx, blocksize, latency):
     t = np.arange(FS) / FS
     tone = 0.2 * np.sin(2*np.pi*440*t)
     pcm = (tone * 32767).astype(np.int16).reshape(-1, 1)
@@ -30,8 +30,8 @@ def try_play(idx):
         samplerate=FS,
         channels=CH,
         dtype=DTYPE,
-        blocksize=512,
-        latency="high",
+        blocksize=blocksize,
+        latency=latency,
     ) as s:
         s.write(pcm)
 
@@ -44,7 +44,7 @@ def main():
     for i, name, _ in wdm:
         print(f"\nTrying {i}: {name}")
         try:
-            try_play(i)
+            try_play(i, blocksize = 256, latency = "low")
             print("  OK at 8000 Hz")
             return
         except Exception as e:

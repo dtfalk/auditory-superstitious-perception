@@ -19,9 +19,9 @@ def list_motu_outputs_verbose():
         out.append((i, d["name"], d["hostapi"], hostapi_name(d["hostapi"])))
     return out
 
-def try_open_and_play(device_index, fs):
+def try_open_and_play(device_index, blocksize, latency, sampling_rate):
     # 0.25 sec 440 Hz tone
-    t = np.arange(int(fs * 0.25)) / fs
+    t = np.arange(int(sampling_rate * 0.25)) / sampling_rate
     tone = 0.2 * np.sin(2 * np.pi * 440 * t)
     pcm16 = (tone * 32767).astype(np.int16).reshape(-1, 1)
 
@@ -29,15 +29,15 @@ def try_open_and_play(device_index, fs):
 
     with sd.OutputStream(
         device=device_index,
-        samplerate=fs,
+        samplerate=sampling_rate,
         channels=CHANNELS,
         dtype=TARGET_DTYPE,
         extra_settings=extra,
-        blocksize=0,
-        latency="low",
+        blocksize=blocksize,
+        latency=latency,
     ) as stream:
         stream.write(pcm16)
-        stream.write(np.zeros((int(fs * 0.02), 1), dtype=np.int16))
+        stream.write(np.zeros((int(sampling_rate * 0.02), 1), dtype=np.int16))
 
 def main():
     print("Host APIs:")
@@ -68,22 +68,22 @@ def main():
     failures = []
     for idx, name in wasapi_motu:
         print(f"\nTrying device {idx}: {name}")
-        for fs in rates_to_try:
+        for sampling_rate in rates_to_try:
             try:
-                print(f"  - rate {fs} ... ", end="", flush=True)
-                try_open_and_play(idx, fs)
+                print(f"  - rate {sampling_rate} ... ", end="", flush=True)
+                try_open_and_play(device_index = idx, blocksize = 256, latency = "low", sampling_rate = sampling_rate)
                 print("OK")
-                print(f"\nSUCCESS: device={idx} rate={fs}")
+                print(f"\nSUCCESS: device={idx} rate={sampling_rate}")
                 return
             except Exception as e:
                 print(f"FAIL ({e})")
-                failures.append((idx, name, fs, repr(e)))
+                failures.append((idx, name, sampling_rate, repr(e)))
                 time.sleep(0.05)
 
     print("\nNo WASAPI-exclusive configuration worked.")
     print("Sample failures:")
-    for idx, name, fs, err in failures[:12]:
-        print(f"  dev {idx} ({name}) @ {fs}: {err}")
+    for idx, name, sampling_rate, err in failures[:12]:
+        print(f"  dev {idx} ({name}) @ {sampling_rate}: {err}")
 
 if __name__ == "__main__":
     main()
