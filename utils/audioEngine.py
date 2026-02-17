@@ -171,7 +171,7 @@ def clear_audio_cache() -> None:
 # AUDIO ENGINE (Real-time playback)
 # =============================================================================
 class AudioEngine:
-    def __init__(self, device_index: int, samplerate: int = 44100, blocksize: int = 256):
+    def __init__(self, device_index: int, samplerate: int = 44100, blocksize: int = 1024):
         self.device = device_index
         self.fs = samplerate
         self.blocksize = blocksize
@@ -270,7 +270,7 @@ class AudioEngine:
                 dtype="int16",
                 callback=callback,
                 blocksize=self.blocksize,
-                latency="low",
+                latency="high",
                 extra_settings=extra,
             )
             self.stream.start()

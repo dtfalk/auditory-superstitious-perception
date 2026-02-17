@@ -30,8 +30,8 @@ def try_play(idx):
         samplerate=FS,
         channels=CH,
         dtype=DTYPE,
-        blocksize=0,
-        latency="low",
+        blocksize=512,
+        latency="high",
     ) as s:
         s.write(pcm)
 

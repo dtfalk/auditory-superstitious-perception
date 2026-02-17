@@ -608,6 +608,6 @@ def run_setup(
     print(f"Device native sample rate: {native_fs} Hz")
 
     # Create audio engine with the chosen samplerate
-    audio_engine = AudioEngine(device_index=audio_device, samplerate=native_fs, blocksize=256)
+    audio_engine = AudioEngine(device_index=audio_device, samplerate=native_fs, blocksize=1024)
 
     return win, audio_engine
