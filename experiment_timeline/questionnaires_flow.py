@@ -316,6 +316,10 @@ def _run_single_question(
     current_w, current_h = screen.width, screen.height
 
     pg.mouse.set_visible(True)
+    
+    # Log that this question screen is being presented
+    if screen_logger:
+        screen_logger.log_event('screen_presented', f'Q{question_index + 1}')
 
     # Sizing
     font_size, scalar = _questionnaire_option_style(questionnaire_name, current_h)
@@ -516,15 +520,22 @@ def _run_questionnaire(
     
     with open(filepath, 'w', newline='') as f:
         writer = csv.writer(f)
-        header = ["Subject Number"] + [f'Q{i+1}' for i in range(len(questions))]
+        header = ["subject_number"] + [f'Q{i+1}' for i in range(len(questions))]
         writer.writerow(header)
         
+        # Row 1: numerical values
         if extract_numeric:
-            processed = [''.join(c for c in r if c.isdigit()) for r in responses]
+            numeric_values = [''.join(c for c in r if c.isdigit()) for r in responses]
+        elif questionnaire_name == 'vhq':
+            # VHQ uses Yes/No scale - convert to 1/0
+            numeric_values = ['1' if r == 'Yes' else '0' for r in responses]
         else:
-            processed = responses
+            numeric_values = responses
+        writer.writerow([subject_number] + numeric_values)
         
-        writer.writerow([subject_number] + processed)
+        # Row 2: text labels (replace commas with semicolons to preserve CSV structure)
+        text_labels = [r.replace(',', ';') for r in responses]
+        writer.writerow([subject_number] + text_labels)
     
     return responses
 
@@ -927,14 +938,18 @@ def _run_recall_questions(subject_number: str, win: pg.Surface) -> None:
     # Save event log
     screen_logger.save()
     
-    # Save responses
+    # Save responses as separate .txt files
     os.makedirs(results_dir, exist_ok=True)
     
-    filepath = os.path.join(results_dir, f'recall_responses_{subject_number}.csv')
-    with open(filepath, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Subject Number', 'Target Word Response', 'Target Sentence Response'])
-        writer.writerow([subject_number, word_response or '', sentence_response or ''])
+    # Target word response
+    word_path = os.path.join(results_dir, f'recall_target_word_{subject_number}.txt')
+    with open(word_path, 'w') as f:
+        f.write(word_response or '')
+    
+    # Target sentence response
+    sentence_path = os.path.join(results_dir, f'recall_target_sentence_{subject_number}.txt')
+    with open(sentence_path, 'w') as f:
+        f.write(sentence_response or '')
     
     # Save listening experience as separate .txt
     exp_path = os.path.join(results_dir, f'listening_experience_{subject_number}.txt')
@@ -986,13 +1001,13 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
                     waiting = False
     
     # Run all questionnaires
-    _flow_state_scale(subject_number, win)
-    _tellegen(subject_number, win)
+    # _flow_state_scale(subject_number, win)
+    # _tellegen(subject_number, win)
     _vhq(subject_number, win)
-    _launay_slade(subject_number, win)
-    _dissociative_experiences(subject_number, win)
-    _bais_v(subject_number, win)
-    _bais_c(subject_number, win)
+    # _launay_slade(subject_number, win)
+    # _dissociative_experiences(subject_number, win)
+    # _bais_v(subject_number, win)
+    # _bais_c(subject_number, win)
     
     # Text response screens for recall
     _run_recall_questions(subject_number, win)
@@ -1005,32 +1020,50 @@ def save_sleepiness_data(
     save_folder: str,
     sleepiness_responses: list,
 ) -> None:
-    """Save sleepiness scale responses to a CSV file."""
-    filepath = os.path.join(save_folder, f'sleepiness_{subject_number}.csv')
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """Save sleepiness scale responses to a CSV file.
+    
+    Format: One row per sleepiness measurement with columns:
+    subject_number, block_index, block_scheme, pre_or_post, time, response, response_text
+    """
+    # Stanford sleepiness options for mapping response number to text
+    sleepiness_options = {
+        '1': '1 - Feeling active; vital; alert; or wide awake',
+        '2': '2 - Functioning at high levels; but not at peak; able to concentrate',
+        '3': '3 - Awake; but relaxed; responsive but not fully alert',
+        '4': '4 - Somewhat foggy; let down',
+        '5': '5 - Foggy; losing interest in remaining awake; slowed down',
+        '6': '6 - Sleepy; woozy; fighting sleep; prefer to lie down',
+        '7': '7 - No longer fighting sleep; sleep onset soon; having dream-like thoughts'
+    }
+    
+    filepath = os.path.join(save_folder, f'stanford_sleepiness_{subject_number}.csv')
     
     with open(filepath, mode='w', newline='') as f:
         writer = csv.writer(f)
         
-        # Build header based on response structure
-        header = ['Subject Number', 'Timestamp']
-        for i, resp in enumerate(sleepiness_responses):
-            if isinstance(resp, dict):
-                header.append(f"Block{resp.get('block', i)}_{resp.get('timing', 'unknown')}")
-            else:
-                header.append(f'Rating_{i+1}')
-        
+        # Header
+        header = ['subject_number', 'block_index', 'block_scheme', 'pre_or_post', 'time', 'response', 'response_text']
         writer.writerow(header)
         
-        # Extract values
-        values = [subject_number, timestamp]
+        # One row per response
         for resp in sleepiness_responses:
             if isinstance(resp, dict):
-                values.append(resp.get('response', ''))
-            else:
-                values.append(resp)
-        
-        writer.writerow(values)
+                response_val = resp.get('response', '')
+                # Extract just the number from the response
+                response_num = ''.join(c for c in str(response_val) if c.isdigit())[:1] or response_val
+                # Get full text (with commas replaced by semicolons)
+                response_text = sleepiness_options.get(response_num, str(response_val).replace(',', ';'))
+                
+                row = [
+                    subject_number,
+                    resp.get('block_index', ''),
+                    resp.get('block_scheme', ''),
+                    resp.get('timing', ''),
+                    resp.get('time', ''),
+                    response_num,
+                    response_text
+                ]
+                writer.writerow(row)
 
 
 def run_stanford_sleepiness(subject_number: str, win: pg.Surface) -> str:

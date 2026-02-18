@@ -67,9 +67,9 @@ def _write_summary_data(subject_number: str, block_names: list[str], save_folder
     """Write summary data with d-prime calculations."""
     filepath = os.path.join(save_folder, f'summaryData_{subject_number}.csv')
 
-    # Load data files in correct order
+    # Load data files from block subfolders
     data_files = [
-        os.path.join(save_folder, f'{block}_{subject_number}.csv')
+        os.path.join(save_folder, block, f'{block}_{subject_number}.csv')
         for block in block_names
     ]
 
@@ -139,7 +139,6 @@ def _show_exit_screen(win: pg.Surface, save_folder: str = "", subject_number: st
     logger = None
     if save_folder and subject_number:
         logger = ScreenEventLogger("exit_screen", save_folder, subject_number)
-        logger.log_event("screen_presented", "exit_screen")
     
     style = TextStyle(
         font_size=screen.scaled_font_size(20),
@@ -186,7 +185,6 @@ def _get_additional_comments(win: pg.Surface, save_folder: str = "", subject_num
     logger = None
     if save_folder and subject_number:
         logger = ScreenEventLogger("additional_comments", save_folder, subject_number)
-        logger.log_event("screen_presented", "additional_comments")
     
     text_input = TextInput(
         screen,

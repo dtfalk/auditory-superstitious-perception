@@ -60,6 +60,8 @@ Contains all experiment instruction text.
 ```python
     - Please try your best. Better performance increases your chances of winning the raffle.\n\
 ```
+## Experimenter Mode Note
+Occasionally the script to exit experimenter mode hangs. Do not click the red x button. Just slick the terminal and press CTRL + C and it will proceed. 
 
 ## Setting up the experiment
 1. Download this code (either as a zip or via git clone)

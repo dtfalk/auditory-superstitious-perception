@@ -127,7 +127,10 @@ def _record_response(
     play_count: int = 1,
 ) -> None:
     """Record a trial response."""
-    filepath = os.path.join(save_folder, f'{block}_{subject_number}.csv')
+    # Save to block subfolder
+    block_subfolder = os.path.join(save_folder, block)
+    os.makedirs(block_subfolder, exist_ok=True)
+    filepath = os.path.join(block_subfolder, f'{block}_{subject_number}.csv')
 
     header = ['Subject Number', 'Block Scheme', 'Stimulus Number', 'Stimulus Type', 
               'Subject Response','Play Count', 'Trial Start Timestamp', 'Play Button Clicked Timestamp',
@@ -420,7 +423,32 @@ def _show_pre_examples_familiarization(
                 elif cont_rect.collidepoint(mouse) and continue_enabled:
                     screen_logger.log_event('button_click', 'continue')
                     screen_logger.save()
+                    # Save play count data
+                    _save_pre_examples_familiarization_data(subject_number, save_folder, play_count, block_name)
                     return
+
+
+def _save_pre_examples_familiarization_data(
+    subject_number: str,
+    save_folder: str,
+    play_count: int,
+    block_name: str,
+) -> None:
+    """Save pre-examples familiarization play count data."""
+    from datetime import datetime
+    
+    # Save to block subfolder
+    block_subfolder = os.path.join(save_folder, block_name)
+    os.makedirs(block_subfolder, exist_ok=True)
+    filepath = os.path.join(block_subfolder, f'pre_examples_familiarization_{block_name}_{subject_number}.csv')
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header = ['subject_number', 'block_name', 'play_count', 'timestamp']
+    data = [subject_number, block_name, play_count, timestamp]
+
+    with open(filepath, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerow(data)
 
 
 def _show_block_examples(
@@ -689,12 +717,22 @@ def _show_block_examples(
                 if continue_rect.collidepoint(mouse) and cont_enabled:
                     screen_logger.log_event('button_click', 'continue')
                     screen_logger.save()
-                    out_path = os.path.join(save_folder, f'example_play_counts_{block_name}_{subject_number}.csv')
+                    # Save to block subfolder
+                    block_subfolder = os.path.join(save_folder, block_name)
+                    os.makedirs(block_subfolder, exist_ok=True)
+                    out_path = os.path.join(block_subfolder, f'example_play_counts_{block_name}_{subject_number}.csv')
                     with open(out_path, 'w', newline='') as f:
                         writer = csv.writer(f)
-                        writer.writerow(['actual_audio'] + [f'target_{i}' for i in range(len(target_files))] +
-                                       [f'distractor_{i}' for i in range(len(distractor_files))])
+                        # Header row: 1-indexed column names
+                        writer.writerow(['actual_audio'] + [f'target_{i+1}' for i in range(len(target_files))] +
+                                       [f'distractor_{i+1}' for i in range(len(distractor_files))])
+                        # Play counts row
                         writer.writerow([actual_count] + target_counts + distractor_counts)
+                        # Filename row (without .wav extension)
+                        actual_name = os.path.splitext(os.path.basename(actual_target_path))[0]
+                        target_names = [os.path.splitext(f)[0] for f in target_files]
+                        distractor_names = [os.path.splitext(f)[0] for f in distractor_files]
+                        writer.writerow([actual_name] + target_names + distractor_names)
                     return
 
                 if still_playing:
@@ -845,12 +883,15 @@ def _save_target_familiarization_data(
     play_count: int,
     block_name: str,
 ) -> None:
-    """Save target familiarization data."""
+    """Save target familiarization data to a block-specific file."""
     from datetime import datetime
     
-    filepath = os.path.join(save_folder, f'target_familiarization_{subject_number}.csv')
+    # Save to block subfolder
+    block_subfolder = os.path.join(save_folder, block_name)
+    os.makedirs(block_subfolder, exist_ok=True)
+    filepath = os.path.join(block_subfolder, f'target_familiarization_{block_name}_{subject_number}.csv')
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    header = ['Subject Number', 'Session Number', 'Block Name', 'Play Count', 'Timestamp']
+    header = ['subject_number', 'session_number', 'block_name', 'play_count', 'timestamp']
     data = [subject_number, session_number, block_name, play_count, timestamp]
 
     file_exists = os.path.exists(filepath)
@@ -963,9 +1004,12 @@ def _save_periodic_reminder_data(
     """Save periodic reminder data."""
     from datetime import datetime
 
-    filepath = os.path.join(save_folder, f'periodic_reminders_{block_name}_{subject_number}.csv')
+    # Save to block subfolder
+    block_subfolder = os.path.join(save_folder, block_name)
+    os.makedirs(block_subfolder, exist_ok=True)
+    filepath = os.path.join(block_subfolder, f'periodic_reminders_{block_name}_{subject_number}.csv')
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    header = ['Subject Number', 'Block Name', 'Trial Number (Block)', 'Play Count', 'Timestamp']
+    header = ['subject_number', 'block_name', 'trial_number', 'play_count', 'timestamp']
     data = [subject_number, block_name, trial_number, play_count, timestamp]
 
     file_exists = os.path.exists(filepath)
@@ -1028,11 +1072,23 @@ def _save_self_reflection(
         rule_following = 'N/A'
 
     screen_logger.save()
-    filepath = os.path.join(save_folder, f'self_reflection_{block_name}_{subject_number}.csv')
-    with open(filepath, mode='w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Subject Number', 'Block Name', 'Methodology Explanation', 'Methodology Changes', 'Imagination Rule Following'])
-        writer.writerow([subject_number, block_name, explanation, changes, rule_following])
+    
+    # Save each response as a separate .txt file in block subfolder
+    block_subfolder = os.path.join(save_folder, block_name)
+    os.makedirs(block_subfolder, exist_ok=True)
+    
+    explanation_path = os.path.join(block_subfolder, f'self_reflection_methodology_explanation_{block_name}_{subject_number}.txt')
+    with open(explanation_path, 'w') as f:
+        f.write(explanation or '')
+    
+    changes_path = os.path.join(block_subfolder, f'self_reflection_methodology_changes_{block_name}_{subject_number}.txt')
+    with open(changes_path, 'w') as f:
+        f.write(changes or '')
+    
+    if block_name == 'imagined_sentence':
+        rule_path = os.path.join(block_subfolder, f'self_reflection_imagination_rule_following_{block_name}_{subject_number}.txt')
+        with open(rule_path, 'w') as f:
+            f.write(rule_following or '')
 
 
 # =============================================================================
@@ -1255,8 +1311,15 @@ def run_blocks(
 
         # Sleepiness scale before block if function provided
         if stanford_sleepiness_scale_func and sleepiness_responses is not None:
+            from datetime import datetime
             response = stanford_sleepiness_scale_func(subject_number, win)
-            sleepiness_responses.append({'block': i, 'timing': 'pre', 'response': response})
+            sleepiness_responses.append({
+                'block_index': i + 1,  # 1-indexed
+                'block_scheme': block_name,
+                'timing': 'pre',
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'response': response
+            })
 
         # Target familiarization before trials
         familiarization_session_count += 1
@@ -1270,8 +1333,15 @@ def run_blocks(
 
         # Sleepiness scale after block if function provided
         if stanford_sleepiness_scale_func and sleepiness_responses is not None:
+            from datetime import datetime
             response = stanford_sleepiness_scale_func(subject_number, win)
-            sleepiness_responses.append({'block': i, 'timing': 'post', 'response': response})
+            sleepiness_responses.append({
+                'block_index': i + 1,  # 1-indexed
+                'block_scheme': block_name,
+                'timing': 'post',
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'response': response
+            })
 
         # Break screen between blocks (not after last block)
         if i < len(block_names) - 1:

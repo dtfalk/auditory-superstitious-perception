@@ -52,10 +52,18 @@ class ScreenEventLogger:
         
         with open(filepath, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['Event', 'Timestamp_ns'])
-            writer.writerow(['screen_presented', self.screen_presented_ns])
+            writer.writerow(['Event', 'Timestamp_ns', 'ms_since_last', 's_since_last'])
+            
+            # Screen presented is the first event (no previous event)
+            writer.writerow(['screen_presented', self.screen_presented_ns, 0, 0.0])
+            
+            prev_ts = self.screen_presented_ns
             for event_desc, ts in self.events:
-                writer.writerow([event_desc, ts])
+                delta_ns = ts - prev_ts
+                ms_since_last = delta_ns / 1_000_000
+                s_since_last = delta_ns / 1_000_000_000
+                writer.writerow([event_desc, ts, f'{ms_since_last:.3f}', f'{s_since_last:.6f}'])
+                prev_ts = ts
 
 
 class EventLogger:
@@ -90,11 +98,20 @@ class EventLogger:
         filepath = os.path.join(self.timestamps_folder, f'experiment_timestamps_{self.subject_number}.csv')
         with open(filepath, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['Event', 'Timestamp_ns'])
+            writer.writerow(['Event', 'Timestamp_ns', 'ms_since_last', 's_since_last'])
+            
+            prev_ts = None
             if self.experiment_start_ns is not None:
-                writer.writerow(['experiment_start', self.experiment_start_ns])
+                writer.writerow(['experiment_start', self.experiment_start_ns, 0, 0.0])
+                prev_ts = self.experiment_start_ns
             if self.experiment_end_ns is not None:
-                writer.writerow(['experiment_end', self.experiment_end_ns])
+                if prev_ts is not None:
+                    delta_ns = self.experiment_end_ns - prev_ts
+                    ms_since_last = delta_ns / 1_000_000
+                    s_since_last = delta_ns / 1_000_000_000
+                    writer.writerow(['experiment_end', self.experiment_end_ns, f'{ms_since_last:.3f}', f'{s_since_last:.6f}'])
+                else:
+                    writer.writerow(['experiment_end', self.experiment_end_ns, 0, 0.0])
     
     def start_screen(self, screen_name: str, unique_suffix: str = "") -> ScreenEventLogger:
         """

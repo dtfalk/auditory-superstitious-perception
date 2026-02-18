@@ -662,26 +662,29 @@ class TextRenderer:
             # For wrapping, use the plain (no **) version of the text so
             # word boundaries are computed correctly.
             plain = self._strip_bold_markers(content)
-            wrapped = self._wrap_text(plain, font, wrap_w)
 
-            # If there is bold markup, we also need wrapped lines of the
-            # *raw* content (with ** markers) so we can render segments.
-            # Map plain-wrapped lines back to rich lines by re-splitting
-            # the original content at the same word boundaries.
+            # If there is bold markup, we need to wrap with bold font measurements
+            # since bold text is wider. Use rich_wrapped as the primary iteration source.
             if has_bold and '**' in content:
                 rich_wrapped = self._wrap_text_preserving_markup(content, font, bold_font, wrap_w)
+                # Also wrap plain text for rendering non-bold lines
+                wrapped = self._wrap_text(plain, font, wrap_w)
             else:
+                wrapped = self._wrap_text(plain, font, wrap_w)
                 rich_wrapped = wrapped
 
-            for idx, plain_line in enumerate(wrapped):
+            # Iterate over rich_wrapped (the actual lines to render) since bold text
+            # may produce more lines than plain text due to wider bold font
+            for idx, rich_line in enumerate(rich_wrapped):
                 if max_y is not None and current_y > max_y:
                     return current_y
 
-                if not plain_line.strip():
+                # Get corresponding plain line for measuring non-bold text
+                plain_line = wrapped[idx] if idx < len(wrapped) else self._strip_bold_markers(rich_line)
+
+                if not rich_line.strip():
                     current_y += line_height
                     continue
-
-                rich_line = rich_wrapped[idx] if idx < len(rich_wrapped) else plain_line
 
                 # Determine alignment for this line
                 if force_center:
