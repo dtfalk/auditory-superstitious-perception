@@ -1,12 +1,16 @@
 import os
 import subprocess
 import sys
+import json
 import ctypes
 from ctypes import wintypes
 import atexit
 import platform
+import threading
+import time
 import tkinter as tk
 from tkinter import messagebox
+import psutil
 
 # Turns off various windows things so experiment is not interrupted or slowed
 EXPERIMENTER_MODE = True
@@ -17,6 +21,7 @@ PROJECT_ROOT = os.path.abspath(CUR_DIR)
 ENTER_SCRIPT = os.path.join(CUR_DIR, "experimenter_mode_scripts", "enterExperimentMode.ps1")
 EXIT_SCRIPT = os.path.join(CUR_DIR, "experimenter_mode_scripts", "exitExperimentMode.ps1")
 EXPERIMENT = os.path.join(CUR_DIR, "main_experimental_flow.py")
+LAST_RUN_METADATA = os.path.join(CUR_DIR, ".last_experiment_run.json")
 
 NUM_EQUALS = 75
 
@@ -226,6 +231,168 @@ def print_system_state(label):
 
 
 # -------------------------
+# System Resource Monitor
+# -------------------------
+
+MONITOR_INTERVAL_SEC = 10  # Sample every 10 seconds (very low overhead)
+
+class SystemMonitor:
+    """Lightweight background monitor for CPU, RAM, and disk usage."""
+
+    def __init__(self, interval=MONITOR_INTERVAL_SEC):
+        self._interval = interval
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._start_time = None
+        self._end_time = None
+
+        # Sample storage
+        self._cpu_samples = []       # percent
+        self._ram_samples = []       # (used_bytes, percent)
+        self._disk_samples = []      # (busy_pct, read_bytes_per_sec, write_bytes_per_sec)
+
+        # Static info captured at start
+        self._ram_total = None
+
+        # Previous disk I/O snapshot for delta computation
+        self._prev_disk_io = None
+        self._prev_disk_time = None
+
+    def start(self):
+        mem = psutil.virtual_memory()
+        self._ram_total = mem.total
+
+        # Prime cpu_percent so first real sample is meaningful
+        psutil.cpu_percent(interval=None)
+
+        # Prime disk I/O counters so first delta is meaningful
+        self._prev_disk_io = psutil.disk_io_counters()
+        self._prev_disk_time = time.time()
+
+        self._start_time = time.time()
+        self._thread = threading.Thread(target=self._sample_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self._interval + 2)
+        self._end_time = time.time()
+
+    def _sample_loop(self):
+        while not self._stop_event.is_set():
+            try:
+                cpu = psutil.cpu_percent(interval=None)
+                mem = psutil.virtual_memory()
+
+                self._cpu_samples.append(cpu)
+                self._ram_samples.append((mem.used, mem.percent))
+
+                # Compute disk I/O activity from deltas
+                now = time.time()
+                cur_io = psutil.disk_io_counters()
+                if self._prev_disk_io is not None:
+                    dt = now - self._prev_disk_time
+                    if dt > 0:
+                        # Busy % approximation: (read_time + write_time) are ms
+                        io_ms = ((cur_io.read_time - self._prev_disk_io.read_time)
+                                 + (cur_io.write_time - self._prev_disk_io.write_time))
+                        busy_pct = min(100.0, (io_ms / (dt * 1000)) * 100)
+
+                        read_bps = (cur_io.read_bytes - self._prev_disk_io.read_bytes) / dt
+                        write_bps = (cur_io.write_bytes - self._prev_disk_io.write_bytes) / dt
+
+                        self._disk_samples.append((busy_pct, read_bps, write_bps))
+
+                self._prev_disk_io = cur_io
+                self._prev_disk_time = now
+            except Exception:
+                pass  # Never interrupt the experiment
+
+            self._stop_event.wait(self._interval)
+
+    @staticmethod
+    def _fmt_bytes(b):
+        """Format bytes to a human-readable string with appropriate unit."""
+        if b >= 1024 ** 3:
+            return f"{b / (1024 ** 3):.2f} GB"
+        elif b >= 1024 ** 2:
+            return f"{b / (1024 ** 2):.1f} MB"
+        elif b >= 1024:
+            return f"{b / 1024:.0f} KB"
+        return f"{b} B"
+
+    @staticmethod
+    def _fmt_rate(bps):
+        """Format bytes/sec to a human-readable throughput string."""
+        if bps >= 1024 ** 3:
+            return f"{bps / (1024 ** 3):.2f} GB/s"
+        elif bps >= 1024 ** 2:
+            return f"{bps / (1024 ** 2):.1f} MB/s"
+        elif bps >= 1024:
+            return f"{bps / 1024:.0f} KB/s"
+        return f"{bps:.0f} B/s"
+
+    def print_summary(self):
+        n = len(self._cpu_samples)
+        if n == 0:
+            print("No resource samples were collected.", flush=True)
+            return
+
+        duration = (self._end_time or time.time()) - self._start_time
+        mins, secs = divmod(int(duration), 60)
+
+        cpu_vals = self._cpu_samples
+        ram_bytes = [s[0] for s in self._ram_samples]
+        ram_pcts  = [s[1] for s in self._ram_samples]
+
+        cpu_min, cpu_max, cpu_avg = min(cpu_vals), max(cpu_vals), sum(cpu_vals) / n
+        ram_b_min, ram_b_max, ram_b_avg = min(ram_bytes), max(ram_bytes), sum(ram_bytes) / n
+        ram_p_min, ram_p_max, ram_p_avg = min(ram_pcts), max(ram_pcts), sum(ram_pcts) / n
+
+        print(f"  Monitoring Duration:  {mins} min {secs:02d} sec  ({n} samples @ {self._interval}s interval)", flush=True)
+        print("", flush=True)
+
+        print(f"  CPU Usage:", flush=True)
+        print(f"    Min:  {cpu_min:6.1f}%", flush=True)
+        print(f"    Max:  {cpu_max:6.1f}%", flush=True)
+        print(f"    Avg:  {cpu_avg:6.1f}%", flush=True)
+        print("", flush=True)
+
+        rt = self._fmt_bytes(self._ram_total)
+        print(f"  RAM Usage:  (Total: {rt})", flush=True)
+        print(f"    Min:  {self._fmt_bytes(ram_b_min):>10s}  ({ram_p_min:5.1f}%)", flush=True)
+        print(f"    Max:  {self._fmt_bytes(ram_b_max):>10s}  ({ram_p_max:5.1f}%)", flush=True)
+        print(f"    Avg:  {self._fmt_bytes(ram_b_avg):>10s}  ({ram_p_avg:5.1f}%)", flush=True)
+
+        dn = len(self._disk_samples)
+        if dn > 0:
+            dsk_busy = [s[0] for s in self._disk_samples]
+            dsk_read = [s[1] for s in self._disk_samples]
+            dsk_write = [s[2] for s in self._disk_samples]
+
+            db_min, db_max, db_avg = min(dsk_busy), max(dsk_busy), sum(dsk_busy) / dn
+            dr_min, dr_max, dr_avg = min(dsk_read), max(dsk_read), sum(dsk_read) / dn
+            dw_min, dw_max, dw_avg = min(dsk_write), max(dsk_write), sum(dsk_write) / dn
+
+            print("", flush=True)
+            print(f"  Disk Activity (I/O Busy %):", flush=True)
+            print(f"    Min:  {db_min:6.1f}%", flush=True)
+            print(f"    Max:  {db_max:6.1f}%", flush=True)
+            print(f"    Avg:  {db_avg:6.1f}%", flush=True)
+            print("", flush=True)
+            print(f"  Disk Read Throughput:", flush=True)
+            print(f"    Min:  {self._fmt_rate(dr_min):>12s}", flush=True)
+            print(f"    Max:  {self._fmt_rate(dr_max):>12s}", flush=True)
+            print(f"    Avg:  {self._fmt_rate(dr_avg):>12s}", flush=True)
+            print("", flush=True)
+            print(f"  Disk Write Throughput:", flush=True)
+            print(f"    Min:  {self._fmt_rate(dw_min):>12s}", flush=True)
+            print(f"    Max:  {self._fmt_rate(dw_max):>12s}", flush=True)
+            print(f"    Avg:  {self._fmt_rate(dw_avg):>12s}", flush=True)
+
+
+# -------------------------
 # Main Flow
 # -------------------------
 
@@ -243,7 +410,6 @@ if __name__ == "__main__":
         print("\n" + "=" * NUM_EQUALS, flush = True)
         print(f"EXPERIMENT MODE ACTIVATION", flush = True)
         print("=" * NUM_EQUALS + "\n", flush = True)
-        print("Enabling experiment mode...", flush = True)
         run_powershell(ENTER_SCRIPT)
         _experiment_mode_active = True  # Mark that we need cleanup on exit
         print("=" * NUM_EQUALS, flush = True)
@@ -257,7 +423,6 @@ if __name__ == "__main__":
             print("\n" + "=" * NUM_EQUALS, flush = True)
             print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
             print("=" * NUM_EQUALS + "\n", flush = True)
-            print("Restoring system...", flush = True)
             run_powershell(EXIT_SCRIPT)
             _cleanup_done = True  # Mark cleanup as done
             _experiment_mode_active = False
@@ -266,7 +431,7 @@ if __name__ == "__main__":
             print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
             show_disabled_popup()
             print("Done.", flush = True)
-            input("\nPress Enter to close this window...\n\n")
+            input("\nReview logs above or press Enter to complete the experiment...\n\n")
             sys.exit()
 
         try:
@@ -274,9 +439,32 @@ if __name__ == "__main__":
             print(f"EXPERIMENT LOGS", flush = True)
             print("=" * NUM_EQUALS + "\n", flush = True)
 
-            # Runs the actual experiment
-            subprocess.run([sys.executable, EXPERIMENT])
+            try:
+                if os.path.exists(LAST_RUN_METADATA):
+                    os.remove(LAST_RUN_METADATA)
+            except Exception:
+                pass
 
+            # Start lightweight background resource monitor
+            monitor = SystemMonitor()
+            monitor.start()
+
+            # Runs the actual experiment
+            # NOTE: Running as subprocess is fine for priority. The child process
+            # inherits the parent's priority class, and the parent is essentially
+            # idle (blocked on subprocess.run) so it does not compete for CPU.
+            result = subprocess.run([sys.executable, EXPERIMENT])
+
+            # Stop monitor and print summary before closing experiment logs
+            monitor.stop()
+
+            print("=" * NUM_EQUALS, flush = True)
+            print("=" * NUM_EQUALS + "\n\n", flush = True)
+
+            print("\n" + "=" * NUM_EQUALS, flush = True)
+            print(f"SYSTEM RESOURCE USAGE DURING EXPERIMENT", flush = True)
+            print("=" * NUM_EQUALS + "\n", flush = True)
+            monitor.print_summary()
             print("=" * NUM_EQUALS, flush = True)
             print("=" * NUM_EQUALS + "\n", flush = True)
         finally:
@@ -284,7 +472,6 @@ if __name__ == "__main__":
                 print("\n\n" + "=" * NUM_EQUALS, flush = True)
                 print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
                 print("=" * NUM_EQUALS + "\n", flush = True)
-                print("Restoring system...", flush = True)
                 run_powershell(EXIT_SCRIPT)
                 _cleanup_done = True
                 _experiment_mode_active = False
@@ -293,8 +480,28 @@ if __name__ == "__main__":
                 print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
                 show_disabled_popup()
 
-        print("Done.", flush = True)
-        input("\nPress Enter to close this window...\n\n")
+        if result.returncode != 0:
+            print(f"Experiment process exited with code {result.returncode}", flush=True)
+
+        save_folder = None
+        subject_number = None
+        try:
+            if os.path.exists(LAST_RUN_METADATA):
+                with open(LAST_RUN_METADATA, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                subject_number = metadata.get("subject_number")
+                save_folder = metadata.get("save_folder")
+        except Exception as e:
+            print(f"Could not read run metadata: {e}", flush=True)
+
+        print("\n" + "-" * NUM_EQUALS, flush=True)
+        if subject_number and save_folder:
+            print(f"Subject {subject_number} results stored in:\n  {save_folder}", flush=True)
+        else:
+            print("No results folder recorded for this run.", flush=True)
+        print("-" * NUM_EQUALS, flush=True)
+
+        input("\nReview logs above or press Enter to complete the experiment...\n\n")
     else:
         # Lazy import to avoid GUI side effects at module load time
         from main_experimental_flow import main as run_experiment

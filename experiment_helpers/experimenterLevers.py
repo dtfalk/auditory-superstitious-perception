@@ -72,3 +72,16 @@ NUM_STIMULI_TO_SHOW = 3
 # Needs to be set for live experiments, but can be set to False for testing/development
 # Ensures a direct path between headphones and the audio engine, which is necessary for accurate audio level testing and playback
 FORCE_WASAPI_OR_ASIO_EXCLUSIVE = True
+
+# If True, prefer MOTU devices on ASIO host API when available (easy to disable/remove later)
+PREFER_MOTU_ASIO = True
+
+# Optional click suppression for short one-shot stimuli using appended ramps.
+# These ramps are appended before/after the clip without modifying the original samples.
+SHORT_STIMULUS_FADEIN_ENABLED = True
+SHORT_STIMULUS_FADEIN_MS = 10.0
+SHORT_STIMULUS_FADEIN_MAX_STIM_MS = 5000
+
+SHORT_STIMULUS_FADEOUT_ENABLED = True
+SHORT_STIMULUS_FADEOUT_MS = 10.0
+SHORT_STIMULUS_FADEOUT_MAX_STIM_MS = 5000

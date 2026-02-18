@@ -18,7 +18,16 @@ from utils.audioEngine import AudioEngine
 from utils.displayEngine import (
     Screen, TextRenderer, Colors, Color, TextStyle, TextAlign,
 )
-from experiment_helpers.experimenterLevers import FORCE_WASAPI_OR_ASIO_EXCLUSIVE
+from experiment_helpers.experimenterLevers import (
+    FORCE_WASAPI_OR_ASIO_EXCLUSIVE,
+    PREFER_MOTU_ASIO,
+    SHORT_STIMULUS_FADEIN_ENABLED,
+    SHORT_STIMULUS_FADEIN_MS,
+    SHORT_STIMULUS_FADEIN_MAX_STIM_MS,
+    SHORT_STIMULUS_FADEOUT_ENABLED,
+    SHORT_STIMULUS_FADEOUT_MS,
+    SHORT_STIMULUS_FADEOUT_MAX_STIM_MS,
+)
 
 
 # =============================================================================
@@ -65,6 +74,38 @@ def _get_default_device_index(devices: list[tuple[int, str]]) -> int:
     except Exception:
         pass
     return 0
+
+
+def _maybe_prefer_motu_asio(device_index: int) -> tuple[int, str, str]:
+    """
+    Prefer an ASIO host-path for MOTU devices when available.
+    Returns (device_index, device_name, display_label).
+    """
+    dev_info = sd.query_devices(device_index)
+    dev_name = dev_info["name"]
+    hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
+    dev_label = f"{dev_name}  [{hostapi_name}]"
+
+    if not (PREFER_MOTU_ASIO and platform.system() == "Windows"):
+        return device_index, dev_name, dev_label
+
+    if "MOTU" not in dev_name.upper():
+        return device_index, dev_name, dev_label
+
+    if "ASIO" in hostapi_name.upper():
+        return device_index, dev_name, dev_label
+
+    for i, d in enumerate(sd.query_devices()):
+        if d["max_output_channels"] <= 0:
+            continue
+        candidate_name = d["name"]
+        candidate_hostapi = sd.query_hostapis(d["hostapi"])["name"]
+        if "MOTU" in candidate_name.upper() and "ASIO" in candidate_hostapi.upper():
+            candidate_label = f"{candidate_name}  [{candidate_hostapi}]"
+            print(f"MOTU device detected; preferring ASIO path: {candidate_name}", flush=True)
+            return i, candidate_name, candidate_label
+
+    return device_index, dev_name, dev_label
 
 
 # =============================================================================
@@ -134,11 +175,27 @@ def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.
             is_wasapi = False
 
         t = np.linspace(0, duration, int(use_fs * duration), endpoint=False, dtype=np.float32)
-        # Apply a short fade-in / fade-out to avoid clicks
-        fade_samples = max(1, int(use_fs * 0.02))
         tone = 0.35 * np.sin(2.0 * np.pi * freq * t)
-        tone[:fade_samples] *= np.linspace(0, 1, fade_samples, dtype=np.float32)
-        tone[-fade_samples:] *= np.linspace(1, 0, fade_samples, dtype=np.float32)
+        
+        # Apply very short cosine taper at start to eliminate startup transient
+        startup_taper_ms = 2.0
+        startup_taper_samples = int(round(use_fs * (startup_taper_ms / 1000.0)))
+        startup_taper_samples = min(startup_taper_samples, tone.shape[0])
+        if startup_taper_samples > 0:
+            taper = 0.5 * (1.0 - np.cos(np.pi * np.linspace(0, 1, startup_taper_samples, dtype=np.float32)))
+            tone[:startup_taper_samples] *= taper
+        
+        tone_duration_ms = int(round(1000.0 * duration))
+
+        if SHORT_STIMULUS_FADEIN_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS):
+            fadein_samples = max(1, int(round(use_fs * (float(SHORT_STIMULUS_FADEIN_MS) / 1000.0))))
+            fadein_samples = min(fadein_samples, tone.shape[0])
+            tone[:fadein_samples] *= np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+
+        if SHORT_STIMULUS_FADEOUT_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS):
+            fadeout_samples = max(1, int(round(use_fs * (float(SHORT_STIMULUS_FADEOUT_MS) / 1000.0))))
+            fadeout_samples = min(fadeout_samples, tone.shape[0])
+            tone[-fadeout_samples:] *= np.linspace(1.0, 0.0, fadeout_samples, dtype=np.float32)
 
         # Use WASAPI exclusive only when required, mirroring AudioEngine behavior
         prev_extra = sd.default.extra_settings
@@ -594,7 +651,10 @@ def run_setup(
         # Find the full label (with host API suffix) for saving
         dev_label = next((label for idx, label in devices if idx == audio_device), dev_name)
 
-    print("Using output:", audio_device, dev_name)
+    # Optional MOTU→ASIO preference (single toggle in experimenterLevers)
+    audio_device, dev_name, dev_label = _maybe_prefer_motu_asio(audio_device)
+
+    print("Using output:", audio_device, dev_name, flush=True)
 
     # Validate host API when force-exclusive is enabled
     if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
@@ -616,9 +676,15 @@ def run_setup(
         native_fs = int(dev_info.get("default_samplerate", 44100))
     except Exception:
         native_fs = 44100
-    print(f"Device native sample rate: {native_fs} Hz")
+    selected_fs = native_fs
+    if "motu" in dev_name.lower():
+        selected_fs = 48000
+        print(f"Device native sample rate: {native_fs} Hz", flush=True)
+        print("MOTU device detected; forcing sample rate to 48000 Hz", flush=True)
+    else:
+        print(f"Device native sample rate: {native_fs} Hz", flush=True)
 
     # Create audio engine with the chosen samplerate
-    audio_engine = AudioEngine(device_index=audio_device, samplerate=native_fs, blocksize=256, latency="low")
+    audio_engine = AudioEngine(device_index=audio_device, samplerate=selected_fs, blocksize=2048, latency=0.05)
 
     return win, audio_engine

@@ -5,3 +5,4 @@
 .last_audio_device
 **/testing
 **/scales
+**/last_experiment_run.json

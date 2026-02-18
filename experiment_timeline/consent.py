@@ -626,4 +626,4 @@ def show_non_consent(win: pg.Surface) -> None:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE or event.key == pg.K_ESCAPE:
                     pg.quit()
-                    sys.exit()
+                    return

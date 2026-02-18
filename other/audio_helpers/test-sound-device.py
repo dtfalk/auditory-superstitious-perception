@@ -71,7 +71,7 @@ def main():
         for sampling_rate in rates_to_try:
             try:
                 print(f"  - rate {sampling_rate} ... ", end="", flush=True)
-                try_open_and_play(device_index = idx, blocksize = 256, latency = "low", sampling_rate = sampling_rate)
+                try_open_and_play(device_index = idx, blocksize = 2048, latency = 2048, sampling_rate = sampling_rate)
                 print("OK")
                 print(f"\nSUCCESS: device={idx} rate={sampling_rate}")
                 return

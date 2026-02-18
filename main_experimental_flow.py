@@ -9,6 +9,7 @@ Usage:
 
 import os
 import sys
+import json
 
 # Add paths for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -22,6 +23,20 @@ from experiment_timeline.blocks import run_blocks
 from experiment_timeline.questionnaires_flow import run_questionnaires, save_sleepiness_data, stanford_sleepiness_scale
 from experiment_timeline.end import run_end
 from utils.eventLogger import init_global_logger
+
+
+def _write_last_run_metadata(subject_number: str, save_folder: str) -> None:
+    """Persist minimal run metadata for parent launcher process."""
+    try:
+        metadata_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.last_experiment_run.json')
+        payload = {
+            "subject_number": subject_number,
+            "save_folder": save_folder,
+        }
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f)
+    except Exception:
+        pass
 
 
 def main():
@@ -49,6 +64,7 @@ def main():
     subject_info = collect_subject_info(win)
     subject_number, save_folder = create_save_folder(subject_info['subject_number'])
     subject_info['subject_number'] = subject_number  # Update with final number
+    _write_last_run_metadata(subject_number, save_folder)
     
     # Initialize event logger and log experiment start
     event_logger = init_global_logger(save_folder, subject_number)
@@ -60,6 +76,7 @@ def main():
     consented = run_consent(win, subject_info)
     if not consented:
         show_non_consent(win)
+        return "Subject did not consent. No Save Folder Created."
     
     # ==========================================================================
     # PHASE 5: EXPERIMENT INTRODUCTION
@@ -95,6 +112,8 @@ def main():
         block_names=block_names,
         audio_engine=audio_engine,
     )
+
+    return save_folder
 
 
 if __name__ == '__main__':

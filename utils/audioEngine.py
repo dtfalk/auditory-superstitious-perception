@@ -9,6 +9,8 @@ Contains audio playback engine and audio processing utilities.
 import os
 import sys
 import wave
+import time
+import atexit
 import threading
 import platform
 import numpy as np
@@ -20,7 +22,15 @@ _AE_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _AE_BASE_DIR not in sys.path:
     sys.path.insert(0, _AE_BASE_DIR)
 
-from experiment_helpers.experimenterLevers import FORCE_WASAPI_OR_ASIO_EXCLUSIVE
+from experiment_helpers.experimenterLevers import (
+    FORCE_WASAPI_OR_ASIO_EXCLUSIVE,
+    SHORT_STIMULUS_FADEIN_ENABLED,
+    SHORT_STIMULUS_FADEIN_MS,
+    SHORT_STIMULUS_FADEIN_MAX_STIM_MS,
+    SHORT_STIMULUS_FADEOUT_ENABLED,
+    SHORT_STIMULUS_FADEOUT_MS,
+    SHORT_STIMULUS_FADEOUT_MAX_STIM_MS,
+)
 
 # =============================================================================
 # AUDIO PROCESSING UTILITIES
@@ -172,10 +182,21 @@ def clear_audio_cache() -> None:
 # AUDIO ENGINE (Real-time playback)
 # =============================================================================
 class AudioEngine:
-    def __init__(self, device_index: int, samplerate: int = 44100, blocksize: int = 256, latency: str = "low"):
+    def __init__(self, device_index: int, samplerate: int = 44100, blocksize: int = 2048, latency: str = "default"):
         self.device = device_index
         self.fs = samplerate
         self.blocksize = blocksize
+        self._started_at = time.perf_counter()
+        self._stream_closed = False
+        self._diag_printed = False
+        self._callback_status_counts = {
+            "output_underflow": 0,
+            "output_overflow": 0,
+            "input_underflow": 0,
+            "input_overflow": 0,
+            "priming_output": 0,
+            "other_status": 0,
+        }
 
         self._lock = threading.Lock()
         # Voices:
@@ -192,8 +213,25 @@ class AudioEngine:
 
         def callback(outdata, frames, time_info, status):
             if status:
-                # If you want, log status to a file for debugging
-                pass
+                if getattr(status, "output_underflow", False):
+                    self._callback_status_counts["output_underflow"] += 1
+                if getattr(status, "output_overflow", False):
+                    self._callback_status_counts["output_overflow"] += 1
+                if getattr(status, "input_underflow", False):
+                    self._callback_status_counts["input_underflow"] += 1
+                if getattr(status, "input_overflow", False):
+                    self._callback_status_counts["input_overflow"] += 1
+                if getattr(status, "priming_output", False):
+                    self._callback_status_counts["priming_output"] += 1
+
+                if not any([
+                    getattr(status, "output_underflow", False),
+                    getattr(status, "output_overflow", False),
+                    getattr(status, "input_underflow", False),
+                    getattr(status, "input_overflow", False),
+                    getattr(status, "priming_output", False),
+                ]):
+                    self._callback_status_counts["other_status"] += 1
 
             with self._lock:
                 mix = np.zeros((frames,), dtype=np.float32)
@@ -283,10 +321,26 @@ class AudioEngine:
                 ) from e
             raise
 
-        print(f"Audio device: {dev_info['name']}")
-        print(f"Host API: {hostapi_name}")
-        print(f"Sample rate: {self.fs}")
-        print(f"Exclusive mode: {exclusive_active}")
+        print(f"Audio device: {dev_info['name']}", flush=True)
+        print(f"Host API: {hostapi_name}", flush=True)
+        print(f"Sample rate: {self.fs}", flush=True)
+        print(f"Exclusive mode: {exclusive_active}", flush=True)
+        atexit.register(self._print_stream_diagnostics)
+
+    def _print_stream_diagnostics(self):
+        if self._diag_printed:
+            return
+        self._diag_printed = True
+        runtime_s = time.perf_counter() - self._started_at
+        print("Audio callback diagnostics:", flush=True)
+        print(f"  Runtime (s): {runtime_s:.2f}", flush=True)
+        print(f"  output_underflow: {self._callback_status_counts['output_underflow']}", flush=True)
+        print(f"  output_overflow: {self._callback_status_counts['output_overflow']}", flush=True)
+        print(f"  input_underflow: {self._callback_status_counts['input_underflow']}", flush=True)
+        print(f"  input_overflow: {self._callback_status_counts['input_overflow']}", flush=True)
+        print(f"  priming_output: {self._callback_status_counts['priming_output']}", flush=True)
+        if self._callback_status_counts["other_status"]:
+            print(f"  other_status: {self._callback_status_counts['other_status']}", flush=True)
 
     def play(self, pcm16_mono: np.ndarray) -> int:
         """
@@ -297,15 +351,54 @@ class AudioEngine:
             pcm16_mono = pcm16_mono[:, None]
         pcm16_mono = np.asarray(pcm16_mono, dtype=np.int16)
 
+        playback_pcm = pcm16_mono
+        original_duration_ms = int(round(1000.0 * (pcm16_mono.shape[0] / self.fs)))
+
+        lead_segment = None
+        if (
+            SHORT_STIMULUS_FADEIN_ENABLED
+            and pcm16_mono.shape[0] > 1
+            and original_duration_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS)
+        ):
+            fadein_samples = int(round(self.fs * (float(SHORT_STIMULUS_FADEIN_MS) / 1000.0)))
+            fadein_samples = max(0, fadein_samples)
+            if fadein_samples > 0:
+                first_sample = int(pcm16_mono[0, 0])
+                lead_ramp = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+                lead_segment = np.round(first_sample * lead_ramp).astype(np.int16)[:, None]
+
+        tail_segment = None
+        if (
+            SHORT_STIMULUS_FADEOUT_ENABLED
+            and pcm16_mono.shape[0] > 1
+            and original_duration_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS)
+        ):
+            fadeout_samples = int(round(self.fs * (float(SHORT_STIMULUS_FADEOUT_MS) / 1000.0)))
+            fadeout_samples = max(0, fadeout_samples)
+            if fadeout_samples > 0:
+                last_sample = int(pcm16_mono[-1, 0])
+                tail_ramp = np.linspace(1.0, 0.0, fadeout_samples, dtype=np.float32)
+                tail_segment = np.round(last_sample * tail_ramp).astype(np.int16)[:, None]
+
+        segments = []
+        if lead_segment is not None:
+            segments.append(lead_segment)
+        segments.append(pcm16_mono)
+        if tail_segment is not None:
+            segments.append(tail_segment)
+        if len(segments) > 1:
+            playback_pcm = np.concatenate(segments, axis=0)
+
+        duration_ms = int(round(1000.0 * (playback_pcm.shape[0] / self.fs)))
+
         with self._lock:
             v = self._voices["oneshot"]
-            v["buf"] = pcm16_mono
+            v["buf"] = playback_pcm
             v["pos"] = 0
             v["active"] = True
             v["loop"] = False
             self._done.clear()
 
-        duration_ms = int(round(1000.0 * (pcm16_mono.shape[0] / self.fs)))
         return duration_ms
 
     def wait_done(self, timeout: float | None = None) -> bool:
@@ -350,6 +443,23 @@ class AudioEngine:
             return bool(self._voices[name]["active"])
 
     def close(self):
+        if self._stream_closed:
+            self._print_stream_diagnostics()
+            return
+
         self.stop()
-        self.stream.stop()
-        self.stream.close()
+        try:
+            self.stream.stop()
+        except Exception:
+            pass
+        try:
+            self.stream.close()
+        except Exception:
+            pass
+
+        self._stream_closed = True
+        self._print_stream_diagnostics()
+
+    def shutdown(self):
+        """Compatibility alias used by end-of-experiment cleanup."""
+        self.close()

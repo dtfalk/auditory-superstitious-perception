@@ -44,7 +44,7 @@ def main():
     for i, name, _ in wdm:
         print(f"\nTrying {i}: {name}")
         try:
-            try_play(i, blocksize = 256, latency = "low")
+            try_play(i, blocksize = 2048, latency = 0.05)
             print("  OK at 8000 Hz")
             return
         except Exception as e:
