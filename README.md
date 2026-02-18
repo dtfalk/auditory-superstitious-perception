@@ -16,12 +16,12 @@ All configurable settings are in `experiment_helpers/experimenterLevers.py`.
 ## runExperiment.py
 | Setting | Description |
 |---------|-------------|
-| `EXPERIMENTER_MODE` | **Must be `True` for live experiments.** Set in `runExperiment.py` (line 11). Disables Windows services that could interrupt the experiment. You may set to `False` if you are not on Windows. |
+| `EXPERIMENTER_MODE` | **Must be `True` for live experiments.** Set in `runExperiment.py` (line 11). Disables Windows services that could interrupt the experiment. Will automatically disable itself if youa re not on Windows. |
 
 ## experiment_helpers\experimenterLevers.py
 | Setting | Description |
 |---------|-------------|
-| `FORCE_WASAPI_OR_ASIO_EXCLUSIVE` | **Must be `True` for live experiments.** Ensures direct audio path for accurate playback. |
+| `FORCE_WASAPI_OR_ASIO_EXCLUSIVE` | **Must be `True` for live experiments.** Ensures direct audio path for accurate playback. Will automatically disable itself if not on Windows.|
 | `NUM_STIMULI_TO_SHOW` | **Must be `-1` for live experiments.** Shows all stimuli to the subject. You may set to a lower value if you are testing.|
 | `MAX_PLAYS` | **Must be `1` for live experiments.** Forces subject to only listen to each stimulus once in the live trials.|
 | `REMINDER_INTERVAL` | **Must be `15` for live experiments.** How often subject sees the reminder screen (e.g. every 15 trials). You may set to a lower value if you are testing.|

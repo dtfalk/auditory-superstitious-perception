@@ -10,6 +10,7 @@ import os
 import sys
 import wave
 import threading
+import platform
 import numpy as np
 from scipy.signal import resample_poly
 from sounddevice import query_devices, query_hostapis, WasapiSettings, OutputStream
@@ -247,7 +248,7 @@ class AudioEngine:
         is_asio = "ASIO" in host_upper
         is_wasapi = "WASAPI" in host_upper
 
-        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
             if not (is_asio or is_wasapi):
                 raise RuntimeError(
                     f"Host API '{hostapi_name}' not allowed. "
@@ -255,7 +256,7 @@ class AudioEngine:
                 )
 
         # Use exclusive WASAPI only when the experiment is configured to require it.
-        if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+        if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
             extra = WasapiSettings(exclusive=True)
             exclusive_active = True
         else:
@@ -275,7 +276,7 @@ class AudioEngine:
             )
             self.stream.start()
         except Exception as e:
-            if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+            if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
                 raise RuntimeError(
                     f"Failed to open exclusive audio stream on '{dev_info['name']}' "
                     f"({hostapi_name}): {e}"

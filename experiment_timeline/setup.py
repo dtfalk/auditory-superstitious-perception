@@ -7,6 +7,7 @@ Handles initialization of pygame, audio device selection, and window creation.
 import os
 import sys
 import argparse
+import platform
 import numpy as np
 import pygame as pg
 import sounddevice as sd
@@ -32,6 +33,7 @@ def _get_output_devices() -> list[tuple[int, str]]:
     are included.  The host-API name is always appended to the label so the
     experimenter can see which audio path each device uses.
     """
+    
     devs = sd.query_devices()
     output_devices: list[tuple[int, str]] = []
     for i, d in enumerate(devs):
@@ -40,7 +42,7 @@ def _get_output_devices() -> list[tuple[int, str]]:
         hostapi_name = sd.query_hostapis(d["hostapi"])["name"]
         host_upper = hostapi_name.upper()
 
-        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
             if not ("ASIO" in host_upper or "WASAPI" in host_upper):
                 continue
 
@@ -141,7 +143,7 @@ def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.
         # Use WASAPI exclusive only when required, mirroring AudioEngine behavior
         prev_extra = sd.default.extra_settings
         try:
-            if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+            if is_wasapi and FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
                 sd.default.extra_settings = sd.WasapiSettings(exclusive=True)
             sd.play(tone, samplerate=use_fs, device=device_index)
         finally:
@@ -546,7 +548,7 @@ def run_setup(
         devices = _get_output_devices()
 
         # If force-exclusive is on and no valid devices exist, show error and exit
-        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and not devices:
+        if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and not devices and platform.system() == "Windows":
             screen = Screen(win)
             text_renderer = TextRenderer(screen)
             err_style = TextStyle(
@@ -595,7 +597,7 @@ def run_setup(
     print("Using output:", audio_device, dev_name)
 
     # Validate host API when force-exclusive is enabled
-    if FORCE_WASAPI_OR_ASIO_EXCLUSIVE:
+    if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
         dev_info = sd.query_devices(audio_device)
         hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
         host_upper = hostapi_name.upper()

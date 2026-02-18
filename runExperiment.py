@@ -4,6 +4,7 @@ import sys
 import ctypes
 from ctypes import wintypes
 import atexit
+import platform
 import tkinter as tk
 from tkinter import messagebox
 
@@ -229,8 +230,8 @@ def print_system_state(label):
 # -------------------------
 
 if __name__ == "__main__":
-
-    if EXPERIMENTER_MODE:
+    
+    if EXPERIMENTER_MODE and platform.system() == "Windows":
         if not is_admin():
             relaunch_as_admin()
 
