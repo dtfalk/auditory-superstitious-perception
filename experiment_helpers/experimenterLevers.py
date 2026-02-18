@@ -56,18 +56,18 @@ MAX_DB = 70
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 1
-
-# Max plays allowed during target familiarization screens
-FAMILIARIZATION_PLAYS = 3
+REMINDER_INTERVAL = 15
 
 # Max plays allowed during periodic reminder screens
-REMINDER_PLAYS = 2
+REMINDER_PLAYS = 3
+
+# Max plays allowed during target familiarization screens
+FAMILIARIZATION_PLAYS = 5
 
 # Set to -1 to show all stimuli
 # Otherwise will shown the specified number of stimuli per block
 # (useful for testing/development)
-NUM_STIMULI_TO_SHOW = 5
+NUM_STIMULI_TO_SHOW = -1
 
 # Needs to be set for live experiments, but can be set to False for testing/development
 # Ensures a direct path between headphones and the audio engine, which is necessary for accurate audio level testing and playback

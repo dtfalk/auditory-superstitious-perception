@@ -122,7 +122,8 @@ def _questionnaire_option_style(questionnaire_name: str, current_h: int) -> tupl
         scalar = 1.4
     elif questionnaire_name == 'dissociative_experiences':
         scalar = 1.5
-    elif questionnaire_name == 'sleepiness':
+    elif questionnaire_name in ('sleepiness', 'stanford_sleepiness'):
+        # Stanford Sleepiness uses dynamic spacing based on wrapped lines
         scalar = 1.3
         font_size = int(0.85 * base_font)
     elif questionnaire_name == 'vhq':
@@ -138,16 +139,38 @@ def _questionnaire_option_style(questionnaire_name: str, current_h: int) -> tupl
     return font_size, scalar
 
 
+def _count_wrapped_lines(text: str, font: pg.font.Font, max_width: int) -> int:
+    """Count how many lines text will wrap to given max_width."""
+    if max_width <= 0:
+        return 1
+    words = text.split()
+    if not words:
+        return 1
+    lines = 1
+    current_line = []
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        test_surf = font.render(test_line, True, (0, 0, 0))
+        if test_surf.get_width() <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines += 1
+            current_line = [word]
+    return lines
+
+
 def _precompute_option_slots(
     questionnaire_name: str,
     win: pg.Surface,
     y_pos_question_fixed: int,
     max_options: int,
+    option_texts: list[str] | None = None,
 ) -> list[dict]:
     """Create stable checkbox positions based on worst-case option count.
 
     The slots are reused for every question so options never shift.
-    Matches the old code's ``_precompute_option_slots`` logic exactly.
+    If option_texts is provided, uses dynamic spacing based on wrapped line counts.
     """
     screen = Screen(win)
     current_w, current_h = screen.width, screen.height
@@ -170,6 +193,40 @@ def _precompute_option_slots(
 
     available_height = max(1, y_end - y_start)
 
+    x_left = int(0.05 * current_w)
+    x_right = int(0.05 * current_w + 0.45 * current_w)
+    
+    # Calculate max text width for wrapping
+    # Leave room for checkbox (button_size + 10px gap) and padding
+    max_text_width = int(0.85 * current_w) - button_size - 20
+    
+    # If option_texts provided, use dynamic spacing based on actual wrapped lines
+    if option_texts:
+        pg.font.init()
+        font = pg.font.SysFont("times new roman", font_size)
+        line_height = int(font_size * 1.15)
+        base_row_height = int(scalar * font_size)
+        
+        slots: list[dict] = []
+        y_current = y_start
+        
+        for idx, text in enumerate(option_texts):
+            num_lines = _count_wrapped_lines(text, font, max_text_width)
+            # Height needed: base height + extra for additional wrapped lines
+            row_height = base_row_height + (num_lines - 1) * line_height
+            
+            slots.append({
+                'x': x_left,
+                'y': y_current,
+                'button_size': button_size,
+                'font_size': font_size,
+                'max_text_width': max_text_width,
+            })
+            y_current += row_height
+        
+        return slots
+
+    # Original fixed-spacing logic for questionnaires without option_texts
     desired_row_step = max(1, int(scalar * font_size))
     min_row_step = max(1, int(1.05 * font_size))
 
@@ -183,28 +240,16 @@ def _precompute_option_slots(
         row_step_fit = desired_row_step
     row_step = max(min_row_step, min(desired_row_step, row_step_fit))
 
-    x_left = int(0.05 * current_w)
-    x_right = int(0.05 * current_w + 0.45 * current_w)
-    
     # Center columns when there are 2
     if n_cols == 2:
-        # Each column is about 45% wide, total 90% of screen
-        # Center by adjusting left margin
         col_width = int(0.45 * current_w)
         total_width = 2 * col_width
         left_margin = (current_w - total_width) // 2
         x_left = left_margin
         x_right = left_margin + col_width
+        max_text_width = col_width - button_size - 30
     
     left_count = max_options if n_cols == 1 else math.ceil(max_options / 2)
-    
-    # Calculate max text width for wrapping anchors
-    # Leave room for checkbox (button_size + 10px gap) and padding
-    if n_cols == 2:
-        col_width = int(0.45 * current_w)
-        max_text_width = col_width - button_size - 30  # padding between columns
-    else:
-        max_text_width = int(0.85 * current_w) - button_size - 20
 
     slots: list[dict] = []
     for idx in range(max_options):
@@ -294,13 +339,13 @@ def _run_single_question(
                                    s.get('max_text_width', 0))
             )
     else:
-        # Fallback: compute per-question (old behaviour for standalone calls)
+        # Fallback: compute per-question with dynamic spacing based on actual text
         screen.fill()
         y_after_question = text_renderer.draw_text_block(
             question_text, rel_x=0.05, rel_y=0.05,
             max_width=screen.abs_x(0.9), style=question_style,
         )
-        slots = _precompute_option_slots(questionnaire_name, win, y_after_question, n_options)
+        slots = _precompute_option_slots(questionnaire_name, win, y_after_question, n_options, option_texts=options)
         for i, opt_text in enumerate(options):
             s = slots[i]
             option_widgets.append(

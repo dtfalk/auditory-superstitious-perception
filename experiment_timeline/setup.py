@@ -99,10 +99,10 @@ def _get_best_preselect(devices: list[tuple[int, str]]) -> int:
     2) system default output, else
     3) first device.
     """
-    last_name = _load_last_device()
-    if last_name:
-        for pos, (_, name) in enumerate(devices):
-            if name == last_name:
+    last_label = _load_last_device()
+    if last_label:
+        for pos, (_, label) in enumerate(devices):
+            if label == last_label:
                 return pos
     return _get_default_device_index(devices)
 
@@ -522,11 +522,15 @@ def run_setup(
     # ── Determine audio device ──
     env_dev = os.getenv("ASP_DEV_SPEAKERS", "").strip().lower() in {"1", "true", "yes", "on"}
     dev_speakers = bool(args.dev_speakers or env_dev)
+    dev_label = None  # Full label with host API suffix (for saving)
 
     if args.audio_device is not None:
         # CLI override — skip GUI
         audio_device = int(args.audio_device)
-        dev_name = sd.query_devices(audio_device)["name"]
+        dev_info = sd.query_devices(audio_device)
+        dev_name = dev_info["name"]
+        hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
+        dev_label = f"{dev_name}  [{hostapi_name}]"
     elif dev_speakers:
         # Dev-speakers shortcut — skip GUI
         audio_device, dev_name = pick_output_device(
@@ -534,6 +538,9 @@ def run_setup(
             exclude_substrings=("HDMI", "NVIDIA", "Intel", "Display", "Monitor"),
             skip_default=True,
         )
+        dev_info = sd.query_devices(audio_device)
+        hostapi_name = sd.query_hostapis(dev_info["hostapi"])["name"]
+        dev_label = f"{dev_name}  [{hostapi_name}]"
     else:
         # ── Interactive GUI selection ──
         devices = _get_output_devices()
@@ -582,6 +589,8 @@ def run_setup(
         best_pos = _get_best_preselect(devices)
         audio_device = _show_audio_device_selection(win, devices, pre_selected=best_pos)
         dev_name = sd.query_devices(audio_device)["name"]
+        # Find the full label (with host API suffix) for saving
+        dev_label = next((label for idx, label in devices if idx == audio_device), dev_name)
 
     print("Using output:", audio_device, dev_name)
 
@@ -596,8 +605,8 @@ def run_setup(
                 "Experiment requires ASIO or WASAPI exclusive."
             )
 
-    # Persist chosen device for next session
-    _save_last_device(dev_name)
+    # Persist chosen device for next session (save full label with host API)
+    _save_last_device(dev_label)
 
     # Use the device's default sample rate for maximum compatibility
     dev_info = sd.query_devices(audio_device)

@@ -199,7 +199,7 @@ def _get_additional_comments(win: pg.Surface, save_folder: str = "", subject_num
     prompt = (
         "Please provide any additional comments you may have about the experiment below.\n"
         "If you have no additional comments, press Enter or Return to continue.\n\n"
-        "Additional Comments:"
+        "**Additional Comments**"
     )
     
     

@@ -2,9 +2,13 @@ import os
 import subprocess
 import sys
 import ctypes
+from ctypes import wintypes
+import atexit
 import tkinter as tk
 from tkinter import messagebox
 
+# Turns off various windows things so experiment is not interrupted or slowed
+EXPERIMENTER_MODE = True
 
 CUR_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(CUR_DIR)
@@ -13,6 +17,52 @@ ENTER_SCRIPT = os.path.join(CUR_DIR, "experimenter_mode_scripts", "enterExperime
 EXIT_SCRIPT = os.path.join(CUR_DIR, "experimenter_mode_scripts", "exitExperimentMode.ps1")
 EXPERIMENT = os.path.join(CUR_DIR, "main_experimental_flow.py")
 
+NUM_EQUALS = 75
+
+# -------------------------
+# Cleanup state tracking
+# -------------------------
+_experiment_mode_active = False
+_cleanup_done = False
+
+# -------------------------
+# Console Control Handler (catches terminal close, Ctrl+C, etc.)
+# -------------------------
+CTRL_C_EVENT = 0
+CTRL_BREAK_EVENT = 1
+CTRL_CLOSE_EVENT = 2
+CTRL_LOGOFF_EVENT = 5
+CTRL_SHUTDOWN_EVENT = 6
+
+HANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+kernel32 = ctypes.windll.kernel32
+
+def _emergency_cleanup():
+    """Restore system state - called on abnormal exit."""
+    global _cleanup_done
+    if _cleanup_done or not _experiment_mode_active:
+        return
+    _cleanup_done = True
+    print("\n[EMERGENCY] Restoring system state...", flush=True)
+    run_powershell(EXIT_SCRIPT)
+
+def _console_ctrl_handler(ctrl_type):
+    """Handle console control events (close button, Ctrl+C, etc.)."""
+    if ctrl_type in (CTRL_CLOSE_EVENT, CTRL_LOGOFF_EVENT, CTRL_SHUTDOWN_EVENT, 
+                     CTRL_C_EVENT, CTRL_BREAK_EVENT):
+        _emergency_cleanup()
+        return True  # Signal handled
+    return False
+
+# Create handler reference (must keep alive to prevent garbage collection)
+_handler = HANDLER_ROUTINE(_console_ctrl_handler)
+
+def _register_cleanup_handlers():
+    """Register handlers to restore system on abnormal termination."""
+    # Register console control handler for terminal close, Ctrl+C, etc.
+    kernel32.SetConsoleCtrlHandler(_handler, True)
+    # Register atexit as backup
+    atexit.register(_emergency_cleanup)
 
 # -------------------------
 # Admin elevation
@@ -116,11 +166,11 @@ def show_disabled_popup():
 
 def print_system_state(label):
     if label == "INITIAL SYSTEM STATE":
-        print("=" * 60, flush = True)
+        print("=" * NUM_EQUALS, flush = True)
     else: 
-        print("\n" + "=" * 60, flush = True)
+        print("\n" + "=" * NUM_EQUALS, flush = True)
     print(f"{label}", flush = True)
-    print("=" * 60, flush = True)
+    print("=" * NUM_EQUALS, flush = True)
 
     subprocess.run([
         "powershell",
@@ -129,44 +179,49 @@ def print_system_state(label):
         "Select Name, Status, StartType | Format-Table -AutoSize"
     ])
 
+    # Disable realtime monitoring for duration of the experiment
+    # I don't know what is wrong but computer seems to ignore it
     # subprocess.run([
     #     "powershell",
     #     "-Command",
     #     "Get-MpPreference | Select DisableRealtimeMonitoring"
     # ])
 
-    print("Defender Exclusion Check:", flush = True)
 
-    result = subprocess.run(
-        [
-            "powershell",
-            "-Command",
-            "(Get-MpPreference).ExclusionPath"
-        ],
-        capture_output=True,
-        text=True
-    )
+    #  Add folder to windows defender exclusions
+    # I don't know what is wrong but computer seems to ignore it
+    # print("Defender Exclusion Check:", flush = True)
+    # 
+    # result = subprocess.run(
+    #     [
+    #         "powershell",
+    #         "-Command",
+    #         "(Get-MpPreference).ExclusionPath"
+    #     ],
+    #     capture_output=True,
+    #     text=True
+    # )
 
-    exclusions = result.stdout.strip().splitlines()
+    # exclusions = result.stdout.strip().splitlines()
 
-    normalized_project = os.path.normcase(os.path.normpath(PROJECT_ROOT))
-    normalized_exclusions = [
-        os.path.normcase(os.path.normpath(e.strip()))
-        for e in exclusions if e.strip()
-    ]
-
-    if normalized_project in normalized_exclusions:
-        print(f"  Project root is EXCLUDED from Defender:\n    {PROJECT_ROOT}\n", flush = True)
-    else:
-        print(f"  Project root is NOT excluded from Defender:\n    {PROJECT_ROOT}\n", flush = True)
+    # normalized_project = os.path.normcase(os.path.normpath(PROJECT_ROOT))
+    # normalized_exclusions = [
+    #     os.path.normcase(os.path.normpath(e.strip()))
+    #     for e in exclusions if e.strip()
+    # ]
+    # 
+    # if normalized_project in normalized_exclusions:
+    #     print(f"  Project root is EXCLUDED from Defender:\n    {PROJECT_ROOT}\n", flush = True)
+    # else:
+    #     print(f"  Project root is NOT excluded from Defender:\n    {PROJECT_ROOT}\n", flush = True)
 
     subprocess.run([
         "powershell",
         "-Command",
         "powercfg -getactivescheme"
     ])
-    print("\n" + "=" * 60, flush = True)
-    print("=" * 60 + "\n", flush = True)
+    print("\n" + "=" * NUM_EQUALS, flush = True)
+    print("=" * NUM_EQUALS + "\n\n", flush = True)
 
 
 # -------------------------
@@ -175,50 +230,71 @@ def print_system_state(label):
 
 if __name__ == "__main__":
 
-    if not is_admin():
-        relaunch_as_admin()
+    if EXPERIMENTER_MODE:
+        if not is_admin():
+            relaunch_as_admin()
 
-    print_system_state("INITIAL SYSTEM STATE")
+        # Register cleanup handlers BEFORE entering experiment mode
+        _register_cleanup_handlers()
 
-    print("\n" + "=" * 60, flush = True)
-    print(f"EXPERIMENT MODE ACTIVATION", flush = True)
-    print("=" * 60, flush = True)
-    print("Enabling experiment mode...", flush = True)
-    run_powershell(ENTER_SCRIPT)
-    print("=" * 60, flush = True)
-    print("=" * 60 + "\n", flush = True)
+        print_system_state("INITIAL SYSTEM STATE")
 
-    print_system_state("STATE AFTER ENTERING EXPERIMENT MODE")
+        print("\n" + "=" * NUM_EQUALS, flush = True)
+        print(f"EXPERIMENT MODE ACTIVATION", flush = True)
+        print("=" * NUM_EQUALS + "\n", flush = True)
+        print("Enabling experiment mode...", flush = True)
+        run_powershell(ENTER_SCRIPT)
+        _experiment_mode_active = True  # Mark that we need cleanup on exit
+        print("=" * NUM_EQUALS, flush = True)
+        print("=" * NUM_EQUALS + "\n\n", flush = True)
 
-    decision = show_mode_popup()
-    if decision == "quit":
-        print("\n\n" + "=" * 60, flush = True)
-        print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
-        print("=" * 60, flush = True)
-        print("Restoring system...", flush = True)
-        run_powershell(EXIT_SCRIPT)
-        print("=" * 60, flush = True)
-        print("=" * 60, flush = True)
-        print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
-        show_disabled_popup()
-        print("\n\nDone.", flush = True)
-        input("\n\nPress Enter to close this window...")
-        sys.exit()
+        print_system_state("STATE AFTER ENTERING EXPERIMENT MODE")
 
-    try:
-        print("\n" + "=" * 60, flush = True)
-        print(f"EXPERIMENT LOGS", flush = True)
-        print("=" * 60, flush = True)
-        subprocess.run([sys.executable, EXPERIMENT])
-    finally:
-        print("\n\n" + "=" * 60, flush = True)
-        print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
-        print("=" * 60 + "\n", flush = True)
-        print("Restoring system...", flush = True)
-        run_powershell(EXIT_SCRIPT)
-        print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
-        print("\n" + "=" * 60 + "\n", flush = True)
-        show_disabled_popup()
+        decision = show_mode_popup()
 
-    print("\n\nDone.", flush = True)
-    input("\n\nPress Enter to close this window...")
+        if decision == "quit":
+            print("\n" + "=" * NUM_EQUALS, flush = True)
+            print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
+            print("=" * NUM_EQUALS + "\n", flush = True)
+            print("Restoring system...", flush = True)
+            run_powershell(EXIT_SCRIPT)
+            _cleanup_done = True  # Mark cleanup as done
+            _experiment_mode_active = False
+            print("=" * NUM_EQUALS, flush = True)
+            print("=" * NUM_EQUALS + "\n\n", flush = True)
+            print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
+            show_disabled_popup()
+            print("Done.", flush = True)
+            input("\nPress Enter to close this window...\n\n")
+            sys.exit()
+
+        try:
+            print("\n" + "=" * NUM_EQUALS, flush = True)
+            print(f"EXPERIMENT LOGS", flush = True)
+            print("=" * NUM_EQUALS + "\n", flush = True)
+
+            # Runs the actual experiment
+            subprocess.run([sys.executable, EXPERIMENT])
+
+            print("=" * NUM_EQUALS, flush = True)
+            print("=" * NUM_EQUALS + "\n", flush = True)
+        finally:
+            if not _cleanup_done:
+                print("\n\n" + "=" * NUM_EQUALS, flush = True)
+                print(f"EXPERIMENT MODE DEACTIVATION", flush = True)
+                print("=" * NUM_EQUALS + "\n", flush = True)
+                print("Restoring system...", flush = True)
+                run_powershell(EXIT_SCRIPT)
+                _cleanup_done = True
+                _experiment_mode_active = False
+                print("=" * NUM_EQUALS, flush = True)
+                print("=" * NUM_EQUALS + "\n\n", flush = True)
+                print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
+                show_disabled_popup()
+
+        print("Done.", flush = True)
+        input("\nPress Enter to close this window...\n\n")
+    else:
+        # Lazy import to avoid GUI side effects at module load time
+        from main_experimental_flow import main as run_experiment
+        run_experiment()

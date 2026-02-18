@@ -30,23 +30,23 @@ else {
     Write-Host "No saved service state found."
 }
 
-# Defender exclusion removal (safe normalization)
+# Defender exclusion
+# Does not seem to work
+# $existingExclusions = (Get-MpPreference).ExclusionPath
+# $normalizedExclusions = @()
 
-$existingExclusions = (Get-MpPreference).ExclusionPath
-$normalizedExclusions = @()
+# foreach ($path in $existingExclusions) {
+#     if ($path) {
+#         $normalizedExclusions += $path.TrimEnd('\').ToLower()
+#     }
+# }
 
-foreach ($path in $existingExclusions) {
-    if ($path) {
-        $normalizedExclusions += $path.TrimEnd('\').ToLower()
-    }
-}
-
-if ($normalizedExclusions -contains $normalizedProjectRoot) {
-    Remove-MpPreference -ExclusionPath $projectRoot
-    Write-Host "Defender exclusion removed."
-}
-else {
-    Write-Host "Defender exclusion not found."
-}
+# if ($normalizedExclusions -contains $normalizedProjectRoot) {
+#     Remove-MpPreference -ExclusionPath $projectRoot
+#     Write-Host "Defender exclusion removed."
+# }
+# else {
+#     Write-Host "Defender exclusion not found."
+# }
 
 Write-Host "System restored."
