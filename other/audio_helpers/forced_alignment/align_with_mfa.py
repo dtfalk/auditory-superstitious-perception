@@ -38,7 +38,7 @@ import re
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 10  # Number of times to run alignment
+N_RUNS = 1  # Number of times to run alignment
 TARGET_WORD = "wall"
 
 # The transcript for fullsentence.wav - EDIT THIS if different
