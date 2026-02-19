@@ -1,0 +1,549 @@
+{
+  "tool": "whisperx",
+  "model": "base",
+  "n_runs": 10,
+  "audio_file": "fullsentence.wav",
+  "statistics": {
+    "n_successful_runs": 10,
+    "target_word": "wall",
+    "start_ms": {
+      "mean": 1322.0,
+      "min": 1322.0,
+      "max": 1322.0,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0,
+        1322.0
+      ]
+    },
+    "end_ms": {
+      "mean": 1772.0,
+      "min": 1772.0,
+      "max": 1772.0,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0,
+        1772.0
+      ]
+    },
+    "duration_ms": {
+      "mean": 449.9999999999999,
+      "min": 449.99999999999994,
+      "max": 449.99999999999994,
+      "range": 0.0,
+      "std": 5.684341886080802e-14,
+      "values": [
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994,
+        449.99999999999994
+      ]
+    }
+  },
+  "all_runs": [
+    {
+      "run": 1,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 2,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 3,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 4,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 5,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 6,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 7,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 8,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 9,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    },
+    {
+      "run": 10,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.031,
+          "end": 0.215,
+          "duration": 0.184
+        },
+        {
+          "word": "picture",
+          "start": 0.277,
+          "end": 0.666,
+          "duration": 0.389
+        },
+        {
+          "word": "hung",
+          "start": 0.707,
+          "end": 0.973,
+          "duration": 0.266
+        },
+        {
+          "word": "on",
+          "start": 1.076,
+          "end": 1.137,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "the",
+          "start": 1.199,
+          "end": 1.26,
+          "duration": 0.06099999999999994
+        },
+        {
+          "word": "wall.",
+          "start": 1.322,
+          "end": 1.772,
+          "duration": 0.44999999999999996
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall.",
+        "start": 1.322,
+        "end": 1.772,
+        "duration": 0.44999999999999996
+      }
+    }
+  ]
+}

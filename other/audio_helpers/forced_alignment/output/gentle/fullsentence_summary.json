@@ -1,0 +1,1559 @@
+{
+  "tool": "gentle",
+  "n_runs": 10,
+  "audio_file": "fullsentence.wav",
+  "transcript": "The picture hung on the wall",
+  "statistics": {
+    "n_successful_runs": 10,
+    "target_word": "wall",
+    "start_ms": {
+      "mean": 1210.0,
+      "min": 1210.0,
+      "max": 1210.0,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0,
+        1210.0
+      ]
+    },
+    "end_ms": {
+      "mean": 1589.9999999999998,
+      "min": 1589.9999999999998,
+      "max": 1589.9999999999998,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998,
+        1589.9999999999998
+      ]
+    },
+    "duration_ms": {
+      "mean": 379.9999999999999,
+      "min": 379.9999999999999,
+      "max": 379.9999999999999,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999,
+        379.9999999999999
+      ]
+    }
+  },
+  "all_runs": [
+    {
+      "run": 1,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 2,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 3,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 4,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 5,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 6,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 7,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 8,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 9,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    },
+    {
+      "run": 10,
+      "words": [
+        {
+          "word": "The",
+          "start": 0.0,
+          "end": 0.2,
+          "duration": 0.2,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.08,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.12,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.22,
+          "end": 0.7,
+          "duration": 0.48,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "p_B"
+            },
+            {
+              "duration": 0.06,
+              "phone": "ih_I"
+            },
+            {
+              "duration": 0.08,
+              "phone": "k_I"
+            },
+            {
+              "duration": 0.13,
+              "phone": "ch_I"
+            },
+            {
+              "duration": 0.14,
+              "phone": "er_E"
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.71,
+          "end": 0.99,
+          "duration": 0.28,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.11,
+              "phone": "hh_B"
+            },
+            {
+              "duration": 0.1,
+              "phone": "ah_I"
+            },
+            {
+              "duration": 0.07,
+              "phone": "ng_E"
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.99,
+          "end": 1.1,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.06,
+              "phone": "ao_B"
+            },
+            {
+              "duration": 0.05,
+              "phone": "n_E"
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.1,
+          "end": 1.2100000000000002,
+          "duration": 0.1100000000000001,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.07,
+              "phone": "dh_B"
+            },
+            {
+              "duration": 0.04,
+              "phone": "ah_E"
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.21,
+          "end": 1.5899999999999999,
+          "duration": 0.3799999999999999,
+          "aligned": true,
+          "phones": [
+            {
+              "duration": 0.1,
+              "phone": "w_B"
+            },
+            {
+              "duration": 0.09,
+              "phone": "ao_I"
+            },
+            {
+              "duration": 0.19,
+              "phone": "l_E"
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.21,
+        "end": 1.5899999999999999,
+        "duration": 0.3799999999999999,
+        "aligned": true,
+        "phones": [
+          {
+            "duration": 0.1,
+            "phone": "w_B"
+          },
+          {
+            "duration": 0.09,
+            "phone": "ao_I"
+          },
+          {
+            "duration": 0.19,
+            "phone": "l_E"
+          }
+        ]
+      }
+    }
+  ]
+}

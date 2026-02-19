@@ -1,0 +1,55 @@
+{
+  "run": 4,
+  "words": [
+    {
+      "word": "the",
+      "start": 0.0,
+      "end": 0.2516715257531584,
+      "duration": 0.2516715257531584,
+      "method": "ctc_proportional"
+    },
+    {
+      "word": "picture",
+      "start": 0.2516715257531584,
+      "end": 0.7550145772594752,
+      "duration": 0.5033430515063168,
+      "method": "ctc_proportional"
+    },
+    {
+      "word": "hung",
+      "start": 0.7550145772594752,
+      "end": 1.069603984450923,
+      "duration": 0.31458940719144796,
+      "method": "ctc_proportional"
+    },
+    {
+      "word": "on",
+      "start": 1.069603984450923,
+      "end": 1.258357628765792,
+      "duration": 0.18875364431486893,
+      "method": "ctc_proportional"
+    },
+    {
+      "word": "the",
+      "start": 1.258357628765792,
+      "end": 1.5100291545189504,
+      "duration": 0.2516715257531583,
+      "method": "ctc_proportional"
+    },
+    {
+      "word": "wall",
+      "start": 1.5100291545189504,
+      "end": 1.761700680272109,
+      "duration": 0.2516715257531585,
+      "method": "ctc_proportional"
+    }
+  ],
+  "target_word": "wall",
+  "target_timing": {
+    "word": "wall",
+    "start": 1.5100291545189504,
+    "end": 1.761700680272109,
+    "duration": 0.2516715257531585,
+    "method": "ctc_proportional"
+  }
+}

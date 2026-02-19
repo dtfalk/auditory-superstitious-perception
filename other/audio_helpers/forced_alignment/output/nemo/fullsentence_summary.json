@@ -1,0 +1,620 @@
+{
+  "tool": "nemo",
+  "model": "stt_en_quartznet15x5",
+  "n_runs": 10,
+  "audio_file": "fullsentence.wav",
+  "transcript": "The picture hung on the wall",
+  "statistics": {
+    "n_successful_runs": 10,
+    "target_word": "wall",
+    "start_ms": {
+      "mean": 1510.0291545189505,
+      "min": 1510.0291545189505,
+      "max": 1510.0291545189505,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505,
+        1510.0291545189505
+      ]
+    },
+    "end_ms": {
+      "mean": 1761.7006802721085,
+      "min": 1761.700680272109,
+      "max": 1761.700680272109,
+      "range": 0.0,
+      "std": 4.547473508864641e-13,
+      "values": [
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109,
+        1761.700680272109
+      ]
+    },
+    "duration_ms": {
+      "mean": 251.6715257531585,
+      "min": 251.67152575315848,
+      "max": 251.67152575315848,
+      "range": 0.0,
+      "std": 2.842170943040401e-14,
+      "values": [
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848,
+        251.67152575315848
+      ]
+    }
+  },
+  "all_runs": [
+    {
+      "run": 1,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 2,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 3,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 4,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 5,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 6,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 7,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 8,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 9,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    },
+    {
+      "run": 10,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.2516715257531584,
+          "duration": 0.2516715257531584,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "picture",
+          "start": 0.2516715257531584,
+          "end": 0.7550145772594752,
+          "duration": 0.5033430515063168,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "hung",
+          "start": 0.7550145772594752,
+          "end": 1.069603984450923,
+          "duration": 0.31458940719144796,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "on",
+          "start": 1.069603984450923,
+          "end": 1.258357628765792,
+          "duration": 0.18875364431486893,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "the",
+          "start": 1.258357628765792,
+          "end": 1.5100291545189504,
+          "duration": 0.2516715257531583,
+          "method": "ctc_proportional"
+        },
+        {
+          "word": "wall",
+          "start": 1.5100291545189504,
+          "end": 1.761700680272109,
+          "duration": 0.2516715257531585,
+          "method": "ctc_proportional"
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.5100291545189504,
+        "end": 1.761700680272109,
+        "duration": 0.2516715257531585,
+        "method": "ctc_proportional"
+      }
+    }
+  ]
+}
