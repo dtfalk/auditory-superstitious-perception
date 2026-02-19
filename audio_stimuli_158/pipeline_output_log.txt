@@ -1,0 +1,606 @@
+================================================================================
+  STIMULI PREPARATION PIPELINE  —  copy_folder → audio_stimuli_158
+  Started: 2026-02-19T17:09:07.247144
+================================================================================
+
+================================================================================
+STEP 1: Create high_correlation_stimuli.csv and low_correlation_stimuli.csv
+================================================================================
+Source CSV : C:\Users\david\OneDrive\Desktop\Code\auditory-superstitious-perception\potential_stimuli\158\copy_folder\correlation_csvs\pearson_scores.csv
+Output dir : C:\Users\david\OneDrive\Desktop\Code\auditory-superstitious-perception\potential_stimuli\158\copy_folder\correlation_csvs
+
+Total rows in pearson_scores.csv: 2777777
+Successfully parsed rows: 2777777
+
+Wrote high_correlation_stimuli.csv  (153 rows)
+  Highest r_score : 0.0897955372929573
+  Lowest  r_score : 0.07182899117469788
+  Chunk #s (first 10): [972268, 1449140, 2106752, 1087200, 996967, 1292805, 649763, 2164437, 2698039, 1026298]
+
+Wrote low_correlation_stimuli.csv  (153 rows)
+  Smallest |r_score| : 1.5543369258352868e-08
+  Largest  |r_score| : 1.4888686337144463e-06
+  Chunk #s (first 10): [124561, 508594, 981114, 1952388, 1699423, 573307, 1476338, 2761256, 2361188, 2281855]
+
+[STEP 1 COMPLETE]
+
+Reference wall_158.wav: SR=8000, Channels=1, Frames=2880, Subtype=PCM_16
+Reference fullsentence_158.wav: SR=8000, Channels=1, Frames=12640, Subtype=PCM_16
+Reference fullsentenceminuswall_158.wav: SR=8000, Channels=1, Frames=9760, Subtype=PCM_16
+================================================================================
+STEP 2: Verify targets/ contains exactly the top 153 stimuli
+================================================================================
+Expected target count : 153
+Actual   target count : 153
+
+  ** CONFIRMED: targets/ contains exactly the top 153 high-correlation stimuli **
+
+[STEP 2 COMPLETE]
+
+================================================================================
+STEP 3: Verify distractors/ contains exactly the bottom 153 stimuli
+================================================================================
+Expected distractor count : 153
+Actual   distractor count : 153
+
+  ** CONFIRMED: distractors/ contains exactly the bottom 153 low-correlation stimuli **
+
+[STEP 3 COMPLETE]
+
+================================================================================
+STEP 4: Validate audio properties (mono, 8 kHz, PCM_16, frame count)
+================================================================================
+
+Reference file: wall_158.wav
+  Sample rate : 8000 Hz
+  Channels    : 1
+  Frames      : 2880
+  Subtype     : PCM_16
+  Duration    : 0.3600 s
+
+Checking targets/ — 153 files
+  All 153 files in targets/ PASSED
+    Channels   : 1 (mono)
+    Sample rate: 8000 Hz
+    Subtype    : PCM_16 (16-bit)
+    Frames     : 2880 (matches wall.wav)
+
+Checking distractors/ — 153 files
+  All 153 files in distractors/ PASSED
+    Channels   : 1 (mono)
+    Sample rate: 8000 Hz
+    Subtype    : PCM_16 (16-bit)
+    Frames     : 2880 (matches wall.wav)
+
+  ** CONFIRMED: All 306 stimuli files are mono, 8 kHz, 16-bit PCM, and have 2880 frames (matching wall.wav) **
+
+[STEP 4 COMPLETE]
+
+================================================================================
+STEP 5: Split 153 targets + 153 distractors into final folder structure
+================================================================================
+  Output root       : C:\Users\david\OneDrive\Desktop\Code\auditory-superstitious-perception\audio_stimuli_158
+  Examples per pool  : 3
+  Main per subfolder : 75
+  Optimiser iters    : 200000
+  Init method        : snake
+
+Selected example targets     : [1013073, 1068459, 1170874]
+Selected example distractors : [327878, 2221193, 2596030]
+  Copied example target: chunk_1013073.wav -> examples/targets/1013073.wav  (r=0.0735793039)
+  Copied example target: chunk_1068459.wav -> examples/targets/1068459.wav  (r=0.0737490058)
+  Copied example target: chunk_1170874.wav -> examples/targets/1170874.wav  (r=0.0767456815)
+  Copied example distractor: chunk_327878.wav -> examples/distractors/327878.wav  (r=-4.268488282832550e-07)
+  Copied example distractor: chunk_2221193.wav -> examples/distractors/2221193.wav  (r=6.438069135583646e-07)
+  Copied example distractor: chunk_2596030.wav -> examples/distractors/2596030.wav  (r=-6.019211582497519e-07)
+
+High remaining for split: 150  (expected 150)
+Low  remaining for split: 150  (expected 150)
+
+Optimising high-correlation split (full_sentence vs imagined_sentence targets)...
+  Iterations: 200000, Seed: 42, Init: snake
+  Done.
+
+Optimising low-correlation split (full_sentence vs imagined_sentence distractors)...
+  Iterations: 200000, Seed: 43, Init: snake
+  Done.
+
+Copying 75 files -> full_sentence/targets/
+  Copied 75 files to full_sentence/targets/
+
+Copying 75 files -> imagined_sentence/targets/
+  Copied 75 files to imagined_sentence/targets/
+
+Copying 75 files -> full_sentence/distractors/
+  Copied 75 files to full_sentence/distractors/
+
+Copying 75 files -> imagined_sentence/distractors/
+  Copied 75 files to imagined_sentence/distractors/
+
+Copied high_correlation_stimuli.csv -> audio_stimuli_158/correlation_csvs/
+
+Copied low_correlation_stimuli.csv -> audio_stimuli_158/correlation_csvs/
+
+[STEP 5 COMPLETE]
+
+================================================================================
+STEP 6: Summary Statistics for All Conditions
+================================================================================
+
+Summary Statistics for full_sentence-targets condition (n = 75)
+============================================================
+  Mean   : 0.07637604316075643
+  Std    : 0.004112957717038115
+  Range  : 0.01793539524078369
+  Max    : 0.0897955372929573
+  Min    : 0.07186014205217361
+  Median : 0.07483497262001038
+  Stimuli: [70268, 85846, 136225, 220888, 278693, 285679, 307667, 316844, 336879, 387803, 555218, 560901, 565106, 604400, 649763, 734996, 843706, 859837, 880192, 887383, 928846, 972268, 996967, 1031051, 1035922, 1052296, 1071791, 1080917, 1087200, 1122312, 1167302, 1176635, 1183273, 1292805, 1351187, 1354153, 1393617, 1413836, 1467244, 1504963, 1527468, 1540036, 1741415, 1847001, 1861034, 1911778, 1934100, 1939306, 1960228, 1990540, 2006996, 2040140, 2043023, 2072864, 2097989, 2122702, 2133753, 2164437, 2176301, 2201520, 2205246, 2214535, 2240042, 2271430, 2291108, 2315211, 2386797, 2428902, 2458981, 2537537, 2625527, 2698039, 2736202, 2757753, 2776393]
+
+Summary Statistics for full_sentence-distractors condition (n = 75)
+============================================================
+  Mean   : 1.2761572556030388e-07
+  Std    : 8.823408815852501e-07
+  Range  : 2.9280515718710376e-06
+  Max    : 1.4391829381565913e-06
+  Min    : -1.4888686337144463e-06
+  Median : 1.4720899343956262e-07
+  Stimuli: [23047, 29940, 92894, 120074, 124561, 240125, 326000, 368411, 387555, 409102, 425479, 467077, 470659, 473595, 480499, 487604, 490000, 504508, 671378, 678636, 684812, 706653, 709477, 750984, 755761, 795524, 806711, 848598, 970558, 981114, 1042932, 1093240, 1129367, 1138362, 1143429, 1150477, 1150777, 1166721, 1174701, 1175276, 1266978, 1275389, 1482358, 1497510, 1626495, 1641534, 1694719, 1699423, 1786634, 1822852, 1876022, 1909149, 1931522, 1993781, 2054667, 2061058, 2068625, 2086544, 2244945, 2281855, 2360371, 2361188, 2379956, 2392806, 2449918, 2488289, 2489849, 2496483, 2515674, 2529157, 2549059, 2555744, 2749230, 2760972, 2761256]
+
+Summary Statistics for imagined_sentence-targets condition (n = 75)
+============================================================
+  Mean   : 0.0763760781288147
+  Std    : 0.004183506078055716
+  Range  : 0.0164334774017334
+  Max    : 0.08826246857643127
+  Min    : 0.07182899117469788
+  Median : 0.07500389963388443
+  Stimuli: [57323, 114047, 174063, 228039, 316479, 348468, 363509, 364351, 373632, 420247, 422894, 453740, 493162, 582260, 599911, 645519, 672474, 713331, 715578, 753336, 763786, 765296, 773375, 776060, 795255, 854076, 864881, 919673, 939226, 980219, 989219, 1020896, 1023517, 1026298, 1070620, 1083401, 1120914, 1206697, 1260648, 1365141, 1388877, 1431583, 1449140, 1454097, 1518581, 1529788, 1558509, 1562564, 1598027, 1627824, 1655002, 1661424, 1693405, 1877264, 1925454, 1935746, 1937144, 2023641, 2042729, 2062247, 2106752, 2171626, 2179711, 2180344, 2237789, 2296881, 2309250, 2309968, 2328724, 2351871, 2364074, 2403891, 2498544, 2728431, 2763405]
+
+Summary Statistics for imagined_sentence-distractors condition (n = 75)
+============================================================
+  Mean   : 1.2759844705575082e-07
+  Std    : 8.824308354582494e-07
+  Range  : 2.908447413574322e-06
+  Max    : 1.4621163018091465e-06
+  Min    : -1.4463311117651756e-06
+  Median : 1.3665388109984633e-07
+  Stimuli: [37208, 81565, 92863, 183170, 206474, 218335, 306864, 345819, 357011, 359208, 373493, 490737, 508594, 572006, 573307, 620484, 641860, 734031, 738193, 761944, 772908, 786140, 829992, 852295, 905279, 932267, 949589, 974490, 979464, 1014311, 1037196, 1141150, 1188390, 1223816, 1363929, 1385020, 1398645, 1417562, 1434688, 1457482, 1476338, 1517943, 1569168, 1644380, 1669742, 1680819, 1882293, 1915589, 1925732, 1952388, 1964145, 2026428, 2037657, 2058014, 2110118, 2151802, 2232184, 2235280, 2293392, 2430688, 2481357, 2483635, 2532706, 2613791, 2627531, 2634821, 2642156, 2656189, 2678899, 2688390, 2714568, 2732172, 2739749, 2748928, 2752931]
+
+Summary Statistics for examples-targets condition (n = 3)
+============================================================
+  Mean   : 0.07469133039315541
+  Std    : 0.001454296720139506
+  Range  : 0.003166377544403076
+  Max    : 0.07674568146467209
+  Min    : 0.07357930392026901
+  Median : 0.07374900579452515
+  Stimuli: [1013073, 1068459, 1170874]
+
+Summary Statistics for examples-distractors condition (n = 3)
+============================================================
+  Mean   : -1.2832102432488077e-07
+  Std    : 5.506352359017411e-07
+  Range  : 1.2457280718081165e-06
+  Max    : 6.438069135583646e-07
+  Min    : -6.019211582497519e-07
+  Median : -4.26848828283255e-07
+  Stimuli: [327878, 2221193, 2596030]
+
+Summary Statistics for all-targets-examples-excluded condition (n = 150)
+============================================================
+  Mean   : 0.07637606064478557
+  Std    : 0.0041483818705541
+  Range  : 0.01796654611825943
+  Max    : 0.0897955372929573
+  Min    : 0.07182899117469788
+  Median : 0.0749194361269474
+  Stimuli: [57323, 70268, 85846, 114047, 136225, 174063, 220888, 228039, 278693, 285679, 307667, 316479, 316844, 336879, 348468, 363509, 364351, 373632, 387803, 420247, 422894, 453740, 493162, 555218, 560901, 565106, 582260, 599911, 604400, 645519, 649763, 672474, 713331, 715578, 734996, 753336, 763786, 765296, 773375, 776060, 795255, 843706, 854076, 859837, 864881, 880192, 887383, 919673, 928846, 939226, 972268, 980219, 989219, 996967, 1020896, 1023517, 1026298, 1031051, 1035922, 1052296, 1070620, 1071791, 1080917, 1083401, 1087200, 1120914, 1122312, 1167302, 1176635, 1183273, 1206697, 1260648, 1292805, 1351187, 1354153, 1365141, 1388877, 1393617, 1413836, 1431583, 1449140, 1454097, 1467244, 1504963, 1518581, 1527468, 1529788, 1540036, 1558509, 1562564, 1598027, 1627824, 1655002, 1661424, 1693405, 1741415, 1847001, 1861034, 1877264, 1911778, 1925454, 1934100, 1935746, 1937144, 1939306, 1960228, 1990540, 2006996, 2023641, 2040140, 2042729, 2043023, 2062247, 2072864, 2097989, 2106752, 2122702, 2133753, 2164437, 2171626, 2176301, 2179711, 2180344, 2201520, 2205246, 2214535, 2237789, 2240042, 2271430, 2291108, 2296881, 2309250, 2309968, 2315211, 2328724, 2351871, 2364074, 2386797, 2403891, 2428902, 2458981, 2498544, 2537537, 2625527, 2698039, 2728431, 2736202, 2757753, 2763405, 2776393]
+
+Summary Statistics for all-distractors-examples-excluded condition (n = 150)
+============================================================
+  Mean   : 1.2760708630802735e-07
+  Std    : 8.823858597103236e-07
+  Range  : 2.950984935523593e-06
+  Max    : 1.4621163018091465e-06
+  Min    : -1.4888686337144463e-06
+  Median : 1.4193143726970447e-07
+  Stimuli: [23047, 29940, 37208, 81565, 92863, 92894, 120074, 124561, 183170, 206474, 218335, 240125, 306864, 326000, 345819, 357011, 359208, 368411, 373493, 387555, 409102, 425479, 467077, 470659, 473595, 480499, 487604, 490000, 490737, 504508, 508594, 572006, 573307, 620484, 641860, 671378, 678636, 684812, 706653, 709477, 734031, 738193, 750984, 755761, 761944, 772908, 786140, 795524, 806711, 829992, 848598, 852295, 905279, 932267, 949589, 970558, 974490, 979464, 981114, 1014311, 1037196, 1042932, 1093240, 1129367, 1138362, 1141150, 1143429, 1150477, 1150777, 1166721, 1174701, 1175276, 1188390, 1223816, 1266978, 1275389, 1363929, 1385020, 1398645, 1417562, 1434688, 1457482, 1476338, 1482358, 1497510, 1517943, 1569168, 1626495, 1641534, 1644380, 1669742, 1680819, 1694719, 1699423, 1786634, 1822852, 1876022, 1882293, 1909149, 1915589, 1925732, 1931522, 1952388, 1964145, 1993781, 2026428, 2037657, 2054667, 2058014, 2061058, 2068625, 2086544, 2110118, 2151802, 2232184, 2235280, 2244945, 2281855, 2293392, 2360371, 2361188, 2379956, 2392806, 2430688, 2449918, 2481357, 2483635, 2488289, 2489849, 2496483, 2515674, 2529157, 2532706, 2549059, 2555744, 2613791, 2627531, 2634821, 2642156, 2656189, 2678899, 2688390, 2714568, 2732172, 2739749, 2748928, 2749230, 2752931, 2760972, 2761256]
+
+Summary Statistics for all-targets-examples-included condition (n = 153)
+============================================================
+  Mean   : 0.07634302671828301
+  Std    : 0.0041191833592726735
+  Range  : 0.01796654611825943
+  Max    : 0.0897955372929573
+  Min    : 0.07182899117469788
+  Median : 0.07483497262001038
+  Stimuli: [57323, 70268, 85846, 114047, 136225, 174063, 220888, 228039, 278693, 285679, 307667, 316479, 316844, 336879, 348468, 363509, 364351, 373632, 387803, 420247, 422894, 453740, 493162, 555218, 560901, 565106, 582260, 599911, 604400, 645519, 649763, 672474, 713331, 715578, 734996, 753336, 763786, 765296, 773375, 776060, 795255, 843706, 854076, 859837, 864881, 880192, 887383, 919673, 928846, 939226, 972268, 980219, 989219, 996967, 1013073, 1020896, 1023517, 1026298, 1031051, 1035922, 1052296, 1068459, 1070620, 1071791, 1080917, 1083401, 1087200, 1120914, 1122312, 1167302, 1170874, 1176635, 1183273, 1206697, 1260648, 1292805, 1351187, 1354153, 1365141, 1388877, 1393617, 1413836, 1431583, 1449140, 1454097, 1467244, 1504963, 1518581, 1527468, 1529788, 1540036, 1558509, 1562564, 1598027, 1627824, 1655002, 1661424, 1693405, 1741415, 1847001, 1861034, 1877264, 1911778, 1925454, 1934100, 1935746, 1937144, 1939306, 1960228, 1990540, 2006996, 2023641, 2040140, 2042729, 2043023, 2062247, 2072864, 2097989, 2106752, 2122702, 2133753, 2164437, 2171626, 2176301, 2179711, 2180344, 2201520, 2205246, 2214535, 2237789, 2240042, 2271430, 2291108, 2296881, 2309250, 2309968, 2315211, 2328724, 2351871, 2364074, 2386797, 2403891, 2428902, 2458981, 2498544, 2537537, 2625527, 2698039, 2728431, 2736202, 2757753, 2763405, 2776393]
+
+Summary Statistics for all-distractors-examples-included condition (n = 153)
+============================================================
+  Mean   : 1.2258888806032326e-07
+  Std    : 8.778053553246537e-07
+  Range  : 2.950984935523593e-06
+  Max    : 1.4621163018091465e-06
+  Min    : -1.4888686337144463e-06
+  Median : 1.3665388109984633e-07
+  Stimuli: [23047, 29940, 37208, 81565, 92863, 92894, 120074, 124561, 183170, 206474, 218335, 240125, 306864, 326000, 327878, 345819, 357011, 359208, 368411, 373493, 387555, 409102, 425479, 467077, 470659, 473595, 480499, 487604, 490000, 490737, 504508, 508594, 572006, 573307, 620484, 641860, 671378, 678636, 684812, 706653, 709477, 734031, 738193, 750984, 755761, 761944, 772908, 786140, 795524, 806711, 829992, 848598, 852295, 905279, 932267, 949589, 970558, 974490, 979464, 981114, 1014311, 1037196, 1042932, 1093240, 1129367, 1138362, 1141150, 1143429, 1150477, 1150777, 1166721, 1174701, 1175276, 1188390, 1223816, 1266978, 1275389, 1363929, 1385020, 1398645, 1417562, 1434688, 1457482, 1476338, 1482358, 1497510, 1517943, 1569168, 1626495, 1641534, 1644380, 1669742, 1680819, 1694719, 1699423, 1786634, 1822852, 1876022, 1882293, 1909149, 1915589, 1925732, 1931522, 1952388, 1964145, 1993781, 2026428, 2037657, 2054667, 2058014, 2061058, 2068625, 2086544, 2110118, 2151802, 2221193, 2232184, 2235280, 2244945, 2281855, 2293392, 2360371, 2361188, 2379956, 2392806, 2430688, 2449918, 2481357, 2483635, 2488289, 2489849, 2496483, 2515674, 2529157, 2532706, 2549059, 2555744, 2596030, 2613791, 2627531, 2634821, 2642156, 2656189, 2678899, 2688390, 2714568, 2732172, 2739749, 2748928, 2749230, 2752931, 2760972, 2761256]
+
+------------------------------------------------------------
+Output folder file counts:
+  examples/targets: 3 files
+  examples/distractors: 3 files
+  full_sentence/targets: 75 files
+  full_sentence/distractors: 75 files
+  imagined_sentence/targets: 75 files
+  imagined_sentence/distractors: 75 files
+
+------------------------------------------------------------
+Cross-check: No stimulus appears in multiple sub-folders
+  ** CONFIRMED: No overlapping stimuli between any sub-folders **
+
+  Total unique targets    : 153  (expected 153)
+  Total unique distractors: 153  (expected 153)
+  ** CONFIRMED: All 153 targets and 153 distractors accounted for **
+
+------------------------------------------------------------
+Optimiser Balance Report (full_sentence vs imagined_sentence):
+
+  Targets:
+    full_sentence      : n= 75  min=0.0718601421  max=0.0897955373  mean=0.0763760432  median=0.0748349726
+    imagined_sentence  : n= 75  min=0.0718289912  max=0.0882624686  mean=0.0763760781  median=0.0750038996
+    Squared-diff cost  : 2.38e-06
+
+  Distractors:
+    full_sentence      : n= 75  min=-0.0000014889  max=0.0000014392  mean=0.0000001276  median=0.0000001472
+    imagined_sentence  : n= 75  min=-0.0000014463  max=0.0000014621  mean=0.0000001276  median=0.0000001367
+    Squared-diff cost  : 2.45e-15
+
+[STEP 6 COMPLETE]
+
+================================================================================
+STEP 7: RMS Normalisation
+================================================================================
+  Stimulus WAV files to normalise: 306
+  Requested target RMS   : -23.00 dBFS
+  Max safe target RMS    : -5.95 dBFS
+  Using target RMS       : -23.00 dBFS (no clipping)
+
+
+  Normalised 306 files in-place.
+
+[STEP 7 COMPLETE]
+
+================================================================================
+STEP 8: Final Gain Verification (check_audio_gain)
+================================================================================
+
+  Found 306 WAV files in audio_stimuli_158/
+
+  File                                                      RMS(dB)  Peak(dB)     SR
+  ----------------------------------------------------------------------------------
+  examples\distractors\2221193.wav                           -23.00    -18.11   8000
+  examples\distractors\2596030.wav                           -23.00    -18.24   8000
+  examples\distractors\327878.wav                            -23.00    -18.14   8000
+  examples\targets\1013073.wav                               -23.00    -18.23   8000
+  examples\targets\1068459.wav                               -23.00    -18.05   8000
+  examples\targets\1170874.wav                               -23.00    -18.20   8000
+  full_sentence\distractors\1042932.wav                      -23.00    -18.27   8000
+  full_sentence\distractors\1093240.wav                      -23.00    -18.21   8000
+  full_sentence\distractors\1129367.wav                      -23.00    -18.21   8000
+  full_sentence\distractors\1138362.wav                      -23.00    -18.22   8000
+  full_sentence\distractors\1143429.wav                      -23.00    -18.27   8000
+  full_sentence\distractors\1150477.wav                      -23.00    -18.17   8000
+  full_sentence\distractors\1150777.wav                      -23.00    -18.20   8000
+  full_sentence\distractors\1166721.wav                      -23.00    -18.19   8000
+  full_sentence\distractors\1174701.wav                      -23.00    -18.16   8000
+  full_sentence\distractors\1175276.wav                      -23.00    -18.17   8000
+  full_sentence\distractors\120074.wav                       -23.00    -18.29   8000
+  full_sentence\distractors\124561.wav                       -23.00    -18.17   8000
+  full_sentence\distractors\1266978.wav                      -23.00    -18.16   8000
+  full_sentence\distractors\1275389.wav                      -23.00    -18.18   8000
+  full_sentence\distractors\1482358.wav                      -23.00    -18.12   8000
+  full_sentence\distractors\1497510.wav                      -23.00    -18.24   8000
+  full_sentence\distractors\1626495.wav                      -23.00    -18.27   8000
+  full_sentence\distractors\1641534.wav                      -23.00    -18.12   8000
+  full_sentence\distractors\1694719.wav                      -23.00    -18.18   8000
+  full_sentence\distractors\1699423.wav                      -23.00    -18.29   8000
+  full_sentence\distractors\1786634.wav                      -23.00    -18.31   8000
+  full_sentence\distractors\1822852.wav                      -23.00    -18.30   8000
+  full_sentence\distractors\1876022.wav                      -23.00    -18.35   8000
+  full_sentence\distractors\1909149.wav                      -23.00    -18.05   8000
+  full_sentence\distractors\1931522.wav                      -23.00    -18.39   8000
+  full_sentence\distractors\1993781.wav                      -23.00    -18.24   8000
+  full_sentence\distractors\2054667.wav                      -23.00    -18.25   8000
+  full_sentence\distractors\2061058.wav                      -23.00    -18.31   8000
+  full_sentence\distractors\2068625.wav                      -23.00    -18.32   8000
+  full_sentence\distractors\2086544.wav                      -23.00    -18.38   8000
+  full_sentence\distractors\2244945.wav                      -23.00    -18.23   8000
+  full_sentence\distractors\2281855.wav                      -23.00    -18.19   8000
+  full_sentence\distractors\23047.wav                        -23.00    -18.20   8000
+  full_sentence\distractors\2360371.wav                      -23.00    -18.22   8000
+  full_sentence\distractors\2361188.wav                      -23.00    -18.15   8000
+  full_sentence\distractors\2379956.wav                      -23.00    -18.26   8000
+  full_sentence\distractors\2392806.wav                      -23.00    -18.17   8000
+  full_sentence\distractors\240125.wav                       -23.00    -18.11   8000
+  full_sentence\distractors\2449918.wav                      -23.00    -18.36   8000
+  full_sentence\distractors\2488289.wav                      -23.00    -18.12   8000
+  full_sentence\distractors\2489849.wav                      -23.00    -18.18   8000
+  full_sentence\distractors\2496483.wav                      -23.00    -18.20   8000
+  full_sentence\distractors\2515674.wav                      -23.00    -18.26   8000
+  full_sentence\distractors\2529157.wav                      -23.00    -18.24   8000
+  full_sentence\distractors\2549059.wav                      -23.00    -18.19   8000
+  full_sentence\distractors\2555744.wav                      -23.00    -18.17   8000
+  full_sentence\distractors\2749230.wav                      -23.00    -18.24   8000
+  full_sentence\distractors\2760972.wav                      -23.00    -18.16   8000
+  full_sentence\distractors\2761256.wav                      -23.00    -18.28   8000
+  full_sentence\distractors\29940.wav                        -23.00    -18.13   8000
+  full_sentence\distractors\326000.wav                       -23.00    -18.18   8000
+  full_sentence\distractors\368411.wav                       -23.00    -18.26   8000
+  full_sentence\distractors\387555.wav                       -23.00    -18.12   8000
+  full_sentence\distractors\409102.wav                       -23.00    -18.13   8000
+  full_sentence\distractors\425479.wav                       -23.00    -18.31   8000
+  full_sentence\distractors\467077.wav                       -23.00    -18.34   8000
+  full_sentence\distractors\470659.wav                       -23.00    -18.19   8000
+  full_sentence\distractors\473595.wav                       -23.00    -18.18   8000
+  full_sentence\distractors\480499.wav                       -23.00    -18.15   8000
+  full_sentence\distractors\487604.wav                       -23.00    -18.29   8000
+  full_sentence\distractors\490000.wav                       -23.00    -18.28   8000
+  full_sentence\distractors\504508.wav                       -23.00    -18.35   8000
+  full_sentence\distractors\671378.wav                       -23.00    -18.22   8000
+  full_sentence\distractors\678636.wav                       -23.00    -18.25   8000
+  full_sentence\distractors\684812.wav                       -23.00    -18.35   8000
+  full_sentence\distractors\706653.wav                       -23.00    -18.34   8000
+  full_sentence\distractors\709477.wav                       -23.00    -18.26   8000
+  full_sentence\distractors\750984.wav                       -23.00    -18.36   8000
+  full_sentence\distractors\755761.wav                       -23.00    -18.13   8000
+  full_sentence\distractors\795524.wav                       -23.00    -18.22   8000
+  full_sentence\distractors\806711.wav                       -23.00    -18.36   8000
+  full_sentence\distractors\848598.wav                       -23.00    -18.19   8000
+  full_sentence\distractors\92894.wav                        -23.00    -18.15   8000
+  full_sentence\distractors\970558.wav                       -23.00    -18.33   8000
+  full_sentence\distractors\981114.wav                       -23.00    -18.19   8000
+  full_sentence\targets\1031051.wav                          -23.00    -18.15   8000
+  full_sentence\targets\1035922.wav                          -23.00    -18.24   8000
+  full_sentence\targets\1052296.wav                          -23.00    -18.21   8000
+  full_sentence\targets\1071791.wav                          -23.00    -18.19   8000
+  full_sentence\targets\1080917.wav                          -23.00    -18.36   8000
+  full_sentence\targets\1087200.wav                          -23.00    -18.27   8000
+  full_sentence\targets\1122312.wav                          -23.00    -18.13   8000
+  full_sentence\targets\1167302.wav                          -23.00    -18.19   8000
+  full_sentence\targets\1176635.wav                          -23.00    -18.28   8000
+  full_sentence\targets\1183273.wav                          -23.00    -18.26   8000
+  full_sentence\targets\1292805.wav                          -23.00    -18.27   8000
+  full_sentence\targets\1351187.wav                          -23.00    -18.35   8000
+  full_sentence\targets\1354153.wav                          -23.00    -18.27   8000
+  full_sentence\targets\136225.wav                           -23.00    -18.32   8000
+  full_sentence\targets\1393617.wav                          -23.00    -18.28   8000
+  full_sentence\targets\1413836.wav                          -23.00    -18.18   8000
+  full_sentence\targets\1467244.wav                          -23.00    -18.35   8000
+  full_sentence\targets\1504963.wav                          -23.00    -18.13   8000
+  full_sentence\targets\1527468.wav                          -23.00    -18.25   8000
+  full_sentence\targets\1540036.wav                          -23.00    -18.18   8000
+  full_sentence\targets\1741415.wav                          -23.00    -18.23   8000
+  full_sentence\targets\1847001.wav                          -23.00    -18.38   8000
+  full_sentence\targets\1861034.wav                          -23.00    -18.31   8000
+  full_sentence\targets\1911778.wav                          -23.00    -18.24   8000
+  full_sentence\targets\1934100.wav                          -23.00    -18.28   8000
+  full_sentence\targets\1939306.wav                          -23.00    -18.28   8000
+  full_sentence\targets\1960228.wav                          -23.00    -18.24   8000
+  full_sentence\targets\1990540.wav                          -23.00    -18.17   8000
+  full_sentence\targets\2006996.wav                          -23.00    -18.19   8000
+  full_sentence\targets\2040140.wav                          -23.00    -18.28   8000
+  full_sentence\targets\2043023.wav                          -23.00    -18.22   8000
+  full_sentence\targets\2072864.wav                          -23.00    -18.24   8000
+  full_sentence\targets\2097989.wav                          -23.00    -18.08   8000
+  full_sentence\targets\2122702.wav                          -23.00    -18.18   8000
+  full_sentence\targets\2133753.wav                          -23.00    -18.13   8000
+  full_sentence\targets\2164437.wav                          -23.00    -18.18   8000
+  full_sentence\targets\2176301.wav                          -23.00    -18.22   8000
+  full_sentence\targets\2201520.wav                          -23.00    -18.21   8000
+  full_sentence\targets\2205246.wav                          -23.00    -18.25   8000
+  full_sentence\targets\220888.wav                           -23.00    -18.33   8000
+  full_sentence\targets\2214535.wav                          -23.00    -18.15   8000
+  full_sentence\targets\2240042.wav                          -23.00    -18.11   8000
+  full_sentence\targets\2271430.wav                          -23.00    -18.18   8000
+  full_sentence\targets\2291108.wav                          -23.00    -18.33   8000
+  full_sentence\targets\2315211.wav                          -23.00    -18.20   8000
+  full_sentence\targets\2386797.wav                          -23.00    -18.13   8000
+  full_sentence\targets\2428902.wav                          -23.00    -18.24   8000
+  full_sentence\targets\2458981.wav                          -23.00    -18.35   8000
+  full_sentence\targets\2537537.wav                          -23.00    -18.24   8000
+  full_sentence\targets\2625527.wav                          -23.00    -18.29   8000
+  full_sentence\targets\2698039.wav                          -23.00    -18.25   8000
+  full_sentence\targets\2736202.wav                          -23.00    -18.34   8000
+  full_sentence\targets\2757753.wav                          -23.00    -18.18   8000
+  full_sentence\targets\2776393.wav                          -23.00    -18.27   8000
+  full_sentence\targets\278693.wav                           -23.00    -18.12   8000
+  full_sentence\targets\285679.wav                           -23.00    -18.16   8000
+  full_sentence\targets\307667.wav                           -23.00    -18.30   8000
+  full_sentence\targets\316844.wav                           -23.00    -18.22   8000
+  full_sentence\targets\336879.wav                           -23.00    -18.31   8000
+  full_sentence\targets\387803.wav                           -23.00    -18.13   8000
+  full_sentence\targets\555218.wav                           -23.00    -18.23   8000
+  full_sentence\targets\560901.wav                           -23.00    -18.24   8000
+  full_sentence\targets\565106.wav                           -23.00    -18.22   8000
+  full_sentence\targets\604400.wav                           -23.00    -18.16   8000
+  full_sentence\targets\649763.wav                           -23.00    -18.15   8000
+  full_sentence\targets\70268.wav                            -23.00    -18.24   8000
+  full_sentence\targets\734996.wav                           -23.00    -18.24   8000
+  full_sentence\targets\843706.wav                           -23.00    -18.19   8000
+  full_sentence\targets\85846.wav                            -23.00    -18.18   8000
+  full_sentence\targets\859837.wav                           -23.00    -18.24   8000
+  full_sentence\targets\880192.wav                           -23.00    -18.36   8000
+  full_sentence\targets\887383.wav                           -23.00    -18.25   8000
+  full_sentence\targets\928846.wav                           -23.00    -18.13   8000
+  full_sentence\targets\972268.wav                           -23.00    -18.27   8000
+  full_sentence\targets\996967.wav                           -23.00    -18.31   8000
+  imagined_sentence\distractors\1014311.wav                  -23.00    -18.24   8000
+  imagined_sentence\distractors\1037196.wav                  -23.00    -18.35   8000
+  imagined_sentence\distractors\1141150.wav                  -23.00    -18.26   8000
+  imagined_sentence\distractors\1188390.wav                  -23.00    -18.25   8000
+  imagined_sentence\distractors\1223816.wav                  -23.00    -18.25   8000
+  imagined_sentence\distractors\1363929.wav                  -23.00    -18.28   8000
+  imagined_sentence\distractors\1385020.wav                  -23.00    -18.10   8000
+  imagined_sentence\distractors\1398645.wav                  -23.00    -18.28   8000
+  imagined_sentence\distractors\1417562.wav                  -23.00    -18.23   8000
+  imagined_sentence\distractors\1434688.wav                  -23.00    -18.15   8000
+  imagined_sentence\distractors\1457482.wav                  -23.00    -18.23   8000
+  imagined_sentence\distractors\1476338.wav                  -23.00    -18.12   8000
+  imagined_sentence\distractors\1517943.wav                  -23.00    -18.22   8000
+  imagined_sentence\distractors\1569168.wav                  -23.00    -18.23   8000
+  imagined_sentence\distractors\1644380.wav                  -23.00    -18.37   8000
+  imagined_sentence\distractors\1669742.wav                  -23.00    -18.26   8000
+  imagined_sentence\distractors\1680819.wav                  -23.00    -18.17   8000
+  imagined_sentence\distractors\183170.wav                   -23.00    -18.16   8000
+  imagined_sentence\distractors\1882293.wav                  -23.00    -18.24   8000
+  imagined_sentence\distractors\1915589.wav                  -23.00    -18.40   8000
+  imagined_sentence\distractors\1925732.wav                  -23.00    -18.07   8000
+  imagined_sentence\distractors\1952388.wav                  -23.00    -18.27   8000
+  imagined_sentence\distractors\1964145.wav                  -23.00    -18.27   8000
+  imagined_sentence\distractors\2026428.wav                  -23.00    -18.15   8000
+  imagined_sentence\distractors\2037657.wav                  -23.00    -18.21   8000
+  imagined_sentence\distractors\2058014.wav                  -23.00    -18.17   8000
+  imagined_sentence\distractors\206474.wav                   -23.00    -18.19   8000
+  imagined_sentence\distractors\2110118.wav                  -23.00    -18.30   8000
+  imagined_sentence\distractors\2151802.wav                  -23.00    -18.18   8000
+  imagined_sentence\distractors\218335.wav                   -23.00    -18.17   8000
+  imagined_sentence\distractors\2232184.wav                  -23.00    -18.32   8000
+  imagined_sentence\distractors\2235280.wav                  -23.00    -18.16   8000
+  imagined_sentence\distractors\2293392.wav                  -23.00    -18.12   8000
+  imagined_sentence\distractors\2430688.wav                  -23.00    -18.21   8000
+  imagined_sentence\distractors\2481357.wav                  -23.00    -18.27   8000
+  imagined_sentence\distractors\2483635.wav                  -23.00    -18.25   8000
+  imagined_sentence\distractors\2532706.wav                  -23.00    -18.13   8000
+  imagined_sentence\distractors\2613791.wav                  -23.00    -18.24   8000
+  imagined_sentence\distractors\2627531.wav                  -23.00    -18.18   8000
+  imagined_sentence\distractors\2634821.wav                  -23.00    -18.24   8000
+  imagined_sentence\distractors\2642156.wav                  -23.00    -18.26   8000
+  imagined_sentence\distractors\2656189.wav                  -23.00    -18.25   8000
+  imagined_sentence\distractors\2678899.wav                  -23.00    -18.33   8000
+  imagined_sentence\distractors\2688390.wav                  -23.00    -18.29   8000
+  imagined_sentence\distractors\2714568.wav                  -23.00    -18.25   8000
+  imagined_sentence\distractors\2732172.wav                  -23.00    -18.16   8000
+  imagined_sentence\distractors\2739749.wav                  -23.00    -18.39   8000
+  imagined_sentence\distractors\2748928.wav                  -23.00    -18.26   8000
+  imagined_sentence\distractors\2752931.wav                  -23.00    -18.21   8000
+  imagined_sentence\distractors\306864.wav                   -23.00    -18.12   8000
+  imagined_sentence\distractors\345819.wav                   -23.00    -18.12   8000
+  imagined_sentence\distractors\357011.wav                   -23.00    -18.19   8000
+  imagined_sentence\distractors\359208.wav                   -23.00    -18.24   8000
+  imagined_sentence\distractors\37208.wav                    -23.00    -18.33   8000
+  imagined_sentence\distractors\373493.wav                   -23.00    -18.14   8000
+  imagined_sentence\distractors\490737.wav                   -23.00    -18.36   8000
+  imagined_sentence\distractors\508594.wav                   -23.00    -18.26   8000
+  imagined_sentence\distractors\572006.wav                   -23.00    -18.35   8000
+  imagined_sentence\distractors\573307.wav                   -23.00    -18.17   8000
+  imagined_sentence\distractors\620484.wav                   -23.00    -18.25   8000
+  imagined_sentence\distractors\641860.wav                   -23.00    -18.23   8000
+  imagined_sentence\distractors\734031.wav                   -23.00    -18.25   8000
+  imagined_sentence\distractors\738193.wav                   -23.00    -18.25   8000
+  imagined_sentence\distractors\761944.wav                   -23.00    -18.13   8000
+  imagined_sentence\distractors\772908.wav                   -23.00    -18.24   8000
+  imagined_sentence\distractors\786140.wav                   -23.00    -18.21   8000
+  imagined_sentence\distractors\81565.wav                    -23.00    -18.12   8000
+  imagined_sentence\distractors\829992.wav                   -23.00    -18.28   8000
+  imagined_sentence\distractors\852295.wav                   -23.00    -18.22   8000
+  imagined_sentence\distractors\905279.wav                   -23.00    -18.30   8000
+  imagined_sentence\distractors\92863.wav                    -23.00    -18.32   8000
+  imagined_sentence\distractors\932267.wav                   -23.00    -18.18   8000
+  imagined_sentence\distractors\949589.wav                   -23.00    -18.21   8000
+  imagined_sentence\distractors\974490.wav                   -23.00    -18.27   8000
+  imagined_sentence\distractors\979464.wav                   -23.00    -18.27   8000
+  imagined_sentence\targets\1020896.wav                      -23.00    -18.31   8000
+  imagined_sentence\targets\1023517.wav                      -23.00    -18.25   8000
+  imagined_sentence\targets\1026298.wav                      -23.00    -18.06   8000
+  imagined_sentence\targets\1070620.wav                      -23.00    -18.17   8000
+  imagined_sentence\targets\1083401.wav                      -23.00    -18.23   8000
+  imagined_sentence\targets\1120914.wav                      -23.00    -18.23   8000
+  imagined_sentence\targets\114047.wav                       -23.00    -18.34   8000
+  imagined_sentence\targets\1206697.wav                      -23.00    -18.29   8000
+  imagined_sentence\targets\1260648.wav                      -23.00    -18.14   8000
+  imagined_sentence\targets\1365141.wav                      -23.00    -18.21   8000
+  imagined_sentence\targets\1388877.wav                      -23.00    -18.32   8000
+  imagined_sentence\targets\1431583.wav                      -23.00    -18.21   8000
+  imagined_sentence\targets\1449140.wav                      -23.00    -18.18   8000
+  imagined_sentence\targets\1454097.wav                      -23.00    -18.16   8000
+  imagined_sentence\targets\1518581.wav                      -23.00    -18.32   8000
+  imagined_sentence\targets\1529788.wav                      -23.00    -18.14   8000
+  imagined_sentence\targets\1558509.wav                      -23.00    -18.22   8000
+  imagined_sentence\targets\1562564.wav                      -23.00    -18.22   8000
+  imagined_sentence\targets\1598027.wav                      -23.00    -18.22   8000
+  imagined_sentence\targets\1627824.wav                      -23.00    -18.27   8000
+  imagined_sentence\targets\1655002.wav                      -23.00    -18.24   8000
+  imagined_sentence\targets\1661424.wav                      -23.00    -18.23   8000
+  imagined_sentence\targets\1693405.wav                      -23.00    -18.26   8000
+  imagined_sentence\targets\174063.wav                       -23.00    -18.13   8000
+  imagined_sentence\targets\1877264.wav                      -23.00    -18.27   8000
+  imagined_sentence\targets\1925454.wav                      -23.00    -18.16   8000
+  imagined_sentence\targets\1935746.wav                      -23.00    -18.21   8000
+  imagined_sentence\targets\1937144.wav                      -23.00    -18.27   8000
+  imagined_sentence\targets\2023641.wav                      -23.00    -18.24   8000
+  imagined_sentence\targets\2042729.wav                      -23.00    -18.35   8000
+  imagined_sentence\targets\2062247.wav                      -23.00    -18.26   8000
+  imagined_sentence\targets\2106752.wav                      -23.00    -18.25   8000
+  imagined_sentence\targets\2171626.wav                      -23.00    -18.12   8000
+  imagined_sentence\targets\2179711.wav                      -23.00    -18.17   8000
+  imagined_sentence\targets\2180344.wav                      -23.00    -18.37   8000
+  imagined_sentence\targets\2237789.wav                      -23.00    -18.27   8000
+  imagined_sentence\targets\228039.wav                       -23.00    -18.39   8000
+  imagined_sentence\targets\2296881.wav                      -23.00    -18.24   8000
+  imagined_sentence\targets\2309250.wav                      -23.00    -18.30   8000
+  imagined_sentence\targets\2309968.wav                      -23.00    -18.22   8000
+  imagined_sentence\targets\2328724.wav                      -23.00    -18.29   8000
+  imagined_sentence\targets\2351871.wav                      -23.00    -18.29   8000
+  imagined_sentence\targets\2364074.wav                      -23.00    -18.13   8000
+  imagined_sentence\targets\2403891.wav                      -23.00    -18.15   8000
+  imagined_sentence\targets\2498544.wav                      -23.00    -18.10   8000
+  imagined_sentence\targets\2728431.wav                      -23.00    -18.22   8000
+  imagined_sentence\targets\2763405.wav                      -23.00    -18.23   8000
+  imagined_sentence\targets\316479.wav                       -23.00    -18.35   8000
+  imagined_sentence\targets\348468.wav                       -23.00    -18.13   8000
+  imagined_sentence\targets\363509.wav                       -23.00    -18.36   8000
+  imagined_sentence\targets\364351.wav                       -23.00    -18.19   8000
+  imagined_sentence\targets\373632.wav                       -23.00    -18.24   8000
+  imagined_sentence\targets\420247.wav                       -23.00    -18.17   8000
+  imagined_sentence\targets\422894.wav                       -23.00    -18.25   8000
+  imagined_sentence\targets\453740.wav                       -23.00    -18.25   8000
+  imagined_sentence\targets\493162.wav                       -23.00    -18.36   8000
+  imagined_sentence\targets\57323.wav                        -23.00    -18.34   8000
+  imagined_sentence\targets\582260.wav                       -23.00    -18.23   8000
+  imagined_sentence\targets\599911.wav                       -23.00    -18.35   8000
+  imagined_sentence\targets\645519.wav                       -23.00    -18.19   8000
+  imagined_sentence\targets\672474.wav                       -23.00    -18.23   8000
+  imagined_sentence\targets\713331.wav                       -23.00    -18.24   8000
+  imagined_sentence\targets\715578.wav                       -23.00    -18.24   8000
+  imagined_sentence\targets\753336.wav                       -23.00    -18.27   8000
+  imagined_sentence\targets\763786.wav                       -23.00    -18.31   8000
+  imagined_sentence\targets\765296.wav                       -23.00    -18.17   8000
+  imagined_sentence\targets\773375.wav                       -23.00    -18.13   8000
+  imagined_sentence\targets\776060.wav                       -23.00    -18.11   8000
+  imagined_sentence\targets\795255.wav                       -23.00    -18.27   8000
+  imagined_sentence\targets\854076.wav                       -23.00    -18.28   8000
+  imagined_sentence\targets\864881.wav                       -23.00    -18.15   8000
+  imagined_sentence\targets\919673.wav                       -23.00    -18.20   8000
+  imagined_sentence\targets\939226.wav                       -23.00    -18.19   8000
+  imagined_sentence\targets\980219.wav                       -23.00    -18.20   8000
+  imagined_sentence\targets\989219.wav                       -23.00    -18.24   8000
+
+  Stimulus files RMS summary:
+    Count      : 306
+    Min RMS    : -23.00 dB
+    Max RMS    : -23.00 dB
+    Mean RMS   : -23.00 dB
+    Std Dev    : 0.0000 dB
+    Spread     : 0.0002 dB
+
+    ** CONFIRMED: All stimulus files have identical RMS levels **
+
+[STEP 8 COMPLETE]
+
+================================================================================
+  PIPELINE COMPLETE
+  Finished: 2026-02-19T17:09:19.570242
+  Output: C:\Users\david\OneDrive\Desktop\Code\auditory-superstitious-perception\audio_stimuli_158
+================================================================================
