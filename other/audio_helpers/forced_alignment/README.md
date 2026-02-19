@@ -10,21 +10,42 @@ This folder contains scripts to compare word/phoneme boundary detection across m
 - **Cons**: Designed for transcription (not alignment), boundaries may be less precise
 - **Best for**: Quick analysis, when you don't have a transcript
 
-### 2. Montreal Forced Aligner (MFA) (Gold Standard)
+### 2. WhisperX (Better Whisper)
+- **What it is**: Enhanced Whisper with wav2vec2-based word alignment
+- **Pros**: More precise timing than vanilla Whisper, pip installable, GPU-accelerated
+- **Cons**: Requires additional models download, slightly more complex
+- **Best for**: When you want Whisper convenience with better alignment precision
+- **Website**: https://github.com/m-bain/whisperX
+
+### 3. Montreal Forced Aligner (MFA) (Gold Standard)
 - **What it is**: Purpose-built forced aligner used in phonetics research
 - **Pros**: Phoneme-level precision, actively maintained, well-documented
 - **Cons**: Requires conda, needs acoustic model download, steeper learning curve
 - **Best for**: Research papers, phonetic analysis, when precision matters
 - **Website**: https://montreal-forced-aligner.readthedocs.io/
 
-### 3. Gentle
+### 4. Gentle
 - **What it is**: Robust forced aligner built on Kaldi
 - **Pros**: Good accuracy, REST API available, handles disfluencies well
 - **Cons**: Requires Docker or complex local installation
 - **Best for**: Subtitle generation, when audio quality varies
 - **Website**: https://github.com/lowerquality/gentle
 
-### 4. Penn Phonetics Lab Forced Aligner (P2FA)
+### 5. NVIDIA NeMo (Research-Grade)
+- **What it is**: NVIDIA's conversational AI toolkit with CTC-based forced alignment
+- **Pros**: Production-quality, GPU-accelerated, actively developed by NVIDIA
+- **Cons**: Large installation (~2GB+), requires CUDA for best performance
+- **Best for**: When you need research-grade alignment with modern neural models
+- **Website**: https://docs.nvidia.com/deeplearning/nemo/
+
+### 6. WebMAUS (BAS - Gold Standard for Phonetics)
+- **What it is**: Web service from Bavarian Archive for Speech Signals, established in phonetics research
+- **Pros**: No installation needed (REST API), gold standard in phonetics literature, produces TextGrids
+- **Cons**: Requires internet, audio uploaded to external servers, rate limited
+- **Best for**: Phonetics research, when citing established methods, no local setup wanted
+- **Website**: https://clarin.phonetik.uni-muenchen.de/BASWebServices/
+
+### 7. Penn Phonetics Lab Forced Aligner (P2FA)
 - **What it is**: Classic forced aligner from UPenn, based on HTK
 - **Pros**: Well-established in literature, produces Praat TextGrids
 - **Cons**: Requires HTK license (free for non-commercial), older, Python 2 originally
@@ -43,6 +64,34 @@ pip install openai-whisper
 
 # For GPU acceleration (optional but recommended)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+### WhisperX (Better Alignment)
+
+```powershell
+# Install with pip (requires torch already installed)
+pip install whisperx
+```
+
+### NVIDIA NeMo (Research-Grade)
+
+```powershell
+# Full installation (large, ~2GB+)
+pip install nemo_toolkit[asr]
+
+# Or minimal installation
+pip install nemo_toolkit[asr] --no-deps
+pip install torch torchaudio omegaconf hydra-core pytorch-lightning
+```
+
+### WebMAUS (No Installation - Web Service)
+
+```powershell
+# No installation needed! Just ensure requests is installed:
+pip install requests
+
+# WebMAUS is a REST API - audio is uploaded to BAS servers (Germany)
+# For sensitive data, use local tools (MFA, Gentle) instead
 ```
 
 ### Montreal Forced Aligner (Recommended)
@@ -115,14 +164,26 @@ cd other\audio_helpers\forced_alignment
 python align_with_whisper.py
 ```
 
-### Step 2: Test with MFA (after conda setup)
+### Step 2: Test with WhisperX (better alignment than vanilla Whisper)
+
+```powershell
+python align_with_whisperx.py
+```
+
+### Step 3: Test with NeMo (NVIDIA research-grade)
+
+```powershell
+python align_with_nemo.py
+```
+
+### Step 4: Test with MFA (after conda setup)
 
 ```powershell
 conda activate mfa
 python align_with_mfa.py
 ```
 
-### Step 3: Test with Gentle (after Docker setup)
+### Step 5: Test with Gentle (after Docker setup)
 
 ```powershell
 # In one terminal, start Gentle:
@@ -132,7 +193,14 @@ docker run -p 8765:8765 lowerquality/gentle
 python align_with_gentle.py
 ```
 
-### Step 4: Compare all results
+### Step 6: Test with WebMAUS (no setup - web service)
+
+```powershell
+# Requires internet connection - audio uploaded to BAS servers
+python align_with_webmaus.py
+```
+
+### Step 7: Compare all results
 
 ```powershell
 python compare_alignments.py

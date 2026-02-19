@@ -25,8 +25,11 @@ RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 TOOL_DIRS = {
     "Whisper": os.path.join(RESULTS_DIR, "whisper"),
+    "WhisperX": os.path.join(RESULTS_DIR, "whisperx"),
     "Gentle": os.path.join(RESULTS_DIR, "gentle"),
     "MFA": os.path.join(RESULTS_DIR, "mfa"),
+    "NeMo": os.path.join(RESULTS_DIR, "nemo"),
+    "WebMAUS": os.path.join(RESULTS_DIR, "webmaus"),
 }
 
 # =============================================================================
