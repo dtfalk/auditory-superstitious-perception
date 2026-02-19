@@ -2,7 +2,9 @@
 **/__pycache__
 **/venv
 **/old-code
-**/.last_*
+**/**last_*
 **/testing
 **/scales
 **/analysis
+**/copy_folder
+**/audio_stimuli_old
