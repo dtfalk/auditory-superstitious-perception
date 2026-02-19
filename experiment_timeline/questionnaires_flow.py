@@ -935,6 +935,25 @@ def _run_recall_questions(subject_number: str, win: pg.Surface) -> None:
     if experience_response:
         screen_logger.log_event('text_submitted', 'listening_experience')
     
+    # Question 4: Technical issues
+    text_input_technical = TextInput(
+        screen,
+        mode=InputMode.ALPHANUMERIC_SPACES,
+        placeholder="Type your answer here...",
+    )
+    technical_response = text_input_technical.run(
+        prompt=(
+            "Did you experience any **technical issues** during this experiment "
+            "that may have affected your performance or attention? "
+            "This could include audio glitches, software errors, "
+            "equipment malfunctions, environmental disturbances, "
+            "or any other factors that interfered with your ability to complete the task.\n\n"
+            "If not, simply type **none**. If so, please describe the nature of the disturbance, how often they occurred, and the degree to which it affected your ability to engage with the experiment.\n\n**Response**"
+        )
+    )
+    if technical_response:
+        screen_logger.log_event('text_submitted', 'technical_issues')
+    
     # Save event log
     screen_logger.save()
     
@@ -955,6 +974,11 @@ def _run_recall_questions(subject_number: str, win: pg.Surface) -> None:
     exp_path = os.path.join(results_dir, f'listening_experience_{subject_number}.txt')
     with open(exp_path, 'w') as f:
         f.write(experience_response or '')
+    
+    # Save technical issues as separate .txt
+    tech_path = os.path.join(results_dir, f'technical_issues_{subject_number}.txt')
+    with open(tech_path, 'w') as f:
+        f.write(technical_response or '')
 
 
 # =============================================================================
@@ -1001,13 +1025,13 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
                     waiting = False
     
     # Run all questionnaires
-    # _flow_state_scale(subject_number, win)
-    # _tellegen(subject_number, win)
+    _flow_state_scale(subject_number, win)
+    _tellegen(subject_number, win)
     _vhq(subject_number, win)
-    # _launay_slade(subject_number, win)
-    # _dissociative_experiences(subject_number, win)
-    # _bais_v(subject_number, win)
-    # _bais_c(subject_number, win)
+    _launay_slade(subject_number, win)
+    _dissociative_experiences(subject_number, win)
+    _bais_v(subject_number, win)
+    _bais_c(subject_number, win)
     
     # Text response screens for recall
     _run_recall_questions(subject_number, win)
