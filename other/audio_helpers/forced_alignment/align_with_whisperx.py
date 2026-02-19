@@ -5,19 +5,26 @@ WhisperX enhances OpenAI's Whisper with wav2vec2-based word alignment,
 providing more precise word boundaries than vanilla Whisper.
 
 =============================================================================
-INSTALLATION
+FULL SETUP (run these commands in order)
 =============================================================================
 
-pip install whisperx
+1. Create conda environment:
+    conda create -n whisperx python=3.10 -y
 
-Note: Requires PyTorch. If you already have torch installed for Whisper,
-WhisperX should work. Otherwise:
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+2. Activate it:
+    conda activate whisperx
 
-=============================================================================
+3. Install PyTorch with CUDA 11.8:
+    conda install pytorch torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
 
-Usage:
+4. Install WhisperX:
+    pip install whisperx
+
+5. Run the script:
+    cd other\audio_helpers\forced_alignment
     python align_with_whisperx.py
+
+=============================================================================
 """
 
 import os
@@ -38,7 +45,7 @@ except ImportError:
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 5  # Number of times to run alignment
+N_RUNS = 10  # Number of times to run alignment
 TARGET_WORD = "wall"
 MODEL_SIZE = "base"  # "tiny", "base", "small", "medium", "large-v2"
 
@@ -68,7 +75,7 @@ def get_device():
 def load_models():
     """Load Whisper and alignment models."""
     device = get_device()
-    compute_type = "float16" if device == "cuda" else "int8"
+    compute_type = "float32" if device == "cuda" else "float32"
     
     print(f"\n  Loading WhisperX model: {MODEL_SIZE}")
     print(f"  Device: {device}, Compute type: {compute_type}")
@@ -237,7 +244,6 @@ def main():
     
     # Files to analyze
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):
@@ -266,29 +272,6 @@ def main():
         "all_runs": all_runs_fullsentence
     }
     save_results(summary, os.path.join(OUTPUT_DIR, "fullsentence_summary.json"))
-    
-    # Run alignments on targetwall
-    if os.path.exists(targetwall_path):
-        print(f"\n{'-'*70}")
-        print(f"  Analyzing: targetwall.wav ({N_RUNS} runs)")
-        print(f"{'-'*70}")
-        
-        all_runs_targetwall = run_multiple_alignments(
-            model, model_a, metadata, device, targetwall_path, N_RUNS, "targetwall"
-        )
-        
-        stats_targetwall = calculate_statistics(all_runs_targetwall)
-        print_statistics(stats_targetwall, "TARGETWALL.WAV - WITHIN-METHOD CONSISTENCY")
-        
-        summary_target = {
-            "tool": "whisperx",
-            "model": MODEL_SIZE,
-            "n_runs": N_RUNS,
-            "audio_file": "targetwall.wav",
-            "statistics": stats_targetwall,
-            "all_runs": all_runs_targetwall
-        }
-        save_results(summary_target, os.path.join(OUTPUT_DIR, "targetwall_summary.json"))
     
     print(f"\n{'='*70}")
     print(f"  WHISPERX ALIGNMENT COMPLETE")

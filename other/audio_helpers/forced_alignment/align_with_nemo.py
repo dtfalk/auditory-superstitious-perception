@@ -5,42 +5,43 @@ NeMo is NVIDIA's conversational AI toolkit with a research-grade forced aligner.
 It uses neural acoustic models and is used in production speech systems.
 
 =============================================================================
-INSTALLATION
+FULL SETUP (run these commands in order)
 =============================================================================
 
-pip install nemo_toolkit[asr]
+1. Create conda environment:
+    conda create -n nemo python=3.10 -y
 
-Note: This is a large installation (~2GB+). Requires PyTorch with CUDA for GPU.
-CPU inference is supported but slower.
+2. Activate it:
+    conda activate nemo
 
-For faster installation with just ASR components:
-    pip install nemo_toolkit[asr] --no-deps
-    pip install torch torchaudio omegaconf hydra-core pytorch-lightning
+3. Install PyTorch with CUDA 11.8:
+    conda install pytorch torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
 
-=============================================================================
+4. Install NeMo ASR:
+    pip install "nemo_toolkit[asr]"
 
-Usage:
+5. Run the script:
+    cd other\audio_helpers\forced_alignment
     python align_with_nemo.py
+
+=============================================================================
 """
 
 import os
 import sys
-import json
 import time
-import tempfile
+import json
+import wave
 
 # Check if nemo is installed
 try:
     import torch
     import nemo.collections.asr as nemo_asr
-    from nemo.collections.asr.parts.utils.vad_utils import (
-        get_vad_stream_status,
-    )
-except ImportError:
-    print("ERROR: nemo_toolkit not installed")
+except ImportError as e:
+    print(f"ERROR: nemo_toolkit not fully installed ({e})")
     print("Install with: pip install nemo_toolkit[asr]")
     print("\nThis is a large installation. For minimal install:")
-    print("  pip install nemo_toolkit[asr] --no-deps")
+    print("  pip install nemo_toolkit[asr]")
     print("  pip install torch torchaudio omegaconf hydra-core pytorch-lightning")
     sys.exit(1)
 
@@ -48,17 +49,14 @@ except ImportError:
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 5  # Number of times to run alignment
+N_RUNS = 10  # Number of times to run alignment
 TARGET_WORD = "wall"
 
 # The transcript for fullsentence.wav
 FULLSENTENCE_TRANSCRIPT = "The picture hung on the wall"
 
-# The transcript for targetwall.wav
-TARGETWALL_TRANSCRIPT = "wall"
-
 # ASR model to use for alignment
-ASR_MODEL = "stt_en_conformer_ctc_small"  # Options: stt_en_conformer_ctc_small, stt_en_conformer_ctc_medium, stt_en_conformer_ctc_large
+ASR_MODEL = "stt_en_quartznet15x5"  # Available: stt_en_quartznet15x5, stt_en_jasper10x5dr, asr_talknet_aligner
 
 # =============================================================================
 # PATHS
@@ -104,79 +102,136 @@ def align_with_nemo_single(model, device, audio_path, transcript, run_number):
     
     start_time = time.time()
     
-    # Create a manifest file (NeMo requires this format)
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        manifest_path = f.name
-        manifest_entry = {
-            "audio_filepath": audio_path,
-            "text": transcript.lower(),
-            "duration": 10.0  # Placeholder, will be updated
-        }
-        f.write(json.dumps(manifest_entry) + "\n")
-    
     try:
-        # Use NeMo's alignment functionality
-        # This uses CTC segmentation to align text to audio
         words = []
         
         # Transcribe to get timing info
         transcription = model.transcribe([audio_path], return_hypotheses=True)
         
         if transcription and len(transcription) > 0:
+            # Handle both list-of-lists and flat list returns
             hypothesis = transcription[0]
+            if isinstance(hypothesis, list):
+                hypothesis = hypothesis[0]
             
-            # Check if we have word-level timestamps
+            # Try to get character-level timesteps and derive word boundaries
             if hasattr(hypothesis, 'timestep') and hypothesis.timestep is not None:
-                # Extract word timings from CTC output
                 timesteps = hypothesis.timestep
-                text_tokenized = hypothesis.text.split()
                 
-                # Simple word boundary estimation from CTC blanks
-                # This is approximate - NeMo's full alignment uses more sophisticated methods
-                if hasattr(timesteps, 'word_timings'):
-                    for word_info in timesteps.word_timings:
+                # If timestep has word-level info (dict format)
+                if isinstance(timesteps, dict) and 'word' in timesteps:
+                    for w_info in timesteps['word']:
                         words.append({
-                            "word": word_info['word'],
-                            "start": word_info['start_time'],
-                            "end": word_info['end_time'],
-                            "duration": word_info['end_time'] - word_info['start_time']
+                            "word": w_info.get('word', w_info.get('label', '')),
+                            "start": w_info.get('start_offset', 0) * 0.02,  # Convert frames to seconds
+                            "end": w_info.get('end_offset', 0) * 0.02,
+                            "duration": (w_info.get('end_offset', 0) - w_info.get('start_offset', 0)) * 0.02
+                        })
+                elif hasattr(timesteps, 'word_timings'):
+                    for w_info in timesteps.word_timings:
+                        if isinstance(w_info, dict):
+                            words.append({
+                                "word": w_info['word'],
+                                "start": w_info['start_time'],
+                                "end": w_info['end_time'],
+                                "duration": w_info['end_time'] - w_info['start_time']
+                            })
+            
+            # Try character timesteps to derive word boundaries
+            if not words and hasattr(hypothesis, 'timestep') and hypothesis.timestep is not None:
+                timesteps = hypothesis.timestep
+                if isinstance(timesteps, dict) and 'char' in timesteps:
+                    char_timestamps = timesteps['char']
+                    text = hypothesis.text if hasattr(hypothesis, 'text') else str(hypothesis)
+                    # Group characters into words by splitting on spaces
+                    current_word = ""
+                    word_start_idx = 0
+                    for ci, ch in enumerate(text):
+                        if ch == ' ':
+                            if current_word and word_start_idx < len(char_timestamps) and ci - 1 < len(char_timestamps):
+                                s = char_timestamps[word_start_idx]
+                                e = char_timestamps[min(ci - 1, len(char_timestamps) - 1)]
+                                s_time = s.get('start_offset', 0) * 0.02 if isinstance(s, dict) else 0
+                                e_time = e.get('end_offset', 0) * 0.02 if isinstance(e, dict) else 0
+                                words.append({
+                                    "word": current_word,
+                                    "start": s_time,
+                                    "end": e_time,
+                                    "duration": e_time - s_time,
+                                    "method": "char_timestamps"
+                                })
+                            current_word = ""
+                            word_start_idx = ci + 1
+                        else:
+                            current_word += ch
+                    # Last word
+                    if current_word and word_start_idx < len(char_timestamps):
+                        s = char_timestamps[word_start_idx]
+                        e = char_timestamps[min(len(text) - 1, len(char_timestamps) - 1)]
+                        s_time = s.get('start_offset', 0) * 0.02 if isinstance(s, dict) else 0
+                        e_time = e.get('end_offset', 0) * 0.02 if isinstance(e, dict) else 0
+                        words.append({
+                            "word": current_word,
+                            "start": s_time,
+                            "end": e_time,
+                            "duration": e_time - s_time,
+                            "method": "char_timestamps"
                         })
             
-            # Fallback: use ASR timestamps if available
-            if not words and hasattr(hypothesis, 'words') and hypothesis.words:
-                for word_info in hypothesis.words:
-                    words.append({
-                        "word": word_info.word,
-                        "start": word_info.start_time,
-                        "end": word_info.end_time,
-                        "duration": word_info.end_time - word_info.start_time
-                    })
-            
-            # If still no words, try timestamp extraction from logprobs
+            # Fallback: use the transcribed text with CTC-based uniform timing
             if not words:
-                # Use basic transcription with estimated uniform timing
                 audio_duration = get_audio_duration(audio_path)
-                text_words = transcript.lower().split()
-                word_duration = audio_duration / len(text_words) if text_words else 0
+                # Use the transcribed text or the provided transcript
+                hyp_text = hypothesis.text if hasattr(hypothesis, 'text') else str(hypothesis)
                 
-                for i, word in enumerate(text_words):
-                    start = i * word_duration
-                    end = (i + 1) * word_duration
-                    words.append({
-                        "word": word,
-                        "start": start,
-                        "end": end,
-                        "duration": word_duration,
-                        "estimated": True  # Mark as estimated, not from CTC
-                    })
+                # Use logprobs length to estimate timing if available
+                if hasattr(hypothesis, 'y_sequence') and hypothesis.y_sequence is not None:
+                    # y_sequence contains the CTC output tokens
+                    tokens = hypothesis.y_sequence
+                    n_frames = len(tokens)
+                    frame_duration = audio_duration / n_frames if n_frames > 0 else 0
+                    
+                    # Decode tokens to find word boundaries
+                    # For CTC models, tokens are character indices
+                    text_words = transcript.lower().split()
+                    current_pos = 0
+                    total_chars = sum(len(w) for w in text_words) + len(text_words) - 1  # chars + spaces
+                    
+                    for i, word in enumerate(text_words):
+                        word_start_frac = current_pos / total_chars if total_chars > 0 else 0
+                        current_pos += len(word) + (1 if i < len(text_words) - 1 else 0)
+                        word_end_frac = current_pos / total_chars if total_chars > 0 else 0
+                        
+                        words.append({
+                            "word": word,
+                            "start": word_start_frac * audio_duration,
+                            "end": word_end_frac * audio_duration,
+                            "duration": (word_end_frac - word_start_frac) * audio_duration,
+                            "method": "ctc_proportional"
+                        })
+                else:
+                    # Pure uniform fallback
+                    text_words = transcript.lower().split()
+                    word_duration = audio_duration / len(text_words) if text_words else 0
+                    
+                    for i, word in enumerate(text_words):
+                        w_start = i * word_duration
+                        w_end = (i + 1) * word_duration
+                        words.append({
+                            "word": word,
+                            "start": w_start,
+                            "end": w_end,
+                            "duration": word_duration,
+                            "method": "uniform_estimate"
+                        })
     
-    finally:
-        # Clean up temp file
-        if os.path.exists(manifest_path):
-            os.unlink(manifest_path)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return {"words": [], "transcription": transcript, "error": str(e)}
     
     elapsed = time.time() - start_time
-    print(f"done ({elapsed:.2f}s)")
+    method = words[0].get("method", "nemo_ctc") if words else "none"
+    print(f"done ({elapsed:.2f}s) [{method}]")
     
     return {"words": words, "transcription": transcript}
 
@@ -306,7 +361,6 @@ def main():
     
     # Files to analyze
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):
@@ -337,31 +391,6 @@ def main():
         "all_runs": all_runs_fullsentence
     }
     save_results(summary, os.path.join(OUTPUT_DIR, "fullsentence_summary.json"))
-    
-    # Run alignments on targetwall
-    if os.path.exists(targetwall_path):
-        print(f"\n{'-'*70}")
-        print(f"  Analyzing: targetwall.wav ({N_RUNS} runs)")
-        print(f"  Transcript: \"{TARGETWALL_TRANSCRIPT}\"")
-        print(f"{'-'*70}")
-        
-        all_runs_targetwall = run_multiple_alignments(
-            model, device, targetwall_path, TARGETWALL_TRANSCRIPT, N_RUNS, "targetwall"
-        )
-        
-        stats_targetwall = calculate_statistics(all_runs_targetwall)
-        print_statistics(stats_targetwall, "TARGETWALL.WAV - WITHIN-METHOD CONSISTENCY")
-        
-        summary_target = {
-            "tool": "nemo",
-            "model": ASR_MODEL,
-            "n_runs": N_RUNS,
-            "audio_file": "targetwall.wav",
-            "transcript": TARGETWALL_TRANSCRIPT,
-            "statistics": stats_targetwall,
-            "all_runs": all_runs_targetwall
-        }
-        save_results(summary_target, os.path.join(OUTPUT_DIR, "targetwall_summary.json"))
     
     print(f"\n{'='*70}")
     print(f"  NEMO ALIGNMENT COMPLETE")

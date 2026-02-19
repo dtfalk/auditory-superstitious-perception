@@ -5,27 +5,24 @@ MFA is the gold standard for phonetic research. It provides phoneme-level
 alignment using acoustic models trained on speech corpora.
 
 =============================================================================
-INSTALLATION OPTIONS (choose one)
+FULL SETUP (run these commands in order)
 =============================================================================
 
-OPTION A - FAST (using mamba, ~5-10 min):
-    conda install -c conda-forge mamba
-    mamba create -n mfa -c conda-forge montreal-forced-aligner
+1. Create conda environment with MFA:
+    conda create -n mfa -c conda-forge montreal-forced-aligner -y
+
+2. Activate it:
     conda activate mfa
+
+3. Download the acoustic model and dictionary:
     mfa model download acoustic english_us_arpa
     mfa model download dictionary english_us_arpa
 
-OPTION B - STANDARD (using conda, can take 30-60+ min):
-    conda create -n mfa -c conda-forge montreal-forced-aligner
-    conda activate mfa
-    mfa model download acoustic english_us_arpa
-    mfa model download dictionary english_us_arpa
-
-=============================================================================
-
-Usage:
-    conda activate mfa
+4. Run the script:
+    cd other\audio_helpers\forced_alignment
     python align_with_mfa.py
+
+=============================================================================
 """
 
 import os
@@ -41,14 +38,11 @@ import re
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 5  # Number of times to run alignment
+N_RUNS = 10  # Number of times to run alignment
 TARGET_WORD = "wall"
 
 # The transcript for fullsentence.wav - EDIT THIS if different
 FULLSENTENCE_TRANSCRIPT = "The picture hung on the wall"
-
-# The transcript for targetwall.wav
-TARGETWALL_TRANSCRIPT = "wall"
 
 # =============================================================================
 # PATHS
@@ -324,7 +318,6 @@ def main():
     
     # Files to analyze
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):
@@ -354,30 +347,6 @@ def main():
         "all_runs": all_runs_fullsentence
     }
     save_results(summary, os.path.join(OUTPUT_DIR, "fullsentence_summary.json"))
-    
-    # Run alignments on targetwall
-    if os.path.exists(targetwall_path):
-        print(f"\n{'-'*70}")
-        print(f"  Analyzing: targetwall.wav ({N_RUNS} runs)")
-        print(f"  Transcript: \"{TARGETWALL_TRANSCRIPT}\"")
-        print(f"{'-'*70}")
-        
-        all_runs_targetwall = run_multiple_alignments(
-            targetwall_path, TARGETWALL_TRANSCRIPT, N_RUNS, "targetwall"
-        )
-        
-        stats_targetwall = calculate_statistics(all_runs_targetwall)
-        print_statistics(stats_targetwall, "TARGETWALL.WAV - WITHIN-METHOD CONSISTENCY")
-        
-        summary_target = {
-            "tool": "mfa",
-            "n_runs": N_RUNS,
-            "audio_file": "targetwall.wav",
-            "transcript": TARGETWALL_TRANSCRIPT,
-            "statistics": stats_targetwall,
-            "all_runs": all_runs_targetwall
-        }
-        save_results(summary_target, os.path.join(OUTPUT_DIR, "targetwall_summary.json"))
     
     print(f"\n{'='*70}")
     print(f"  MFA ALIGNMENT COMPLETE")

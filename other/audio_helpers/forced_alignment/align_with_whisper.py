@@ -5,11 +5,27 @@ Whisper is a general-purpose speech recognition model that can also provide
 word-level timestamps. It's the easiest tool to use but may be slightly less
 precise than purpose-built forced aligners.
 
-Installation:
+=============================================================================
+FULL SETUP (run these commands in order)
+=============================================================================
+
+1. Create conda environment:
+    conda create -n whisper python=3.10 -y
+
+2. Activate it:
+    conda activate whisper
+
+3. Install PyTorch with CUDA 11.8:
+    conda install pytorch torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
+
+4. Install Whisper:
     pip install openai-whisper
 
-For GPU acceleration (recommended):
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+5. Run the script:
+    cd other\audio_helpers\forced_alignment
+    python align_with_whisper.py
+
+=============================================================================
 """
 
 import os
@@ -29,7 +45,7 @@ except ImportError:
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 5  # Number of times to run alignment
+N_RUNS = 10  # Number of times to run alignment
 TARGET_WORD = "wall"
 MODEL_SIZE = "base"  # "tiny", "base", "small", "medium", "large"
 
@@ -53,7 +69,18 @@ def load_model():
     """Load Whisper model once."""
     print(f"\n  Loading Whisper model: {MODEL_SIZE}")
     print("  (First run will download the model, ~140MB for 'base')")
-    return whisper.load_model(MODEL_SIZE)
+    # Force CPU if CUDA isn't compatible (e.g. Blackwell sm_120 with CUDA 11.8 builds)
+    import torch
+    device = "cpu"
+    if torch.cuda.is_available():
+        try:
+            # Test if CUDA actually works with this GPU
+            torch.zeros(1).cuda()
+            device = "cuda"
+        except Exception:
+            print("  Note: CUDA available but GPU not compatible with this PyTorch build, using CPU")
+    print(f"  Device: {device}")
+    return whisper.load_model(MODEL_SIZE, device=device)
 
 
 def align_with_whisper_single(model, audio_path, run_number):
@@ -205,7 +232,6 @@ def main():
     
     # Files to analyze
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):
@@ -232,27 +258,6 @@ def main():
         "all_runs": all_runs_fullsentence
     }
     save_results(summary, os.path.join(OUTPUT_DIR, "fullsentence_summary.json"))
-    
-    # Run alignments on targetwall
-    if os.path.exists(targetwall_path):
-        print(f"\n{'-'*70}")
-        print(f"  Analyzing: targetwall.wav ({N_RUNS} runs)")
-        print(f"{'-'*70}")
-        
-        all_runs_targetwall = run_multiple_alignments(model, targetwall_path, N_RUNS, "targetwall")
-        
-        stats_targetwall = calculate_statistics(all_runs_targetwall)
-        print_statistics(stats_targetwall, "TARGETWALL.WAV - WITHIN-METHOD CONSISTENCY")
-        
-        summary_target = {
-            "tool": "whisper",
-            "model": MODEL_SIZE,
-            "n_runs": N_RUNS,
-            "audio_file": "targetwall.wav",
-            "statistics": stats_targetwall,
-            "all_runs": all_runs_targetwall
-        }
-        save_results(summary_target, os.path.join(OUTPUT_DIR, "targetwall_summary.json"))
     
     print(f"\n{'='*70}")
     print(f"  WHISPER ALIGNMENT COMPLETE")

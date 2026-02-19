@@ -4,14 +4,31 @@ Forced Alignment using Gentle - Multiple Runs Version
 Gentle is a robust forced aligner built on Kaldi. It handles disfluencies
 and various audio qualities well.
 
-Installation (Docker - recommended):
-    1. Install Docker Desktop: https://www.docker.com/products/docker-desktop
-    2. Pull Gentle image: docker pull lowerquality/gentle
-    3. Run Gentle server: docker run -p 8765:8765 lowerquality/gentle
+=============================================================================
+FULL SETUP (run these commands in order)
+=============================================================================
 
-Usage:
-    1. Start Gentle server (see above)
-    2. python align_with_gentle.py
+1. Install Docker Desktop (if not already installed):
+    https://www.docker.com/products/docker-desktop
+
+2. Pull and start the Gentle server:
+    docker pull lowerquality/gentle
+    docker run -p 8765:8765 lowerquality/gentle
+
+3. Create conda environment (in a separate terminal):
+    conda create -n gentle python=3.10 -y
+
+4. Activate it:
+    conda activate gentle
+
+5. Install dependencies:
+    pip install requests
+
+6. Run the script (while Docker container is running):
+    cd other\audio_helpers\forced_alignment
+    python align_with_gentle.py
+
+=============================================================================
 """
 
 import os
@@ -24,14 +41,11 @@ import requests
 # CONFIGURATION - EDIT THESE
 # =============================================================================
 
-N_RUNS = 5  # Number of times to run alignment
+N_RUNS = 10  # Number of times to run alignment
 TARGET_WORD = "wall"
 
 # The transcript for fullsentence.wav - EDIT THIS if different
 FULLSENTENCE_TRANSCRIPT = "The picture hung on the wall"
-
-# The transcript for targetwall.wav
-TARGETWALL_TRANSCRIPT = "wall"
 
 # Gentle server URL (default Docker configuration)
 GENTLE_URL = "http://localhost:8765/transcriptions"
@@ -247,7 +261,6 @@ def main():
     
     # Files to analyze
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):
@@ -276,29 +289,6 @@ def main():
         "all_runs": all_runs_fullsentence
     }
     save_results(summary, os.path.join(OUTPUT_DIR, "fullsentence_summary.json"))
-    
-    # Run alignments on targetwall
-    if os.path.exists(targetwall_path):
-        print(f"\n{'-'*70}")
-        print(f"  Analyzing: targetwall.wav ({N_RUNS} runs)")
-        print(f"{'-'*70}")
-        
-        all_runs_targetwall = run_multiple_alignments(
-            targetwall_path, TARGETWALL_TRANSCRIPT, N_RUNS, "targetwall"
-        )
-        
-        stats_targetwall = calculate_statistics(all_runs_targetwall)
-        print_statistics(stats_targetwall, "TARGETWALL.WAV - WITHIN-METHOD CONSISTENCY")
-        
-        summary_target = {
-            "tool": "gentle",
-            "n_runs": N_RUNS,
-            "audio_file": "targetwall.wav",
-            "transcript": TARGETWALL_TRANSCRIPT,
-            "statistics": stats_targetwall,
-            "all_runs": all_runs_targetwall
-        }
-        save_results(summary_target, os.path.join(OUTPUT_DIR, "targetwall_summary.json"))
     
     print(f"\n{'='*70}")
     print(f"  GENTLE ALIGNMENT COMPLETE")
