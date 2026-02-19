@@ -158,6 +158,153 @@ def step1_create_correlation_csvs(pearson_csv: Path, corr_csv_dir: Path, L):
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# STEP 7.5 — Verify reference WAV files (fullsentence, wall, fullsentenceminuswall)
+# ══════════════════════════════════════════════════════════════════════════
+def step7_5_verify_reference_wavs(wall_wav: Path, fullsentence_wav: Path,
+                                   fullsentenceminuswall_wav: Path, L):
+    """
+    Compare fullsentence and wall properties, and verify that
+    fullsentenceminuswall + wall == fullsentence (sample-exact match).
+    Run AFTER normalization to ensure all files have the same gain.
+    """
+    L.log("=" * 80)
+    L.log("STEP 7.5: Verify Reference WAV Files (Post-Normalization)")
+    L.log("=" * 80)
+    L.log()
+
+    all_ok = True
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Part A: Compare fullsentence and wall properties
+    # ─────────────────────────────────────────────────────────────────────
+    L.log("Part A: Comparing fullsentence and wall properties")
+    L.log("-" * 60)
+
+    wall_info = sf.info(str(wall_wav))
+    fs_info = sf.info(str(fullsentence_wav))
+    fsmw_info = sf.info(str(fullsentenceminuswall_wav))
+
+    # Log properties of all three files
+    for name, info in [("wall", wall_info),
+                       ("fullsentence", fs_info),
+                       ("fullsentenceminuswall", fsmw_info)]:
+        L.log(f"  {name}:")
+        L.log(f"    Sample rate : {int(info.samplerate)} Hz")
+        L.log(f"    Channels    : {info.channels}")
+        L.log(f"    Frames      : {info.frames}")
+        L.log(f"    Duration    : {info.frames / info.samplerate:.4f} s")
+        L.log(f"    Subtype     : {info.subtype}")
+        L.log()
+
+    # Check that all share the same audio properties (except frame count)
+    props_match = True
+    if wall_info.samplerate != fs_info.samplerate:
+        L.log(f"  MISMATCH: wall SR ({wall_info.samplerate}) != fullsentence SR ({fs_info.samplerate})")
+        props_match = False
+    if wall_info.channels != fs_info.channels:
+        L.log(f"  MISMATCH: wall channels ({wall_info.channels}) != fullsentence channels ({fs_info.channels})")
+        props_match = False
+    if wall_info.subtype != fs_info.subtype:
+        L.log(f"  MISMATCH: wall subtype ({wall_info.subtype}) != fullsentence subtype ({fs_info.subtype})")
+        props_match = False
+    if fsmw_info.samplerate != fs_info.samplerate:
+        L.log(f"  MISMATCH: fullsentenceminuswall SR ({fsmw_info.samplerate}) != fullsentence SR ({fs_info.samplerate})")
+        props_match = False
+    if fsmw_info.channels != fs_info.channels:
+        L.log(f"  MISMATCH: fullsentenceminuswall channels ({fsmw_info.channels}) != fullsentence channels ({fs_info.channels})")
+        props_match = False
+    if fsmw_info.subtype != fs_info.subtype:
+        L.log(f"  MISMATCH: fullsentenceminuswall subtype ({fsmw_info.subtype}) != fullsentence subtype ({fs_info.subtype})")
+        props_match = False
+
+    if props_match:
+        L.log("  ** CONFIRMED: All reference files share consistent audio properties (SR, channels, subtype) **")
+    else:
+        L.log("  ** WARNING: Property mismatches found — see above **")
+        all_ok = False
+    L.log()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Part B: Verify frame count relationship
+    # ─────────────────────────────────────────────────────────────────────
+    L.log("Part B: Verifying frame count relationship")
+    L.log("-" * 60)
+
+    expected_fs_frames = fsmw_info.frames + wall_info.frames
+    L.log(f"  fullsentenceminuswall frames : {fsmw_info.frames}")
+    L.log(f"  wall frames                  : {wall_info.frames}")
+    L.log(f"  Expected fullsentence frames : {expected_fs_frames}")
+    L.log(f"  Actual fullsentence frames   : {fs_info.frames}")
+
+    if fs_info.frames == expected_fs_frames:
+        L.log("  ** CONFIRMED: fullsentence frames == fullsentenceminuswall + wall frames **")
+    else:
+        diff = fs_info.frames - expected_fs_frames
+        L.log(f"  ** MISMATCH: Difference of {diff} frames **")
+        all_ok = False
+    L.log()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Part C: Verify sample-exact concatenation match
+    # ─────────────────────────────────────────────────────────────────────
+    L.log("Part C: Verifying sample-exact concatenation (fullsentenceminuswall + wall == fullsentence)")
+    L.log("-" * 60)
+
+    # Read all audio data
+    wall_data, _ = sf.read(str(wall_wav), dtype='int16')
+    fs_data, _ = sf.read(str(fullsentence_wav), dtype='int16')
+    fsmw_data, _ = sf.read(str(fullsentenceminuswall_wav), dtype='int16')
+
+    # Concatenate fullsentenceminuswall + wall
+    concat_data = np.concatenate([fsmw_data, wall_data])
+
+    L.log(f"  fullsentenceminuswall samples : {len(fsmw_data)}")
+    L.log(f"  wall samples                  : {len(wall_data)}")
+    L.log(f"  Concatenated samples          : {len(concat_data)}")
+    L.log(f"  fullsentence samples          : {len(fs_data)}")
+
+    if len(concat_data) != len(fs_data):
+        L.log(f"  ** MISMATCH: Sample count differs by {len(fs_data) - len(concat_data)} **")
+        all_ok = False
+    else:
+        # Compare sample values
+        if np.array_equal(concat_data, fs_data):
+            L.log("  ** CONFIRMED: Concatenation is sample-exact match with fullsentence **")
+        else:
+            # Find where differences occur
+            diff_mask = concat_data != fs_data
+            diff_count = np.sum(diff_mask)
+            diff_indices = np.where(diff_mask)[0]
+            first_diff = diff_indices[0] if len(diff_indices) > 0 else None
+            last_diff = diff_indices[-1] if len(diff_indices) > 0 else None
+
+            L.log(f"  ** MISMATCH: {diff_count} samples differ **")
+            L.log(f"     First difference at sample index: {first_diff}")
+            L.log(f"     Last difference at sample index : {last_diff}")
+
+            # Show a few sample values at the first difference
+            if first_diff is not None:
+                start = max(0, first_diff - 2)
+                end = min(len(concat_data), first_diff + 3)
+                L.log(f"     Concatenated values around diff: {concat_data[start:end].tolist()}")
+                L.log(f"     Fullsentence values around diff: {fs_data[start:end].tolist()}")
+
+            all_ok = False
+    L.log()
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Summary
+    # ─────────────────────────────────────────────────────────────────────
+    if all_ok:
+        L.log("  ** STEP 7.5 PASSED: All reference WAV verification checks passed **")
+    else:
+        L.log("  ** STEP 7.5 FAILED: One or more verification checks failed — see above **")
+
+    L.log("\n[STEP 7.5 COMPLETE]\n")
+    return all_ok
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # STEP 2 — Verify targets
 # ══════════════════════════════════════════════════════════════════════════
 def step2_verify_targets(high_153, targets_dir: Path, L):
@@ -700,20 +847,16 @@ def step7_rms_normalize(out_root: Path, L,
     L.log("STEP 7: RMS Normalisation")
     L.log("=" * 80)
 
-    # Collect all WAVs under the stimulus sub-folders only
-    stim_dirs = [
-        "examples/targets", "examples/distractors",
-        "full_sentence/targets", "full_sentence/distractors",
-        "imagined_sentence/targets", "imagined_sentence/distractors",
-    ]
+    # Collect ALL WAVs in the output directory (root + all subdirectories)
+    wavs = sorted(out_root.rglob("*.wav"))
 
-    wavs = []
-    for sub in stim_dirs:
-        d = out_root / sub
-        if d.exists():
-            wavs.extend(sorted(d.glob("*.wav")))
-
-    L.log(f"  Stimulus WAV files to normalise: {len(wavs)}")
+    L.log(f"  Total WAV files to normalise: {len(wavs)}")
+    
+    # Log breakdown by location
+    root_wavs = [w for w in wavs if w.parent == out_root]
+    subdir_wavs = [w for w in wavs if w.parent != out_root]
+    L.log(f"    Root directory: {len(root_wavs)} files")
+    L.log(f"    Subdirectories: {len(subdir_wavs)} files")
 
     if not wavs:
         L.log("  No WAV files found — skipping.")
@@ -911,20 +1054,16 @@ def run_pipeline_for_folder(copy_folder: Path, out_root: Path,
         shutil.rmtree(out_root)
     out_root.mkdir(parents=True)
 
+    # Copy reference WAV files to output root
+    L.log("Copying reference WAV files to output root...")
+    for src_wav in [wall_wav, fullsentence_wav, fullsentenceminuswall_wav]:
+        dst_wav = out_root / src_wav.name
+        shutil.copy2(src_wav, dst_wav)
+        L.log(f"  Copied {src_wav.name} -> {out_root.name}/")
+    L.log()
+
     # Step 1
     high_153, low_153 = step1_create_correlation_csvs(pearson_csv, corr_csv_dir, L)
-    # Optionally: add comparison logic for wall_{number}.wav, fullsentence_{number}.wav, fullsentenceminuswall_{number}.wav here
-    # For example, validate their properties or log their stats
-    for ref_file, ref_name in [
-        (wall_wav, f"wall_{folder_number}.wav"),
-        (fullsentence_wav, f"fullsentence_{folder_number}.wav"),
-        (fullsentenceminuswall_wav, f"fullsentenceminuswall_{folder_number}.wav")
-    ]:
-        if ref_file and ref_file.exists():
-            info = sf.info(str(ref_file))
-            L.log(f"Reference {ref_name}: SR={info.samplerate}, Channels={info.channels}, Frames={info.frames}, Subtype={info.subtype}")
-        else:
-            L.log(f"Reference {ref_name} missing or not found.")
 
     # Step 2
     targets_ok = step2_verify_targets(high_153, targets_dir, L)
@@ -956,8 +1095,17 @@ def run_pipeline_for_folder(copy_folder: Path, out_root: Path,
     # Step 6
     step6_statistics(groups, out_root, L)
 
-    # Step 7 — RMS normalise
+    # Step 7 — RMS normalise (all WAVs including reference files at root)
     step7_rms_normalize(out_root, L, verbose=verbose)
+
+    # Step 7.5 — Verify reference WAV files (AFTER normalization)
+    # Use the normalized copies in the output directory
+    out_wall_wav = out_root / f"wall_{folder_number}.wav"
+    out_fullsentence_wav = out_root / f"fullsentence_{folder_number}.wav"
+    out_fullsentenceminuswall_wav = out_root / f"fullsentenceminuswall_{folder_number}.wav"
+    refs_ok = step7_5_verify_reference_wavs(out_wall_wav, out_fullsentence_wav, out_fullsentenceminuswall_wav, L)
+    if not refs_ok:
+        L.log("*** WARNING: Reference WAV verification failed (post-normalization). ***\n")
 
     # Step 8 — Final gain verification
     step8_verify_gain(out_root, L)

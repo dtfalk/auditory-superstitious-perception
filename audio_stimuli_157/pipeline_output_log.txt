@@ -1,7 +1,12 @@
 ================================================================================
   STIMULI PREPARATION PIPELINE  —  copy_folder → audio_stimuli_157
-  Started: 2026-02-19T17:08:54.809354
+  Started: 2026-02-19T17:29:03.533333
 ================================================================================
+
+Copying reference WAV files to output root...
+  Copied wall_157.wav -> audio_stimuli_157/
+  Copied fullsentence_157.wav -> audio_stimuli_157/
+  Copied fullsentenceminuswall_157.wav -> audio_stimuli_157/
 
 ================================================================================
 STEP 1: Create high_correlation_stimuli.csv and low_correlation_stimuli.csv
@@ -24,9 +29,6 @@ Wrote low_correlation_stimuli.csv  (153 rows)
 
 [STEP 1 COMPLETE]
 
-Reference wall_157.wav: SR=8000, Channels=1, Frames=2800, Subtype=PCM_16
-Reference fullsentence_157.wav: SR=8000, Channels=1, Frames=12560, Subtype=PCM_16
-Reference fullsentenceminuswall_157.wav: SR=8000, Channels=1, Frames=9760, Subtype=PCM_16
 ================================================================================
 STEP 2: Verify targets/ contains exactly the top 153 stimuli
 ================================================================================
@@ -262,21 +264,78 @@ Optimiser Balance Report (full_sentence vs imagined_sentence):
 ================================================================================
 STEP 7: RMS Normalisation
 ================================================================================
-  Stimulus WAV files to normalise: 306
+  Total WAV files to normalise: 309
+    Root directory: 3 files
+    Subdirectories: 306 files
   Requested target RMS   : -23.00 dBFS
-  Max safe target RMS    : -5.99 dBFS
+  Max safe target RMS    : -18.21 dBFS
   Using target RMS       : -23.00 dBFS (no clipping)
 
 
-  Normalised 306 files in-place.
+  Normalised 309 files in-place.
 
 [STEP 7 COMPLETE]
+
+================================================================================
+STEP 7.5: Verify Reference WAV Files (Post-Normalization)
+================================================================================
+
+Part A: Comparing fullsentence and wall properties
+------------------------------------------------------------
+  wall:
+    Sample rate : 8000 Hz
+    Channels    : 1
+    Frames      : 2800
+    Duration    : 0.3500 s
+    Subtype     : PCM_16
+
+  fullsentence:
+    Sample rate : 8000 Hz
+    Channels    : 1
+    Frames      : 12560
+    Duration    : 1.5700 s
+    Subtype     : PCM_16
+
+  fullsentenceminuswall:
+    Sample rate : 8000 Hz
+    Channels    : 1
+    Frames      : 9760
+    Duration    : 1.2200 s
+    Subtype     : PCM_16
+
+  ** CONFIRMED: All reference files share consistent audio properties (SR, channels, subtype) **
+
+Part B: Verifying frame count relationship
+------------------------------------------------------------
+  fullsentenceminuswall frames : 9760
+  wall frames                  : 2800
+  Expected fullsentence frames : 12560
+  Actual fullsentence frames   : 12560
+  ** CONFIRMED: fullsentence frames == fullsentenceminuswall + wall frames **
+
+Part C: Verifying sample-exact concatenation (fullsentenceminuswall + wall == fullsentence)
+------------------------------------------------------------
+  fullsentenceminuswall samples : 9760
+  wall samples                  : 2800
+  Concatenated samples          : 12560
+  fullsentence samples          : 12560
+  ** MISMATCH: 12008 samples differ **
+     First difference at sample index: 0
+     Last difference at sample index : 12559
+     Concatenated values around diff: [-169, -287, -186]
+     Fullsentence values around diff: [-167, -283, -184]
+
+  ** STEP 7.5 FAILED: One or more verification checks failed — see above **
+
+[STEP 7.5 COMPLETE]
+
+*** WARNING: Reference WAV verification failed (post-normalization). ***
 
 ================================================================================
 STEP 8: Final Gain Verification (check_audio_gain)
 ================================================================================
 
-  Found 306 WAV files in audio_stimuli_157/
+  Found 309 WAV files in audio_stimuli_157/
 
   File                                                      RMS(dB)  Peak(dB)     SR
   ----------------------------------------------------------------------------------
@@ -436,6 +495,8 @@ STEP 8: Final Gain Verification (check_audio_gain)
   full_sentence\targets\86872.wav                            -23.00    -18.35   8000
   full_sentence\targets\924617.wav                           -23.00    -18.24   8000
   full_sentence\targets\966771.wav                           -23.00    -18.19   8000
+  fullsentence_157.wav                                       -23.00     -5.92   8000
+  fullsentenceminuswall_157.wav                              -23.00     -5.79   8000
   imagined_sentence\distractors\1023030.wav                  -23.00    -18.21   8000
   imagined_sentence\distractors\1034848.wav                  -23.00    -18.14   8000
   imagined_sentence\distractors\1041236.wav                  -23.00    -18.25   8000
@@ -586,6 +647,7 @@ STEP 8: Final Gain Verification (check_audio_gain)
   imagined_sentence\targets\898707.wav                       -23.00    -18.10   8000
   imagined_sentence\targets\935026.wav                       -23.00    -18.34   8000
   imagined_sentence\targets\955224.wav                       -23.00    -18.29   8000
+  wall_157.wav                                               -23.00     -9.80   8000
 
   Stimulus files RMS summary:
     Count      : 306
@@ -601,6 +663,6 @@ STEP 8: Final Gain Verification (check_audio_gain)
 
 ================================================================================
   PIPELINE COMPLETE
-  Finished: 2026-02-19T17:09:07.247144
+  Finished: 2026-02-19T17:29:16.391522
   Output: C:\Users\david\OneDrive\Desktop\Code\auditory-superstitious-perception\audio_stimuli_157
 ================================================================================
