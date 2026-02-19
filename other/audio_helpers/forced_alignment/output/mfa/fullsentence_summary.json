@@ -1,0 +1,244 @@
+{
+  "tool": "mfa",
+  "n_runs": 1,
+  "audio_file": "fullsentence.wav",
+  "transcript": "The picture hung on the wall",
+  "statistics": {
+    "n_successful_runs": 1,
+    "target_word": "wall",
+    "start_ms": {
+      "mean": 1180.0,
+      "min": 1180.0,
+      "max": 1180.0,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1180.0
+      ]
+    },
+    "end_ms": {
+      "mean": 1630.0,
+      "min": 1630.0,
+      "max": 1630.0,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        1630.0
+      ]
+    },
+    "duration_ms": {
+      "mean": 449.99999999999994,
+      "min": 449.99999999999994,
+      "max": 449.99999999999994,
+      "range": 0.0,
+      "std": 0.0,
+      "values": [
+        449.99999999999994
+      ]
+    },
+    "phones": [
+      {
+        "phone": "W",
+        "start": 1.18,
+        "end": 1.31,
+        "duration": 0.13000000000000012
+      },
+      {
+        "phone": "AO1",
+        "start": 1.31,
+        "end": 1.53,
+        "duration": 0.21999999999999997
+      },
+      {
+        "phone": "L",
+        "start": 1.53,
+        "end": 1.63,
+        "duration": 0.09999999999999987
+      }
+    ]
+  },
+  "all_runs": [
+    {
+      "run": 1,
+      "words": [
+        {
+          "word": "the",
+          "start": 0.0,
+          "end": 0.17,
+          "duration": 0.17,
+          "phones": [
+            {
+              "phone": "DH",
+              "start": 0.0,
+              "end": 0.09,
+              "duration": 0.09
+            },
+            {
+              "phone": "AH0",
+              "start": 0.09,
+              "end": 0.17,
+              "duration": 0.08000000000000002
+            }
+          ]
+        },
+        {
+          "word": "picture",
+          "start": 0.17,
+          "end": 0.66,
+          "duration": 0.49,
+          "phones": [
+            {
+              "phone": "P",
+              "start": 0.17,
+              "end": 0.29,
+              "duration": 0.11999999999999997
+            },
+            {
+              "phone": "IH1",
+              "start": 0.29,
+              "end": 0.34,
+              "duration": 0.050000000000000044
+            },
+            {
+              "phone": "K",
+              "start": 0.34,
+              "end": 0.39,
+              "duration": 0.04999999999999999
+            },
+            {
+              "phone": "CH",
+              "start": 0.39,
+              "end": 0.54,
+              "duration": 0.15000000000000002
+            },
+            {
+              "phone": "ER0",
+              "start": 0.54,
+              "end": 0.66,
+              "duration": 0.12
+            }
+          ]
+        },
+        {
+          "word": "hung",
+          "start": 0.66,
+          "end": 0.98,
+          "duration": 0.31999999999999995,
+          "phones": [
+            {
+              "phone": "HH",
+              "start": 0.66,
+              "end": 0.81,
+              "duration": 0.15000000000000002
+            },
+            {
+              "phone": "AH1",
+              "start": 0.81,
+              "end": 0.9,
+              "duration": 0.08999999999999997
+            },
+            {
+              "phone": "NG",
+              "start": 0.9,
+              "end": 0.98,
+              "duration": 0.07999999999999996
+            }
+          ]
+        },
+        {
+          "word": "on",
+          "start": 0.98,
+          "end": 1.11,
+          "duration": 0.13000000000000012,
+          "phones": [
+            {
+              "phone": "AA1",
+              "start": 0.98,
+              "end": 1.04,
+              "duration": 0.06000000000000005
+            },
+            {
+              "phone": "N",
+              "start": 1.04,
+              "end": 1.11,
+              "duration": 0.07000000000000006
+            }
+          ]
+        },
+        {
+          "word": "the",
+          "start": 1.11,
+          "end": 1.18,
+          "duration": 0.06999999999999984,
+          "phones": [
+            {
+              "phone": "DH",
+              "start": 1.11,
+              "end": 1.15,
+              "duration": 0.039999999999999813
+            },
+            {
+              "phone": "AH1",
+              "start": 1.15,
+              "end": 1.18,
+              "duration": 0.030000000000000027
+            }
+          ]
+        },
+        {
+          "word": "wall",
+          "start": 1.18,
+          "end": 1.63,
+          "duration": 0.44999999999999996,
+          "phones": [
+            {
+              "phone": "W",
+              "start": 1.18,
+              "end": 1.31,
+              "duration": 0.13000000000000012
+            },
+            {
+              "phone": "AO1",
+              "start": 1.31,
+              "end": 1.53,
+              "duration": 0.21999999999999997
+            },
+            {
+              "phone": "L",
+              "start": 1.53,
+              "end": 1.63,
+              "duration": 0.09999999999999987
+            }
+          ]
+        }
+      ],
+      "target_word": "wall",
+      "target_timing": {
+        "word": "wall",
+        "start": 1.18,
+        "end": 1.63,
+        "duration": 0.44999999999999996,
+        "phones": [
+          {
+            "phone": "W",
+            "start": 1.18,
+            "end": 1.31,
+            "duration": 0.13000000000000012
+          },
+          {
+            "phone": "AO1",
+            "start": 1.31,
+            "end": 1.53,
+            "duration": 0.21999999999999997
+          },
+          {
+            "phone": "L",
+            "start": 1.53,
+            "end": 1.63,
+            "duration": 0.09999999999999987
+          }
+        ]
+      }
+    }
+  ]
+}
