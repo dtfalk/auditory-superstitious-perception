@@ -129,7 +129,7 @@ def preload_audio(audio_engine: AudioEngine) -> None:
     extras = [
         os.path.join(audio_stimuli_dir, 'fullsentenceminuswall.wav'),
         os.path.join(audio_stimuli_dir, 'fullsentence.wav'),
-        os.path.join(audio_stimuli_dir, 'targetwall.wav'),
+        os.path.join(audio_stimuli_dir, 'wall.wav'),
         os.path.join(audio_stimuli_dir, 'target_example.wav'),
         os.path.join(audio_stimuli_dir, 'distractor_example.wav'),
         os.path.join(audio_stimuli_dir, '60s_background_noise.wav'),

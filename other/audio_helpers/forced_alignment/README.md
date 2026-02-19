@@ -271,11 +271,11 @@ The comparison script will show you:
 
 Your audio files:
 - `fullsentence.wav` - Full sentence containing the word "wall"
-- `targetwall.wav` - Isolated word "wall"
+- `wall.wav` - Isolated word "wall"
 
 The scripts are pre-configured to analyze these files and find:
 1. Where "wall" starts and ends in `fullsentence.wav`
-2. Whether `targetwall.wav` was cut at the correct boundaries
+2. Whether `wall.wav` was cut at the correct boundaries
 3. If there's extra silence/audio that should be trimmed
 
 ---

@@ -121,46 +121,65 @@ def run_mfa_align(input_dir, output_dir, acoustic_model="english_us_arpa", dicti
     return True
 
 
-def parse_textgrid_robust(textgrid_path):
-    """Robust TextGrid parser using regex."""
-    with open(textgrid_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    
-    words = []
-    
-    # Find the words tier section
-    words_tier_match = re.search(
-        r'name\s*=\s*"words".*?intervals:\s*size\s*=\s*(\d+)(.*?)(?=item\s*\[|$)',
+def _parse_tier(content, tier_name, alt_tier_name=None):
+    """Parse a single tier from a TextGrid file."""
+    tier_match = re.search(
+        rf'name\s*=\s*"{tier_name}".*?intervals:\s*size\s*=\s*(\d+)(.*?)(?=item\s*\[|$)',
         content,
         re.IGNORECASE | re.DOTALL
     )
-    
-    if not words_tier_match:
-        # Try alternate tier name
-        words_tier_match = re.search(
-            r'name\s*=\s*"word".*?intervals:\s*size\s*=\s*(\d+)(.*?)(?=item\s*\[|$)',
+
+    if not tier_match and alt_tier_name:
+        tier_match = re.search(
+            rf'name\s*=\s*"{alt_tier_name}".*?intervals:\s*size\s*=\s*(\d+)(.*?)(?=item\s*\[|$)',
             content,
             re.IGNORECASE | re.DOTALL
         )
-    
-    if words_tier_match:
-        intervals_text = words_tier_match.group(2)
-        
-        # Find all intervals
+
+    items = []
+    if tier_match:
+        intervals_text = tier_match.group(2)
         interval_pattern = r'intervals\s*\[\d+\].*?xmin\s*=\s*([\d.]+).*?xmax\s*=\s*([\d.]+).*?text\s*=\s*"([^"]*)"'
-        
+
         for match in re.finditer(interval_pattern, intervals_text, re.DOTALL):
             xmin, xmax, text = match.groups()
             xmin, xmax = float(xmin), float(xmax)
-            
-            if text.strip():  # Skip empty intervals
-                words.append({
-                    "word": text.strip(),
+            if text.strip():
+                items.append({
+                    "label": text.strip(),
                     "start": xmin,
                     "end": xmax,
                     "duration": xmax - xmin
                 })
-    
+    return items
+
+
+def parse_textgrid_robust(textgrid_path):
+    """Robust TextGrid parser — extracts both words and phones tiers."""
+    with open(textgrid_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # --- words tier ---
+    raw_words = _parse_tier(content, "words", alt_tier_name="word")
+    words = [{
+        "word": w["label"],
+        "start": w["start"],
+        "end": w["end"],
+        "duration": w["duration"]
+    } for w in raw_words]
+
+    # --- phones tier ---
+    phones = _parse_tier(content, "phones", alt_tier_name="phone")
+
+    # Associate each phone with its parent word
+    for w in words:
+        w["phones"] = [
+            {"phone": p["label"], "start": p["start"],
+             "end": p["end"], "duration": p["duration"]}
+            for p in phones
+            if p["start"] >= w["start"] - 1e-6 and p["end"] <= w["end"] + 1e-6
+        ]
+
     return words
 
 
@@ -269,13 +288,21 @@ def calculate_statistics(all_runs):
             "values": values
         }
     
-    return {
+    result = {
         "n_successful_runs": n,
         "target_word": TARGET_WORD,
         "start_ms": calc_stats(starts),
         "end_ms": calc_stats(ends),
         "duration_ms": calc_stats(durations)
     }
+
+    # Include phoneme data from the first successful run
+    for run in all_runs:
+        if run["target_timing"] and "phones" in run["target_timing"]:
+            result["phones"] = run["target_timing"]["phones"]
+            break
+
+    return result
 
 
 def print_statistics(stats, title):
@@ -297,6 +324,12 @@ def print_statistics(stats, title):
         print(f"    Mean:  {m['mean']:>8.2f} ms")
         print(f"    Std:   {m['std']:>8.2f} ms")
         print(f"    Range: {m['range']:>8.2f} ms (min: {m['min']:.2f}, max: {m['max']:.2f})")
+    
+    # Print phoneme breakdown if available
+    if "phones" in stats:
+        print(f"\n  Phoneme breakdown (run 1):")
+        for p in stats["phones"]:
+            print(f"    /{p['phone']}/  {p['start']*1000:>8.1f} – {p['end']*1000:>8.1f} ms  ({p['duration']*1000:.1f} ms)")
     
     print()
 

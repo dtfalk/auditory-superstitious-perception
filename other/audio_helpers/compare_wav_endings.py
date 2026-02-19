@@ -1,5 +1,5 @@
 """
-Compare fullsentence.wav and targetwall.wav to see if the endings align in content.
+Compare fullsentence.wav and wall.wav to see if the endings align in content.
 Works backwards from the end of each file to check if the audio data matches.
 """
 
@@ -324,7 +324,7 @@ def analyze_and_extract_trailing(source_file, trailing_ms, output_file=None):
 
 if __name__ == "__main__":
     fullsentence_path = os.path.join(AUDIO_STIMULI_DIR, "fullsentence.wav")
-    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "targetwall.wav")
+    targetwall_path = os.path.join(AUDIO_STIMULI_DIR, "wall.wav")
     
     # Check files exist
     if not os.path.exists(fullsentence_path):

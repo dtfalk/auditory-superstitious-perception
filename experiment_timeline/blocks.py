@@ -500,7 +500,7 @@ def _show_block_examples(
 
     # Load actual audio — differs by block
     if block_name == 'imagined_sentence':
-        actual_target_path = os.path.join(audio_stimuli_dir, 'targetwall.wav')
+        actual_target_path = os.path.join(audio_stimuli_dir, 'wall.wav')
     else:
         actual_target_path = os.path.join(audio_stimuli_dir, 'fullsentence.wav')
     actual_pcm = get_pcm16_mono(actual_target_path, fs_out)
