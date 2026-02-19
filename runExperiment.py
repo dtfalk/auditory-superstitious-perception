@@ -11,6 +11,9 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 import psutil
+import csv
+import shutil
+import io
 
 # Turns off various windows things so experiment is not interrupted or slowed
 EXPERIMENTER_MODE = True
@@ -24,6 +27,77 @@ EXPERIMENT = os.path.join(CUR_DIR, "main_experimental_flow.py")
 LAST_RUN_METADATA = os.path.join(CUR_DIR, ".last_experiment_run.json")
 
 NUM_EQUALS = 75
+RESULTS_DIR = os.path.join(CUR_DIR, "results")
+DEIDENTIFIED_DIR = os.path.join(CUR_DIR, "results_deidentified")
+
+# -------------------------
+# Console Logger (captures all output to file)
+# -------------------------
+
+class TeeLogger:
+    """Captures stdout/stderr to both console and a buffer for later saving."""
+    
+    def __init__(self, original_stream):
+        self._original = original_stream
+        self._buffer = io.StringIO()
+        self._encoding = getattr(original_stream, 'encoding', 'utf-8')
+    
+    def write(self, text):
+        self._original.write(text)
+        self._buffer.write(text)
+    
+    def flush(self):
+        self._original.flush()
+    
+    def get_contents(self):
+        return self._buffer.getvalue()
+    
+    def save_to_file(self, filepath):
+        """Save captured output to a file."""
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(self._buffer.getvalue())
+
+_stdout_logger = None
+_stderr_logger = None
+
+def start_logging():
+    """Start capturing stdout and stderr."""
+    global _stdout_logger, _stderr_logger
+    _stdout_logger = TeeLogger(sys.stdout)
+    _stderr_logger = TeeLogger(sys.stderr)
+    sys.stdout = _stdout_logger
+    sys.stderr = _stderr_logger
+
+def save_console_log(filepath):
+    """Save captured console output to file."""
+    global _stdout_logger
+    if _stdout_logger is not None:
+        _stdout_logger.save_to_file(filepath)
+        return True
+    return False
+
+
+def run_subprocess_logged(cmd, shell=False):
+    """
+    Run a subprocess and stream its output through our logger.
+    Returns the process return code.
+    """
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        shell=shell,
+        bufsize=1  # Line buffered
+    )
+    
+    # Stream output line by line
+    for line in process.stdout:
+        print(line, end='', flush=True)
+    
+    process.wait()
+    return process.returncode
+
 
 # -------------------------
 # Cleanup state tracking
@@ -98,16 +172,16 @@ def relaunch_as_admin():
 # -------------------------
 
 def run_powershell(script_path):
-    result = subprocess.run([
+    returncode = run_subprocess_logged([
         "powershell",
         "-ExecutionPolicy", "Bypass",
         "-File", script_path
     ])
 
-    if result.returncode != 0:
-        print(f"PowerShell exited with code {result.returncode}", flush = True)
+    if returncode != 0:
+        print(f"PowerShell exited with code {returncode}", flush = True)
 
-    return result.returncode
+    return returncode
 
 
 # -------------------------
@@ -178,7 +252,7 @@ def print_system_state(label):
     print(f"{label}", flush = True)
     print("=" * NUM_EQUALS, flush = True)
 
-    subprocess.run([
+    run_subprocess_logged([
         "powershell",
         "-Command",
         "Get-Service SysMain, WSearch, wuauserv | "
@@ -221,7 +295,7 @@ def print_system_state(label):
     # else:
     #     print(f"  Project root is NOT excluded from Defender:\n    {PROJECT_ROOT}\n", flush = True)
 
-    subprocess.run([
+    run_subprocess_logged([
         "powershell",
         "-Command",
         "powercfg -getactivescheme"
@@ -393,6 +467,86 @@ class SystemMonitor:
 
 
 # -------------------------
+# Summary Statistics Display
+# -------------------------
+
+def display_summary_statistics(subject_number):
+    """Display summary statistics for the current subject if available."""
+    summary_file = os.path.join(RESULTS_DIR, str(subject_number), f"summary_data_{subject_number}.csv")
+    
+    if not os.path.exists(summary_file):
+        print(f"No summary statistics found for subject {subject_number}.", flush=True)
+        return False
+    
+    try:
+        with open(summary_file, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+        
+        if len(rows) < 2:
+            print(f"  Summary file exists but contains no data.", flush=True)
+            return False
+        
+        headers = rows[0]
+        data = rows[1]
+        
+        print(f"  Subject: {subject_number}", flush=True)
+        print("", flush=True)
+        
+        # Display each column
+        for i, (header, value) in enumerate(zip(headers, data)):
+            if header.lower() != "subject number":
+                print(f"    {header}: {value}", flush=True)
+        
+        return True
+    except Exception as e:
+        print(f"  Error reading summary statistics: {e}", flush=True)
+        return False
+
+
+# -------------------------
+# Deidentified Results Folder
+# -------------------------
+
+def create_deidentified_results():
+    """
+    Create a copy of the results folder without consent files.
+    Copies all files except consent_{subject_number}.csv for each subject.
+    """
+    if not os.path.exists(RESULTS_DIR):
+        print("  No results folder found to deidentify.", flush=True)
+        return False
+    
+    try:
+        # Remove existing deidentified folder if it exists
+        if os.path.exists(DEIDENTIFIED_DIR):
+            shutil.rmtree(DEIDENTIFIED_DIR)
+        
+        # Walk through results and copy everything except consent files
+        for root, dirs, files in os.walk(RESULTS_DIR):
+            # Compute relative path from RESULTS_DIR
+            rel_path = os.path.relpath(root, RESULTS_DIR)
+            dest_dir = os.path.join(DEIDENTIFIED_DIR, rel_path) if rel_path != "." else DEIDENTIFIED_DIR
+            
+            # Create destination directory
+            os.makedirs(dest_dir, exist_ok=True)
+            
+            for file in files:
+                # Skip consent files (consent_{subject_number}.csv)
+                if file.startswith("consent_") and file.endswith(".csv"):
+                    continue
+                
+                src_file = os.path.join(root, file)
+                dst_file = os.path.join(dest_dir, file)
+                shutil.copy2(src_file, dst_file)
+        
+        return True
+    except Exception as e:
+        print(f"  Error creating deidentified folder: {e}", flush=True)
+        return False
+
+
+# -------------------------
 # Main Flow
 # -------------------------
 
@@ -401,6 +555,9 @@ if __name__ == "__main__":
     if EXPERIMENTER_MODE and platform.system() == "Windows":
         if not is_admin():
             relaunch_as_admin()
+
+        # Start console logging to capture all output
+        start_logging()
 
         # Register cleanup handlers BEFORE entering experiment mode
         _register_cleanup_handlers()
@@ -453,7 +610,7 @@ if __name__ == "__main__":
             # NOTE: Running as subprocess is fine for priority. The child process
             # inherits the parent's priority class, and the parent is essentially
             # idle (blocked on subprocess.run) so it does not compete for CPU.
-            result = subprocess.run([sys.executable, EXPERIMENT])
+            experiment_returncode = run_subprocess_logged([sys.executable, EXPERIMENT])
 
             # Stop monitor and print summary before closing experiment logs
             monitor.stop()
@@ -480,8 +637,8 @@ if __name__ == "__main__":
                 print_system_state("FINAL SYSTEM STATE AFTER RESTORE")
                 show_disabled_popup()
 
-        if result.returncode != 0:
-            print(f"Experiment process exited with code {result.returncode}", flush=True)
+        if experiment_returncode != 0:
+            print(f"Experiment process exited with code {experiment_returncode}", flush=True)
 
         save_folder = None
         subject_number = None
@@ -494,12 +651,50 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Could not read run metadata: {e}", flush=True)
 
+        # Display subject summary statistics
+        if subject_number:
+            print("\n" + "=" * NUM_EQUALS, flush=True)
+            print(f"SUBJECT SUMMARY STATISTICS", flush=True)
+            print("=" * NUM_EQUALS + "\n", flush=True)
+            display_summary_statistics(subject_number)
+            print("\n" + "=" * NUM_EQUALS, flush=True)
+            print("=" * NUM_EQUALS, flush=True)
+
+        # Create deidentified results folder
+        print("\n" + "=" * NUM_EQUALS, flush=True)
+        print(f"CREATING DEIDENTIFIED DATA FOLDER", flush=True)
+        print("=" * NUM_EQUALS + "\n", flush=True)
+        if create_deidentified_results():
+            print(f"Created deidentified data folder.", flush=True)
+        print("\n" + "=" * NUM_EQUALS, flush=True)
+        print("=" * NUM_EQUALS, flush=True)
+
         print("\n" + "-" * NUM_EQUALS, flush=True)
         if subject_number and save_folder:
             print(f"Subject {subject_number} results stored in:\n  {save_folder}", flush=True)
         else:
             print("No results folder recorded for this run.", flush=True)
         print("-" * NUM_EQUALS, flush=True)
+
+        print("\n" + "-" * NUM_EQUALS, flush=True)
+        print(f"Deidentified results folder:\n  {DEIDENTIFIED_DIR}", flush=True)
+        print("-" * NUM_EQUALS, flush=True)
+
+        # Save console log to subject's folder before final prompt
+        if subject_number and save_folder:
+            console_log_path = os.path.join(save_folder, f"console_log_{subject_number}.txt")
+            if save_console_log(console_log_path):
+                print(f"\nConsole log saved to:\n  {console_log_path}", flush=True)
+            
+            # Also copy console log to deidentified folder
+            deidentified_subject_folder = os.path.join(DEIDENTIFIED_DIR, str(subject_number))
+            if os.path.exists(deidentified_subject_folder):
+                deidentified_log_path = os.path.join(deidentified_subject_folder, f"console_log_{subject_number}.txt")
+                try:
+                    shutil.copy2(console_log_path, deidentified_log_path)
+                    print(f"Console log also saved to deidentified folder.", flush=True)
+                except Exception as e:
+                    print(f"Could not copy console log to deidentified folder: {e}", flush=True)
 
         input("\nReview logs above or press Enter to complete the experiment...\n\n")
     else:

@@ -1,8 +1,8 @@
-**/results
+**/results**
 **/__pycache__
 **/venv
 **/old-code
-.last_audio_device
+**/.last_*
 **/testing
 **/scales
-**/last_experiment_run.json
+**/analysis

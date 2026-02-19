@@ -65,7 +65,7 @@ def _calculate_dprime(hits: int, misses: int, correct_rejections: int, false_ala
 
 def _write_summary_data(subject_number: str, block_names: list[str], save_folder: str) -> None:
     """Write summary data with d-prime calculations."""
-    filepath = os.path.join(save_folder, f'summaryData_{subject_number}.csv')
+    filepath = os.path.join(save_folder, f'summary_data_{subject_number}.csv')
 
     # Load data files from block subfolders
     data_files = [

@@ -99,7 +99,7 @@ def main():
     # ==========================================================================
     # PHASE 7: QUESTIONNAIRES
     # ==========================================================================
-    run_questionnaires(subject_number, win)
+    # run_questionnaires(subject_number, win)
     save_sleepiness_data(subject_number, save_folder, sleepiness_responses)
     
     # ==========================================================================
