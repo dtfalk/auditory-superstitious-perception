@@ -340,7 +340,10 @@ class SystemMonitor:
         psutil.cpu_percent(interval=None)
 
         # Prime disk I/O counters so first delta is meaningful
-        self._prev_disk_io = psutil.disk_io_counters()
+        try:
+            self._prev_disk_io = psutil.disk_io_counters()
+        except Exception:
+            self._prev_disk_io = None
         self._prev_disk_time = time.time()
 
         self._start_time = time.time()
@@ -365,21 +368,34 @@ class SystemMonitor:
                 # Compute disk I/O activity from deltas
                 now = time.time()
                 cur_io = psutil.disk_io_counters()
-                if self._prev_disk_io is not None:
+                if cur_io is not None and self._prev_disk_io is not None:
                     dt = now - self._prev_disk_time
                     if dt > 0:
-                        # Busy % approximation: (read_time + write_time) are ms
+                        # Timing-based busy % (read_time + write_time are ms).
+                        # On some Windows systems (especially NVMe/SSD) these
+                        # fields are always 0.  Fall back to an IOPS-based
+                        # heuristic when that happens.
                         io_ms = ((cur_io.read_time - self._prev_disk_io.read_time)
                                  + (cur_io.write_time - self._prev_disk_io.write_time))
-                        busy_pct = min(100.0, (io_ms / (dt * 1000)) * 100)
+
+                        if io_ms > 0:
+                            busy_pct = min(100.0, (io_ms / (dt * 1000)) * 100)
+                        else:
+                            # Timing data unavailable — estimate from IOPS.
+                            # Assume each I/O op takes ~0.1 ms on a fast SSD.
+                            delta_ops = ((cur_io.read_count - self._prev_disk_io.read_count)
+                                         + (cur_io.write_count - self._prev_disk_io.write_count))
+                            estimated_ms = delta_ops * 0.1
+                            busy_pct = min(100.0, (estimated_ms / (dt * 1000)) * 100)
 
                         read_bps = (cur_io.read_bytes - self._prev_disk_io.read_bytes) / dt
                         write_bps = (cur_io.write_bytes - self._prev_disk_io.write_bytes) / dt
 
                         self._disk_samples.append((busy_pct, read_bps, write_bps))
 
-                self._prev_disk_io = cur_io
-                self._prev_disk_time = now
+                if cur_io is not None:
+                    self._prev_disk_io = cur_io
+                    self._prev_disk_time = now
             except Exception:
                 pass  # Never interrupt the experiment
 

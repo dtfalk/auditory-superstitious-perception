@@ -301,25 +301,57 @@ class AudioEngine:
             extra = None
             exclusive_active = False
 
-        try:
-            self.stream = OutputStream(
-                device=self.device,
-                samplerate=self.fs,
-                channels=1,
-                dtype="int16",
-                callback=callback,
-                blocksize=self.blocksize,
-                latency=latency,
-                extra_settings=extra,
-            )
-            self.stream.start()
-        except Exception as e:
+        # Build an ordered list of sample rates to try:
+        # 1) The requested rate, 2) common alternatives.
+        # This handles cases where the device's reported default_samplerate
+        # doesn't match its actual hardware configuration (common with
+        # MOTU + WASAPI exclusive).
+        _FALLBACK_RATES = [44100, 48000, 96000, 88200, 192000]
+        rates_to_try = [self.fs] + [r for r in _FALLBACK_RATES if r != self.fs]
+
+        last_err = None
+        for try_fs in rates_to_try:
+            try:
+                self.stream = OutputStream(
+                    device=self.device,
+                    samplerate=try_fs,
+                    channels=1,
+                    dtype="int16",
+                    callback=callback,
+                    blocksize=self.blocksize, 
+                    latency=latency,
+                    extra_settings=extra,
+                )
+                self.stream.start()
+                if try_fs != self.fs:
+                    print(f"Sample rate {self.fs} Hz rejected; using {try_fs} Hz instead", flush=True)
+                self.fs = try_fs  # update to the rate that actually worked
+                last_err = None
+                break
+            except Exception as e:
+                last_err = e
+                err_msg = str(e).lower()
+                # Retry on any error that could be rate-related.
+                # WASAPI exclusive often gives generic "unanticipated host error"
+                # or "Error opening OutputStream" when the rate doesn't match.
+                retryable_keywords = [
+                    "sample rate", "samplerate", "invalid",
+                    "unanticipated host error", "error opening",
+                ]
+                if any(kw in err_msg for kw in retryable_keywords):
+                    print(f"  Rate {try_fs} Hz failed on '{dev_info['name']}': {e} — trying next...", flush=True)
+                    continue
+                # Non-rate error — stop retrying
+                print(f"  Non-retryable error at {try_fs} Hz: {e}", flush=True)
+                break
+
+        if last_err is not None:
             if FORCE_WASAPI_OR_ASIO_EXCLUSIVE and platform.system() == "Windows":
                 raise RuntimeError(
                     f"Failed to open exclusive audio stream on '{dev_info['name']}' "
-                    f"({hostapi_name}): {e}"
-                ) from e
-            raise
+                    f"({hostapi_name}). Tried rates {rates_to_try}: {last_err}"
+                ) from last_err
+            raise last_err
 
         print(f"Audio device: {dev_info['name']}", flush=True)
         print(f"Host API: {hostapi_name}", flush=True)
