@@ -1065,7 +1065,7 @@ def _save_self_reflection(
     if block_name == 'imagined_sentence':
         rule_following = _get_subject_input(
             win,
-            'During this block did you imagine the sentence before playing the stimuli and then click "Play Audio" at the moment you would have imagined the word "Wall"?\n  - Please begin your response with either "Yes." or "No."\n  - You may include additional information after typing "Yes." or "No."\n\n**Response**',
+            'At the beginning of this block, we asked you to imagine the sentence before playing the stimuli and then click "Play Audio" at the moment you would have imagined the word "Wall". Did you follow these instructions?\n  - Please answer honestly. Your response will **not** affect your compensation for the study.\n\n**Response**',
             screen_logger, 'imagination_rule_following'
         )
     else:

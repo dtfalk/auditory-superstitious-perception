@@ -41,7 +41,8 @@ explanationText_4 = '**What to keep in mind**\n\
 explanationText_5 = '>>>**A final note before beginning**\n\n\
 Even with the sentence context and the speaker in mind, the audio samples you will hear will remain extremely noisy. You will never clearly hear the word \"Wall\" spoken in the samples.\n\n\
 It is normal for many trials to feel uncertain, ambiguous, or as though nothing definite is there at all.\n\n\
-That experience is expected. Doing well on this task does not require certainty or confidence, but a willingness to stay engaged and respond based on the impressions you have, even when they feel faint or unclear.'
+That experience is expected. Doing well on this task does not require certainty or confidence, but a willingness to stay engaged and respond based on the impressions you have, even when they feel faint or unclear.\n\n\
+On the next screen, you will receive instructions specific to the first block of the experiment.'
 
 breakScreenText = 'You have now completed 1 out of 2 blocks.\n\n You have earned a break.\n\n Please let the experimenter know.\n\nWhen you are ready you will begin the next portion of the experiment.\n\n'
 
@@ -65,7 +66,7 @@ fullSentenceBlockInstructionsText = (
     "**A few important points**\n"
     "     - The audio samples themselves are not clearly spoken words. They are noisy clips that may or may not contain traces of the speaker’s \"Wall\".\n"
     "     - If the speaker’s \"Wall\" is present, it spans the entire audio sample from beginning to end.\n"
-    "     - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample. You must **always** imagine the speaker's voice.\n\n"
+    "     - You are always judging whether the speaker’s version of \"Wall\" is present in the audio sample. You must **always** listen for the speaker's voice saying \"Wall\" and **not** your own voice or anybody else's.\n\n"
     ">>>If you have **any** questions please ask the experimenter now\n"
     ">>>Press the **spacebar** to continue"
 )
@@ -160,7 +161,7 @@ preExamplesFamiliarizationInstructions_imagined_sentence = [
     ">>>**Sentence Familiarization**",
     "",
     "- You will now hear the speaker say the full sentence.",
-    "- On the very next screen, you will hear examples where you must imagine the speaker saying this sentence before listening to each audio sample. This means you will need to actively use your memory of this sentence right away, without hearing it spoken aloud.",
+    "- On the very next screen, you will hear examples where you must imagine the speaker saying this sentence before listening to each audio sample. Make sure that you commit this sentence to memory, as you will need to imagine it clearly and reliably on the next screen.",
     f"- You must listen to the sentence at least {FAMILIARIZATION_PLAYS} times before continuing.",
     "- You may listen to it as many additional times as you like.",
     "- Use this time to get the sentence clearly and reliably into your head in the speaker's voice.",
@@ -258,7 +259,7 @@ blockExamplesInstructions_full_sentence = (
 audioLevelTestInstructions = [
     "Use this screen to normalize audio levels before starting the experiment.",
     "Adjust system volume so both sounds are at comfortable levels.",
-    f"The target decibel range **{MIN_DB}** dBs to **{MAX_DB}** dBs.",
+    f"The target decibel range is **{MIN_DB}** dB to **{MAX_DB}** dB.",
     "When audio levels are properly set, click 'Continue' to proceed."
 ]
 # =======================================================================   

@@ -221,15 +221,23 @@ def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.
 
                 tone_duration_ms = int(round(1000.0 * (tone.shape[0] / float(try_fs))))
 
+                # Prepend DC ramp from 0 to first sample (raised cosine curve)
                 if SHORT_STIMULUS_FADEIN_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS):
                     fadein_samples = max(1, int(round(try_fs * (float(SHORT_STIMULUS_FADEIN_MS) / 1000.0))))
-                    fadein_samples = min(fadein_samples, tone.shape[0])
-                    tone[:fadein_samples] *= np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+                    first_sample = tone[0]
+                    t = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+                    lead_ramp = 0.5 * (1.0 - np.cos(np.pi * t))
+                    lead_segment = first_sample * lead_ramp
+                    tone = np.concatenate([lead_segment, tone])
 
+                # Append DC ramp from last sample to 0 (raised cosine curve)
                 if SHORT_STIMULUS_FADEOUT_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS):
                     fadeout_samples = max(1, int(round(try_fs * (float(SHORT_STIMULUS_FADEOUT_MS) / 1000.0))))
-                    fadeout_samples = min(fadeout_samples, tone.shape[0])
-                    tone[-fadeout_samples:] *= np.linspace(1.0, 0.0, fadeout_samples, dtype=np.float32)
+                    last_sample = tone[-1]
+                    t = np.linspace(0.0, 1.0, fadeout_samples, dtype=np.float32)
+                    tail_ramp = 0.5 * (1.0 + np.cos(np.pi * t))
+                    tail_segment = last_sample * tail_ramp
+                    tone = np.concatenate([tone, tail_segment])
 
                 # Use WASAPI exclusive only when required, mirroring AudioEngine behavior
                 prev_extra = sd.default.extra_settings
@@ -313,7 +321,14 @@ def _show_audio_device_selection(
     # Test-tone state: track which device is being tested & when it started
     test_device_pos: int | None = None
     test_start_ticks: int = 0
-    test_duration_ms: int = 800  # matches _play_test_tone default duration
+    # Calculate total test tone duration including DC ramps
+    _base_tone_ms = 380  # wall.wav duration
+    _total_ramps_ms = 0
+    if SHORT_STIMULUS_FADEIN_ENABLED and _base_tone_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS):
+        _total_ramps_ms += int(SHORT_STIMULUS_FADEIN_MS)
+    if SHORT_STIMULUS_FADEOUT_ENABLED and _base_tone_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS):
+        _total_ramps_ms += int(SHORT_STIMULUS_FADEOUT_MS)
+    test_duration_ms: int = _base_tone_ms + _total_ramps_ms
 
     while True:
         screen.fill()

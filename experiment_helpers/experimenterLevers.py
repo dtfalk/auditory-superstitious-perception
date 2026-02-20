@@ -45,8 +45,8 @@ WIN_WIDTH, WIN_HEIGHT = prepareExperimentalScreen()
 SENTENCE_TO_IMAGINE = "The Picture Hung on the Wall"
 
 # Minimum and maximum decibles for audio leveling
-MIN_DB = 68
-MAX_DB = 70
+MIN_DB = 58
+MAX_DB = 60
 
 # =============================================================================
 # TRIAL CONFIGURATION
@@ -56,18 +56,18 @@ MAX_DB = 70
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 1
+REMINDER_INTERVAL = 15
 
 # Max plays allowed during periodic reminder screens
-REMINDER_PLAYS = 1
+REMINDER_PLAYS = 3
 
 # Max plays allowed during target familiarization screens
-FAMILIARIZATION_PLAYS = 1
+FAMILIARIZATION_PLAYS = 5
 
 # Set to -1 to show all stimuli
 # Otherwise will shown the specified number of stimuli per block
 # (useful for testing/development)
-NUM_STIMULI_TO_SHOW = 5
+NUM_STIMULI_TO_SHOW = -1
 
 # Needs to be set for live experiments, but can be set to False for testing/development
 # Ensures a direct path between headphones and the audio engine, which is necessary for accurate audio level testing and playback
@@ -79,9 +79,9 @@ PREFER_MOTU_ASIO = True
 # Optional click suppression for short one-shot stimuli using appended ramps.
 # These ramps are appended before/after the clip without modifying the original samples.
 SHORT_STIMULUS_FADEIN_ENABLED = True
-SHORT_STIMULUS_FADEIN_MS = 10.0
+SHORT_STIMULUS_FADEIN_MS = 20.0
 SHORT_STIMULUS_FADEIN_MAX_STIM_MS = 5000
 
 SHORT_STIMULUS_FADEOUT_ENABLED = True
-SHORT_STIMULUS_FADEOUT_MS = 10.0
+SHORT_STIMULUS_FADEOUT_MS = 250.0
 SHORT_STIMULUS_FADEOUT_MAX_STIM_MS = 5000

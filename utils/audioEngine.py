@@ -396,7 +396,9 @@ class AudioEngine:
             fadein_samples = max(0, fadein_samples)
             if fadein_samples > 0:
                 first_sample = int(pcm16_mono[0, 0])
-                lead_ramp = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+                # Raised cosine (Hann) ramp: gentler acceleration, no abrupt rate changes
+                t = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+                lead_ramp = 0.5 * (1.0 - np.cos(np.pi * t))
                 lead_segment = np.round(first_sample * lead_ramp).astype(np.int16)[:, None]
 
         tail_segment = None
@@ -409,7 +411,9 @@ class AudioEngine:
             fadeout_samples = max(0, fadeout_samples)
             if fadeout_samples > 0:
                 last_sample = int(pcm16_mono[-1, 0])
-                tail_ramp = np.linspace(1.0, 0.0, fadeout_samples, dtype=np.float32)
+                # Raised cosine (Hann) ramp: gentler deceleration, no abrupt rate changes
+                t = np.linspace(0.0, 1.0, fadeout_samples, dtype=np.float32)
+                tail_ramp = 0.5 * (1.0 + np.cos(np.pi * t))
                 tail_segment = np.round(last_sample * tail_ramp).astype(np.int16)[:, None]
 
         segments = []
