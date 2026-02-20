@@ -56,7 +56,7 @@ MAX_DB = 70
 MAX_PLAYS = 1
 
 # How often to show periodic reminders (every N trials)
-REMINDER_INTERVAL = 10
+REMINDER_INTERVAL = 1
 
 # Max plays allowed during periodic reminder screens
 REMINDER_PLAYS = 1

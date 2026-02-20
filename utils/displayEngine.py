@@ -1214,7 +1214,11 @@ class TextInput:
                     return None
                 
                 if result == "submit":
-                    return self.value
+                    if self.value.strip():
+                        return self.value.strip()
+                    else:
+                        self.value = ""
+                        self.cursor_pos = 0
             
             # Draw
             self.screen.fill()

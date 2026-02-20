@@ -940,13 +940,13 @@ def _show_periodic_reminder(
         audio_still_playing = (last_audio_start != 0) and (time_since_last < audio_duration)
         continue_enabled = (play_count >= required_plays) and (not audio_still_playing)
 
-        y_pos = _show_instructions_(win, instructions, text_align="LEFT")
+        y_pos = _show_instructions_(win, instructions, text_align="LEFT", font_divisor=20)
 
         # Dynamic button placement in remaining space
         remaining_h = screen.height - y_pos - screen.abs_y(0.05)
         play_y = y_pos + int(remaining_h * 0.25)
-        btn_width = screen.abs_x(0.2)
-        btn_height = max(30, int(remaining_h * 0.18))
+        btn_width = screen.abs_x(0.22)
+        btn_height = max(40, int(remaining_h * 0.25))
         cont_y = play_y + btn_height + int(remaining_h * 0.12)
         cont_width = screen.abs_x(0.15)
         cont_height = max(26, int(remaining_h * 0.15))
