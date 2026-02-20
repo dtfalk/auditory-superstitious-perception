@@ -27,6 +27,15 @@ All configurable settings are in `experiment_helpers/experimenterLevers.py`.
 | `REMINDER_INTERVAL` | **Must be `15` for live experiments.** How often subject sees the reminder screen (e.g. every 15 trials). You may set to a lower value if you are testing.|
 | `REMINDER_PLAYS` | **Must be `3` for live experiments.** Number of times subjects can listen to the audio during the reminder screens. You may set to a lower value if you are testing.|
 | `FAMILIARIZATION_PLAYS` | **Must be `5` for live experiments.** How many familiarization listens the subject gets just before each block begins. You may set to a lower value if you are testing.|
+| `PREFER_MOTU_ASIO` | **Must be `True` for live experiments.** Prefers MOTU devices on ASIO host API when available. |
+| `SECTIONS_TO_SKIP` | **Must be `[]` for live experiments.** Empty list runs all sections. Options: `"audio_level_test"`, `"subject_info"`, `"consent"`, `"intro"`, `"blocks"`, `"questionnaires"` |
+| `QUESTIONNAIRES_TO_SKIP` | **Must be `[]` for live experiments.** Empty list runs all questionnaires. Options: `"flow_state_scale"`, `"tellegen"`, `"vhq"`, `"launay_slade"`, `"dissociative_experiences"`, `"bais_v"`, `"bais_c"` |
+| `SHORT_STIMULUS_FADEIN_ENABLED` | **Must be `True` for live experiments.** Enables DC click suppression fade-in for short stimuli. |
+| `SHORT_STIMULUS_FADEIN_MS` | **Must be `50.0` for live experiments.** DC Fade-in duration in milliseconds. |
+| `SHORT_STIMULUS_FADEIN_MAX_STIM_MS` | **Must be `5000` for live experiments.** Max stimulus length (ms) to apply DC fade-in. |
+| `SHORT_STIMULUS_FADEOUT_ENABLED` | **Must be `True` for live experiments.** Enables DC click suppression fade-out for short stimuli. |
+| `SHORT_STIMULUS_FADEOUT_MS` | **Must be `250.0` for live experiments.** DC Fade-out duration in milliseconds. |
+| `SHORT_STIMULUS_FADEOUT_MAX_STIM_MS` | **Must be `5000` for live experiments.** Max stimulus length (ms) to apply DC fade-out. |
 
 ### Consent Form Variables
 

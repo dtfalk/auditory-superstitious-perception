@@ -49,7 +49,7 @@ MIN_DB = 58
 MAX_DB = 60
 
 # =============================================================================
-# TRIAL CONFIGURATION
+# EXPERIMENT CONFIGURATION
 # =============================================================================
 
 # Maximum number of times a participant can replay audio during a trial
@@ -76,10 +76,19 @@ FORCE_WASAPI_OR_ASIO_EXCLUSIVE = True
 # If True, prefer MOTU devices on ASIO host API when available (easy to disable/remove later)
 PREFER_MOTU_ASIO = True
 
+# Allows you to specify a stages of the experiment to skip for testing/development purposes
+# Options: "audio_level_test", "subject_info", "consent", "intro", "blocks", "questionnaires"
+SECTIONS_TO_SKIP = []
+
+# List of questionnaire names to skip (e.g. ["flow_state_scale", "tellegen", "vhq"])
+# Options: "flow_state_scale", "tellegen", "vhq", "launay_slade", "dissociative_experiences", "bais_v", "bais_c"
+QUESTIONNAIRES_TO_SKIP = [] 
+
+
 # Optional click suppression for short one-shot stimuli using appended ramps.
 # These ramps are appended before/after the clip without modifying the original samples.
 SHORT_STIMULUS_FADEIN_ENABLED = True
-SHORT_STIMULUS_FADEIN_MS = 20.0
+SHORT_STIMULUS_FADEIN_MS = 50.0
 SHORT_STIMULUS_FADEIN_MAX_STIM_MS = 5000
 
 SHORT_STIMULUS_FADEOUT_ENABLED = True

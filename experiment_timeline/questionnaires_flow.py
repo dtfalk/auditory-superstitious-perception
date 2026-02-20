@@ -19,6 +19,7 @@ import csv
 import math
 import pygame as pg
 from datetime import datetime
+from experiment_helpers.experimenterLevers import QUESTIONNAIRES_TO_SKIP
 
 # Add parent directory for imports
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -948,7 +949,7 @@ def _run_recall_questions(subject_number: str, win: pg.Surface) -> None:
             "This could include audio glitches, software errors, "
             "equipment malfunctions, environmental disturbances, "
             "or any other factors that interfered with your ability to complete the task.\n\n"
-            "If not, simply type **none**. If so, please describe the nature of the disturbance, how often they occurred, and the degree to which it affected your ability to engage with the experiment.\n\n**Response**"
+            "If not, simply type **none**. If so, please describe the nature of the disturbance(s), how often they occurred, and the degree to which they affected your ability to engage with the experiment.\n\n**Response**"
         )
     )
     if technical_response:
@@ -1025,13 +1026,20 @@ def run_questionnaires(subject_number: str, win: pg.Surface) -> None:
                     waiting = False
     
     # Run all questionnaires
-    _flow_state_scale(subject_number, win)
-    _tellegen(subject_number, win)
-    _vhq(subject_number, win)
-    _launay_slade(subject_number, win)
-    _dissociative_experiences(subject_number, win)
-    _bais_v(subject_number, win)
-    _bais_c(subject_number, win)
+    if not "flow_state_scale" in QUESTIONNAIRES_TO_SKIP:
+        _flow_state_scale(subject_number, win)
+    if not "tellegen" in QUESTIONNAIRES_TO_SKIP:
+        _tellegen(subject_number, win)
+    if not "vhq" in QUESTIONNAIRES_TO_SKIP:
+        _vhq(subject_number, win)
+    if not "launay_slade" in QUESTIONNAIRES_TO_SKIP:
+        _launay_slade(subject_number, win)
+    if not "dissociative_experiences" in QUESTIONNAIRES_TO_SKIP:
+        _dissociative_experiences(subject_number, win)
+    if not "bais_v" in QUESTIONNAIRES_TO_SKIP:
+        _bais_v(subject_number, win)
+    if not "bais_c" in QUESTIONNAIRES_TO_SKIP:
+        _bais_c(subject_number, win)
     
     # Text response screens for recall
     _run_recall_questions(subject_number, win)

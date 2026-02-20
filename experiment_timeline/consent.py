@@ -110,7 +110,7 @@ def collect_subject_info(win: pg.Surface) -> dict:
     }
 
 
-def create_save_folder(subject_number: str) -> tuple[str, str]:
+def create_save_folder(subject_number: str, dev: bool) -> tuple[str, str]:
     """
     Create and return the save folder path for the subject.
     Handles duplicate subject numbers by appending '0'.
@@ -121,7 +121,7 @@ def create_save_folder(subject_number: str) -> tuple[str, str]:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     save_folder = os.path.join(base_dir, 'results', subject_number)
 
-    while os.path.exists(save_folder):
+    while os.path.exists(save_folder) and not dev:
         subject_number = subject_number + '0'
         save_folder = os.path.join(base_dir, 'results', subject_number)
 
