@@ -1105,20 +1105,61 @@ class TextInput:
         )
         
         input_y = y_after + 10
+        max_input_width = self.screen.abs_x(0.9) - pos_x
+        line_height = font.get_linesize()
         
         if self.value:
-            # Draw text before cursor
-            before_cursor = self.value[:self.cursor_pos]
-            after_cursor = self.value[self.cursor_pos:]
+            # Character-based wrapping to maintain exact cursor position mapping
+            wrapped_lines: list[str] = []
+            current_line = ""
+            char_to_line_pos: list[tuple[int, int]] = []  # (line_idx, pos_in_line) for each char
             
-            self.text_renderer.draw_text(before_cursor + after_cursor, x=pos_x, y=input_y, style=input_style)
+            for i, ch in enumerate(self.value):
+                trial = current_line + ch
+                if font.size(trial)[0] <= max_input_width:
+                    current_line = trial
+                    char_to_line_pos.append((len(wrapped_lines), len(current_line) - 1))
+                else:
+                    # Start new line
+                    if current_line:
+                        wrapped_lines.append(current_line)
+                    current_line = ch
+                    char_to_line_pos.append((len(wrapped_lines), 0))
             
-            # Blinking vertical bar cursor
+            if current_line:
+                wrapped_lines.append(current_line)
+            
+            if not wrapped_lines:
+                wrapped_lines = [""]
+            
+            # Draw all wrapped lines
+            for i, line in enumerate(wrapped_lines):
+                line_y = input_y + i * line_height
+                self.text_renderer.draw_text(line, x=pos_x, y=line_y, style=input_style)
+            
+            # Determine cursor position
+            if self.cursor_pos == 0:
+                cursor_line_idx = 0
+                cursor_line_offset = 0
+            elif self.cursor_pos <= len(char_to_line_pos):
+                # Cursor is after the character at cursor_pos - 1
+                line_idx, pos_in_line = char_to_line_pos[self.cursor_pos - 1]
+                cursor_line_idx = line_idx
+                cursor_line_offset = pos_in_line + 1
+            else:
+                # Cursor at end
+                cursor_line_idx = len(wrapped_lines) - 1
+                cursor_line_offset = len(wrapped_lines[-1])
+            
+            # Blinking vertical bar cursor on the correct line
             elapsed = (pg.time.get_ticks() - self._cursor_blink_time) % (self._cursor_blink_interval * 2)
             if elapsed < self._cursor_blink_interval:
-                cursor_x = pos_x + font.size(before_cursor)[0]
-                cursor_top = input_y + 2
-                cursor_bottom = input_y + font.get_height() - 2
+                cursor_line = wrapped_lines[cursor_line_idx] if cursor_line_idx < len(wrapped_lines) else ""
+                before_cursor_on_line = cursor_line[:cursor_line_offset]
+                cursor_x = pos_x + font.size(before_cursor_on_line)[0]
+                cursor_y = input_y + cursor_line_idx * line_height
+                cursor_top = cursor_y + 2
+                cursor_bottom = cursor_y + font.get_height() - 2
                 pg.draw.line(
                     self.screen.win,
                     input_style.color.to_tuple(),
