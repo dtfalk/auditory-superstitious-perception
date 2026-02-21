@@ -3,7 +3,8 @@ import subprocess
 import sys
 import json
 import ctypes
-from ctypes import wintypes
+if sys.platform == "win32":
+    from ctypes import wintypes
 import atexit
 import platform
 import threading
@@ -114,8 +115,9 @@ CTRL_CLOSE_EVENT = 2
 CTRL_LOGOFF_EVENT = 5
 CTRL_SHUTDOWN_EVENT = 6
 
-HANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
-kernel32 = ctypes.windll.kernel32
+if sys.platform == "win32":
+    HANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
+    kernel32 = ctypes.windll.kernel32
 
 def _emergency_cleanup():
     """Restore system state - called on abnormal exit."""
@@ -135,7 +137,8 @@ def _console_ctrl_handler(ctrl_type):
     return False
 
 # Create handler reference (must keep alive to prevent garbage collection)
-_handler = HANDLER_ROUTINE(_console_ctrl_handler)
+if sys.platform == "win32":
+    _handler = HANDLER_ROUTINE(_console_ctrl_handler)
 
 def _register_cleanup_handlers():
     """Register handlers to restore system on abnormal termination."""
