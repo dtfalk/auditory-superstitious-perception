@@ -157,6 +157,71 @@ def _get_best_preselect(devices: list[tuple[int, str]]) -> int:
 # Cache of discovered working sample rates per device index
 _DEVICE_WORKING_RATE: dict[int, int] = {}
 
+# Cache for test tone: {sample_rate: processed_float32_array}
+_TEST_TONE_CACHE: dict[int, np.ndarray] = {}
+# Cache for raw WAV data: (int16_array, original_sample_rate)
+_TEST_WAV_RAW: tuple[np.ndarray, int] | None = None
+
+
+def _get_test_tone(target_fs: int) -> np.ndarray:
+    """
+    Get the processed test tone at the target sample rate.
+    Caches results to avoid repeated disk I/O and resampling.
+    """
+    global _TEST_WAV_RAW
+
+    # Return cached processed tone if available
+    if target_fs in _TEST_TONE_CACHE:
+        return _TEST_TONE_CACHE[target_fs]
+
+    # Load raw WAV once (lazy)
+    if _TEST_WAV_RAW is None:
+        wav_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audio_stimuli', 'wall.wav')
+        _TEST_WAV_RAW = load_wav_mono_int16(wav_path)
+
+    x16, fs_in = _TEST_WAV_RAW
+
+    # Resample if needed
+    if fs_in != target_fs:
+        y16 = resample_int16(x16, fs_in, target_fs)
+    else:
+        y16 = x16
+
+    # Convert int16 PCM to float32 in [-1, 1] and apply global level
+    tone = (y16.astype(np.float32) / 32768.0) * 0.35
+
+    # Apply very short cosine taper at start to eliminate startup transient
+    startup_taper_ms = 2.0
+    startup_taper_samples = int(round(target_fs * (startup_taper_ms / 1000.0)))
+    startup_taper_samples = min(startup_taper_samples, tone.shape[0])
+    if startup_taper_samples > 0:
+        taper = 0.5 * (1.0 - np.cos(np.pi * np.linspace(0, 1, startup_taper_samples, dtype=np.float32)))
+        tone[:startup_taper_samples] *= taper
+
+    tone_duration_ms = int(round(1000.0 * (tone.shape[0] / float(target_fs))))
+
+    # Prepend DC ramp from 0 to first sample (raised cosine curve)
+    if SHORT_STIMULUS_FADEIN_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS):
+        fadein_samples = max(1, int(round(target_fs * (float(SHORT_STIMULUS_FADEIN_MS) / 1000.0))))
+        first_sample = tone[0]
+        t = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
+        lead_ramp = 0.5 * (1.0 - np.cos(np.pi * t))
+        lead_segment = first_sample * lead_ramp
+        tone = np.concatenate([lead_segment, tone])
+
+    # Append DC ramp from last sample to 0 (raised cosine curve)
+    if SHORT_STIMULUS_FADEOUT_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS):
+        fadeout_samples = max(1, int(round(target_fs * (float(SHORT_STIMULUS_FADEOUT_MS) / 1000.0))))
+        last_sample = tone[-1]
+        t = np.linspace(0.0, 1.0, fadeout_samples, dtype=np.float32)
+        tail_ramp = 0.5 * (1.0 + np.cos(np.pi * t))
+        tail_segment = last_sample * tail_ramp
+        tone = np.concatenate([tone, tail_segment])
+
+    # Cache and return
+    _TEST_TONE_CACHE[target_fs] = tone
+    return tone
+
 
 def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.0, fs: int = 44100) -> None:
     """
@@ -198,46 +263,8 @@ def _play_test_tone(device_index: int, duration: float = 0.8, freq: float = 440.
         last_err = None
         for try_fs in rates_to_try:
             try:
-                # Load the test WAV from the project audio_stimuli folder
-                wav_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audio_stimuli', 'wall.wav')
-                x16, fs_in = load_wav_mono_int16(wav_path)
-
-                # Resample if needed to match the attempted rate
-                if fs_in != try_fs:
-                    y16 = resample_int16(x16, fs_in, try_fs)
-                else:
-                    y16 = x16
-
-                # Convert int16 PCM to float32 in [-1, 1] and apply global level
-                tone = (y16.astype(np.float32) / 32768.0) * 0.35
-
-                # Apply very short cosine taper at start to eliminate startup transient
-                startup_taper_ms = 2.0
-                startup_taper_samples = int(round(try_fs * (startup_taper_ms / 1000.0)))
-                startup_taper_samples = min(startup_taper_samples, tone.shape[0])
-                if startup_taper_samples > 0:
-                    taper = 0.5 * (1.0 - np.cos(np.pi * np.linspace(0, 1, startup_taper_samples, dtype=np.float32)))
-                    tone[:startup_taper_samples] *= taper
-
-                tone_duration_ms = int(round(1000.0 * (tone.shape[0] / float(try_fs))))
-
-                # Prepend DC ramp from 0 to first sample (raised cosine curve)
-                if SHORT_STIMULUS_FADEIN_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEIN_MAX_STIM_MS):
-                    fadein_samples = max(1, int(round(try_fs * (float(SHORT_STIMULUS_FADEIN_MS) / 1000.0))))
-                    first_sample = tone[0]
-                    t = np.linspace(0.0, 1.0, fadein_samples, dtype=np.float32)
-                    lead_ramp = 0.5 * (1.0 - np.cos(np.pi * t))
-                    lead_segment = first_sample * lead_ramp
-                    tone = np.concatenate([lead_segment, tone])
-
-                # Append DC ramp from last sample to 0 (raised cosine curve)
-                if SHORT_STIMULUS_FADEOUT_ENABLED and tone_duration_ms <= int(SHORT_STIMULUS_FADEOUT_MAX_STIM_MS):
-                    fadeout_samples = max(1, int(round(try_fs * (float(SHORT_STIMULUS_FADEOUT_MS) / 1000.0))))
-                    last_sample = tone[-1]
-                    t = np.linspace(0.0, 1.0, fadeout_samples, dtype=np.float32)
-                    tail_ramp = 0.5 * (1.0 + np.cos(np.pi * t))
-                    tail_segment = last_sample * tail_ramp
-                    tone = np.concatenate([tone, tail_segment])
+                # Get processed tone from cache (loads/resamples only on first call per rate)
+                tone = _get_test_tone(try_fs)
 
                 # Use WASAPI exclusive only when required, mirroring AudioEngine behavior
                 prev_extra = sd.default.extra_settings
