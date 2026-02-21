@@ -91,10 +91,21 @@ def run_subprocess_logged(cmd, shell=False):
         shell=shell,
         bufsize=1  # Line buffered
     )
+
+    # Switchin' to using readline() and poll() to avoid hanging on pipe read after subprocess exits (Windows buffering issue)
+    # (Keep this in mind for future this is helpful to know)
+    while True:
+        line = process.stdout.readline()
+        if line:
+            print(line, end='', flush=True)
+        elif process.poll() is not None:
+            # Process exited and no more data
+            break
     
-    # Stream output line by line
-    for line in process.stdout:
-        print(line, end='', flush=True)
+    # Drain any remaining buffered output
+    remaining = process.stdout.read()
+    if remaining:
+        print(remaining, end='', flush=True)
     
     process.wait()
     return process.returncode
