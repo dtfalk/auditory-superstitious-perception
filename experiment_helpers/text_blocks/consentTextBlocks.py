@@ -6,7 +6,7 @@ from experimenterLevers import IRB_NUMBER, STUDY_TITLE, RESEARCHERS, NUMBER_OF_C
 studyInfoText = f'**Study Number:** {IRB_NUMBER}\n**Study Title:** {STUDY_TITLE}\n**Researcher(s):** {", ".join(RESEARCHERS)}\n\
 \n>>>**Description**\n\nWe are researchers at the University of Chicago doing a research study about the limits of human perception. You will be asked to engage with different types of stimuli (such as images and sounds) and indicate whether or not you believe a particular target is present within them. You will also be asked to fill out a couple of questionnaires.\n\n\
 Depending on your performance, we may reach out to you for follow up studies. If we reach out to you again, your participation is entirely voluntary, and you will be compensated for any further experiments in which you are a participant.\n\n\
-Participation should take approximately 45-90 minutes.\nYour participation is voluntary.\n\n\
+Participation should take approximately 45-90 minutes.\n\nDepending on your performance, we may reach out to you for follow up studies. If we reach out to you again, your participation is entirely voluntary, and you will be compensated for any further experiments in which you are a participant.\n\n\
 >>>Press the right arrow key to continue'
 
 incentivesText = f">>>**Incentives**\n\nYou will be compensated {NUMBER_OF_CREDITS} {CREDIT_DENOMINATION} for your participation in this study. You will also be entered into a raffle for a 50 dollar Amazon gift card. Your performance on the study will influence your chances of winning the raffle. The better you do, the higher your chances are to win the giftcard.\n\n>>>Press the right arrow key to continue and the left arrow key to go back"
