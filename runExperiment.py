@@ -540,37 +540,37 @@ def display_summary_statistics(subject_number):
 
 def create_deidentified_results():
     """
-    Create a copy of the results folder without consent files.
-    Copies all files except consent_{subject_number}.csv for each subject.
+    Create/update a copy of the results folder without consent files.
+    Never deletes RESULTS_DIR or DEIDENTIFIED_DIR.
+    Overwrites files in DEIDENTIFIED_DIR with the latest deidentified copies.
+    Also removes any consent_*.csv that might already exist in DEIDENTIFIED_DIR.
     """
     if not os.path.exists(RESULTS_DIR):
         print("  No results folder found to deidentify.", flush=True)
         return False
-    
+
     try:
-        # Remove existing deidentified folder if it exists
-        if os.path.exists(DEIDENTIFIED_DIR):
-            shutil.rmtree(DEIDENTIFIED_DIR)
-        
-        # Walk through results and copy everything except consent files
+        # Create destination root if missing (do NOT delete it)
+        os.makedirs(DEIDENTIFIED_DIR, exist_ok=True)
+
+        # Copy everything except consent files
         for root, dirs, files in os.walk(RESULTS_DIR):
-            # Compute relative path from RESULTS_DIR
             rel_path = os.path.relpath(root, RESULTS_DIR)
-            dest_dir = os.path.join(DEIDENTIFIED_DIR, rel_path) if rel_path != "." else DEIDENTIFIED_DIR
-            
-            # Create destination directory
+            dest_dir = DEIDENTIFIED_DIR if rel_path == "." else os.path.join(DEIDENTIFIED_DIR, rel_path)
+
             os.makedirs(dest_dir, exist_ok=True)
-            
+
             for file in files:
-                # Skip consent files (consent_{subject_number}.csv)
                 if file.startswith("consent_") and file.endswith(".csv"):
                     continue
-                
+
                 src_file = os.path.join(root, file)
                 dst_file = os.path.join(dest_dir, file)
+
+                # Overwrite/update the destination file
                 shutil.copy2(src_file, dst_file)
-        
         return True
+
     except Exception as e:
         print(f"  Error creating deidentified folder: {e}", flush=True)
         return False
